@@ -1,0 +1,30 @@
+.mac-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mac-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.mac-left code {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mac-uses {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.mac-tag {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+}
+.mac-preview {
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+}
