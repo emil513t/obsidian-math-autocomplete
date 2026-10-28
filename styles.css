@@ -28,3 +28,7 @@
   max-width: 45%;
   overflow: hidden;
 }
+.mac-fill-preview {
+  max-width: 60%;
+  font-size: 0.9em;
+}

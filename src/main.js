@@ -3,6 +3,7 @@ import {
   PluginSettingTab,
   Setting,
   EditorSuggest,
+  SuggestModal,
   TFile,
   Notice,
   renderMath,
@@ -13,13 +14,87 @@ import { isCursorInMath } from "./mathContext.js";
 import { scanDocument, mergeStats } from "./stats.js";
 import { cursorOffset, previewSource } from "./dictionary.js";
 import { rankSuggestions } from "./rank.js";
+import { fillsFor } from "./fills.js";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
   showPreview: true,
   maxSuggestions: 15,
+  askFill: true,
   boosts: {},
+  fillPicks: {},
 };
+
+// Re-indent a multi-line insert to the current line's indentation, keeping the
+// cursor offset pointing at the same character.
+function indentInsert(text, offset, indent) {
+  if (!text.includes("\n") || !indent) return { text, offset };
+  const linesBefore = text.slice(0, offset).split("\n").length - 1;
+  return { text: text.split("\n").join("\n" + indent), offset: offset + indent.length * linesBefore };
+}
+
+// Second step after inserting a construct (\frac, \sum, a matrix, ...): pick
+// what to fill it with. "Blank" or Esc keeps what's already in the note.
+class FillModal extends SuggestModal {
+  constructor(plugin, editor, name, fills, from, length) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.editor = editor;
+    this.name = name;
+    this.fills = fills;
+    this.from = from;
+    this.length = length;
+    this.setPlaceholder(`Fill \\${name} with… (Enter on Blank or Esc keeps it empty)`);
+  }
+
+  getSuggestions(query) {
+    const q = query.toLowerCase();
+    const picks = this.plugin.settings.fillPicks;
+    return this.fills
+      .filter((f) => (f.label || f.text).toLowerCase().includes(q))
+      .map((f, i) => ({ f, i, n: picks[`${this.name}:${f.id}`] || 0 }))
+      .sort((a, b) => b.n - a.n || a.i - b.i)
+      .map((x) => x.f);
+  }
+
+  renderSuggestion(fill, el) {
+    el.addClass("mac-item");
+    const left = el.createDiv({ cls: "mac-left" });
+    if (fill.label) left.createSpan({ text: fill.label });
+    else left.createEl("code", { text: fill.text });
+    if (fill.uses) {
+      left.createSpan({ cls: "mac-uses", text: `${fill.uses}×` });
+      left.createSpan({ cls: "mac-tag", text: "from your notes" });
+    }
+    if (!fill.preview || !this.plugin.settings.showPreview) return;
+    const right = el.createDiv({ cls: "mac-preview mac-fill-preview" });
+    try {
+      right.appendChild(renderMath(fill.preview, false));
+      finishRenderMath();
+    } catch (_) {
+      // Preview is decoration; the fill still works without it.
+    }
+  }
+
+  onChooseSuggestion(fill) {
+    const key = `${this.name}:${fill.id}`;
+    this.plugin.settings.fillPicks[key] = (this.plugin.settings.fillPicks[key] || 0) + 1;
+    this.plugin.saveSettings();
+    if (fill.id === "blank") return;
+
+    const { editor, from } = this;
+    const start = editor.offsetToPos(from);
+    const indent = editor.getLine(start.line).match(/^\s*/)[0];
+    const { text, offset } = indentInsert(fill.text, fill.cursor, indent);
+    editor.replaceRange(text, start, editor.offsetToPos(from + this.length));
+    editor.setCursor(editor.offsetToPos(from + offset));
+  }
+
+  onClose() {
+    super.onClose();
+    this.editor.focus();
+  }
+}
 
 class MathSuggest extends EditorSuggest {
   constructor(plugin) {
@@ -73,20 +148,21 @@ class MathSuggest extends EditorSuggest {
 
   selectSuggestion(item) {
     const { editor, start, end } = this.context;
-    let text = item.insert;
-    let offset = item.kind === "atom" ? text.length : cursorOffset(text);
-
-    // Keep multi-line environments aligned with the current indentation.
-    if (text.includes("\n")) {
-      const indent = editor.getLine(start.line).match(/^\s*/)[0];
-      const lines = text.split("\n");
-      offset += indent.length * text.slice(0, offset).split("\n").slice(1).length;
-      text = lines.join("\n" + indent);
-    }
+    const indent = editor.getLine(start.line).match(/^\s*/)[0];
+    const { text, offset } = indentInsert(
+      item.insert,
+      item.kind === "atom" ? item.insert.length : cursorOffset(item.insert),
+      indent,
+    );
 
     editor.replaceRange(text, start, end);
-    editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + offset));
+    const from = editor.posToOffset(start);
+    editor.setCursor(editor.offsetToPos(from + offset));
     this.plugin.recordPick(item.insert);
+
+    if (item.kind !== "builtin" || !this.plugin.settings.askFill) return;
+    const fills = fillsFor(item.name, item.insert, this.plugin.stats.atoms);
+    if (fills) new FillModal(this.plugin, editor, item.name, fills, from, text.length).open();
   }
 }
 
@@ -168,6 +244,11 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Rendered preview")
       .setDesc("Render each suggestion with MathJax next to its source.")
       .addToggle((t) => t.setValue(s.showPreview).onChange(async (v) => { s.showPreview = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Offer fills after inserting")
+      .setDesc("After picking \\frac, \\sum, \\int, \\lim, a matrix and more, offer filled versions: the ones you write most first, then common ones.")
+      .addToggle((t) => t.setValue(s.askFill).onChange(async (v) => { s.askFill = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
       .setName("Max suggestions")
