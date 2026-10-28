@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=cjs --platform=browser --target=es2020 --external:obsidian --outfile=dist/main.js",
-    "test": "node --test test/",
+    "test": "node --test test/core.test.js",
     "install-vault": "node scripts/install.mjs"
   },
   "devDependencies": {
