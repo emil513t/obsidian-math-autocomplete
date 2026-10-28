@@ -1,6 +1,6 @@
 // Fill-in options offered after inserting an environment, e.g. picking
 // \pmatrix then choosing "3×3 identity". Each body is a list of rows; cells
-// within a row are joined with " & ", rows with " \\" + newline.
+// within a row are joined with " & ", rows with " \\ ", all on one line.
 
 const MATRIX_ENVS = new Set(["pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "matrix"]);
 
@@ -62,7 +62,7 @@ const ALIGN_VARIANTS = [
 
 // Environment name if `insert` is a bare environment template we can fill.
 export function envOf(insert) {
-  const m = insert.match(/^\\begin\{(\w+)\}\n\n\\end\{\1\}$/);
+  const m = insert.match(/^\\begin\{(\w+)\}  \\end\{\1\}$/);
   return m ? m[1] : null;
 }
 
@@ -84,10 +84,11 @@ function rowText(cells, variant, rowIndex, env) {
 
 // Full environment text for a variant, plus where the cursor should land.
 export function buildEnv(env, variant) {
+  // One line, so the environment sits inside $$ ... $$ without new lines.
   const rows = variant.rows.map((cells, i) => rowText(cells, variant, i, env).trimEnd());
-  const body = rows.join(ROW_END + "\n");
-  const open = `\\begin{${env}}\n`;
-  const text = `${open}${body}\n\\end{${env}}`;
+  const body = rows.join(ROW_END + " ");
+  const open = `\\begin{${env}} `;
+  const text = `${open}${body} \\end{${env}}`;
   // Every blank fill starts with its first empty slot, so the cursor goes to the
   // start of the first row; filled ones put it after \end.
   const cursor = variant.blank ? open.length : text.length;

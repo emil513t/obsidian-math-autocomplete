@@ -59,17 +59,18 @@ const WITH_ARGS = {
   lceil: "\\lceil  \\rceil",
   lfloor: "\\lfloor  \\rfloor",
   langle: "\\langle  \\rangle",
-  begin: "\\begin{}\n\n\\end{}",
-  pmatrix: "\\begin{pmatrix}\n\n\\end{pmatrix}",
-  bmatrix: "\\begin{bmatrix}\n\n\\end{bmatrix}",
-  vmatrix: "\\begin{vmatrix}\n\n\\end{vmatrix}",
-  Bmatrix: "\\begin{Bmatrix}\n\n\\end{Bmatrix}",
-  Vmatrix: "\\begin{Vmatrix}\n\n\\end{Vmatrix}",
-  matrix: "\\begin{matrix}\n\n\\end{matrix}",
-  cases: "\\begin{cases}\n\n\\end{cases}",
-  aligned: "\\begin{aligned}\n\n\\end{aligned}",
-  align: "\\begin{align}\n\n\\end{align}",
-  array: "\\begin{array}{}\n\n\\end{array}",
+  // Environments stay on one line so the closing $$ isn't pushed down.
+  begin: "\\begin{}  \\end{}",
+  pmatrix: "\\begin{pmatrix}  \\end{pmatrix}",
+  bmatrix: "\\begin{bmatrix}  \\end{bmatrix}",
+  vmatrix: "\\begin{vmatrix}  \\end{vmatrix}",
+  Bmatrix: "\\begin{Bmatrix}  \\end{Bmatrix}",
+  Vmatrix: "\\begin{Vmatrix}  \\end{Vmatrix}",
+  matrix: "\\begin{matrix}  \\end{matrix}",
+  cases: "\\begin{cases}  \\end{cases}",
+  aligned: "\\begin{aligned}  \\end{aligned}",
+  align: "\\begin{align}  \\end{align}",
+  array: "\\begin{array}{}  \\end{array}",
   pmod: "\\pmod{}",
   bmod: "\\bmod",
   stackrel: "\\stackrel{}{}",
@@ -113,9 +114,8 @@ for (const name of SYMBOLS) {
 // Where the cursor goes after inserting `template`: inside the first {} / [] gap,
 // otherwise at the first double-space gap (e.g. \lceil  \rceil), otherwise the end.
 export function cursorOffset(template) {
-  const m = template.match(/\{\}|\{ |\[\]|\(\s|  |\n\n/);
+  const m = template.match(/\{\}|\{ |\[\]|\(\s|  /);
   if (!m) return template.length;
-  if (m[0] === "\n\n") return m.index + 1;
   return m.index + 1;
 }
 
@@ -124,8 +124,8 @@ export function previewSource(template) {
   return template
     .replace(/\{\}/g, "{\\square}")
     .replace(/\[\]/g, "[n]")
-    .replace(/\\begin\{\}\n\n\\end\{\}/, "\\text{env}")
+    .replace(/\\begin\{\\square\}  \\end\{\\square\}/, "\\text{env}")
     .replace(/\\begin\{array\}\{\\square\}/, "\\begin{array}{cc}")
-    .replace(/\n\n/g, " a & b \\\\ c & d ")
+    .replace(/(\\begin\{\w+\}(?:\{\w+\})?)  (\\end)/, "$1 a & b \\\\ c & d $2")
     .replace(/  /g, " x ");
 }

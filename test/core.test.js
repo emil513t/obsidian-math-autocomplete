@@ -5,7 +5,7 @@ import path from "node:path";
 import { isCursorInMath, extractMath } from "../src/mathContext.js";
 import { scanDocument, mergeStats } from "../src/stats.js";
 import { rankSuggestions } from "../src/rank.js";
-import { cursorOffset } from "../src/dictionary.js";
+import { cursorOffset, previewSource, DICTIONARY } from "../src/dictionary.js";
 
 test("math detection", () => {
   assert.equal(isCursorInMath("hello $x + \\fr"), true);
@@ -44,7 +44,7 @@ test("cursor offsets", () => {
   assert.equal(cursorOffset("\\frac{}{}"), 6);
   assert.equal(cursorOffset("\\lim_{ \\to }"), 6);
   assert.equal(cursorOffset("\\alpha"), 6);
-  assert.equal(cursorOffset("\\begin{pmatrix}\n\n\\end{pmatrix}"), 16);
+  assert.equal(cursorOffset("\\begin{pmatrix}  \\end{pmatrix}"), 16);
 });
 
 const VAULT = "C:/Users/emill/OneDrive/Desktop/CS Shit/Obsidian/Emil";
@@ -76,23 +76,24 @@ import { envOf, variantsFor, buildEnv, previewOf } from "../src/variants.js";
 
 test("environment fills", () => {
   const BS = String.fromCharCode(92);
-  assert.equal(envOf(`${BS}begin{pmatrix}\n\n${BS}end{pmatrix}`), "pmatrix");
+  assert.equal(envOf(`${BS}begin{pmatrix}  ${BS}end{pmatrix}`), "pmatrix");
   assert.equal(envOf(`${BS}frac{}{}`), null);
   assert.equal(variantsFor("frac"), null);
   const v = (env, id) => variantsFor(env).find((x) => x.id === id);
 
   const abcd = buildEnv("pmatrix", v("pmatrix", "abcd"));
-  assert.equal(abcd.text, `${BS}begin{pmatrix}\na & b ${BS}${BS}\nc & d\n${BS}end{pmatrix}`);
+  assert.equal(abcd.text, `${BS}begin{pmatrix} a & b ${BS}${BS} c & d ${BS}end{pmatrix}`);
+  assert.ok(!abcd.text.includes("\n"), "fills stay on one line");
   assert.equal(abcd.cursor, abcd.text.length);
 
   const id3 = buildEnv("bmatrix", v("bmatrix", "id3")).text;
-  assert.ok(id3.includes(`1 & 0 & 0 ${BS}${BS}\n0 & 1 & 0`));
+  assert.ok(id3.includes(`1 & 0 & 0 ${BS}${BS} 0 & 1 & 0`));
 
   const blank = buildEnv("pmatrix", v("pmatrix", "blank2"));
   assert.equal(blank.text.slice(blank.cursor, blank.cursor + 3), " & ");
 
   const al = buildEnv("aligned", v("aligned", "chain")).text;
-  assert.equal(al, `${BS}begin{aligned}\n&= ${BS}${BS}\n&=\n${BS}end{aligned}`);
+  assert.equal(al, `${BS}begin{aligned} &= ${BS}${BS} &= ${BS}end{aligned}`);
 
   assert.ok(previewOf("align", v("align", "eq2")).startsWith(`${BS}begin{aligned}`));
   assert.ok(previewOf("pmatrix", v("pmatrix", "blank2")).includes(`${BS}square & ${BS}square`));
@@ -114,6 +115,14 @@ test("general fills", () => {
   assert.equal(fillsFor("sum", `${BS}sum_{}^{}`, atoms)[1].text, `${BS}sum_{j=1}^{m}`);
   assert.ok(!fillsFor("ddx", `${BS}frac{d}{dx}`, atoms).some((f) => f.uses), "aliases skip vault atoms");
   assert.equal(fillsFor("alpha", `${BS}alpha`, atoms), null);
-  assert.equal(fillsFor("pmatrix", `${BS}begin{pmatrix}\n\n${BS}end{pmatrix}`, atoms)[0].id, "blank2");
-  assert.equal(fillsFor("begin", `${BS}begin{}\n\n${BS}end{}`, atoms), null);
+  assert.equal(fillsFor("pmatrix", `${BS}begin{pmatrix}  ${BS}end{pmatrix}`, atoms)[0].id, "blank2");
+  assert.equal(fillsFor("begin", `${BS}begin{}  ${BS}end{}`, atoms), null);
+
+  // Nothing the plugin can insert spans more than one line.
+  for (const d of DICTIONARY.values()) {
+    assert.ok(!d.template.includes("\n"), d.name);
+    for (const f of fillsFor(d.name, d.template, atoms) || []) assert.ok(!f.text.includes("\n"), `${d.name}:${f.id}`);
+  }
+  assert.ok(previewSource(DICTIONARY.get("pmatrix").template).includes(`a & b ${BS}${BS} c & d`));
+  assert.equal(previewSource(DICTIONARY.get("begin").template), `${BS}text{env}`);
 });
