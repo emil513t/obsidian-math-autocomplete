@@ -12,9 +12,23 @@ export const MARKER_RE = /⟨([^⟨⟩\n]+)⟩/g;
 export function parseTemplates(md) {
   const out = [];
   let cur = null;
+  const tidy = (lines) => lines.join("\n").replace(/^\s*\n/, "").replace(/\s+$/, "");
   const flush = () => {
     if (!cur) return;
-    cur.body = cur.lines.join("\n").replace(/^\s*\n/, "").replace(/\s+$/, "");
+    // `### label` lines split the body into solution routes ("variants").
+    // Text before the first ### is a shared intro prepended to every route.
+    const intro = [];
+    const variants = [];
+    for (const line of cur.lines) {
+      const v = line.match(/^###\s+(.+?)\s*$/);
+      if (v) variants.push({ label: v[1], lines: [] });
+      else (variants.length ? variants[variants.length - 1].lines : intro).push(line);
+    }
+    const pre = tidy(intro);
+    cur.variants = variants
+      .map((v) => ({ label: v.label, body: [pre, tidy(v.lines)].filter(Boolean).join("\n") }))
+      .filter((v) => v.body);
+    cur.body = cur.variants.length ? cur.variants[0].body : pre;
     delete cur.lines;
     if (cur.body) out.push(cur);
   };

@@ -108,15 +108,29 @@ import { parseRefQuery, rankRefs, formatRef } from "../src/refs.js";
 test("imo26 templates + references", () => {
   const imo = parseTemplates(fs.readFileSync(new URL("../src/imo26-templates.md", import.meta.url), "utf8"));
   const generic = parseTemplates(fs.readFileSync(new URL("../src/default-templates.md", import.meta.url), "utf8"));
-  assert.ok(imo.length >= 60, `imo26 templates: ${imo.length}`);
+  assert.ok(imo.length >= 45, `imo26 templates: ${imo.length}`);
+  const routes = imo.reduce((n, t) => n + t.variants.length, 0);
+  assert.ok(routes >= 150, `routes: ${routes}`);
+  const proof = generic.find((t) => t.name === "proof");
+  assert.ok(proof.variants.length >= 6, "proof has strategies");
+  assert.equal(proof.body, proof.variants[0].body, "first route is the default body");
+  const open = imo.find((t) => t.name === "openset");
+  assert.ok(open.variants.some((v) => v.label.includes("Prop 5.68")), "routes cite results by number");
   const names = [...generic, ...imo].map((t) => t.name);
   assert.equal(new Set(names).size, names.length, "no duplicate template names");
+  for (const t of [...imo, ...generic]) for (const v of t.variants) {
+    assert.ok(!v.body.includes("###"), `${t.name}: ${v.label}`);
+    for (const m of v.body.matchAll(/\$\$([\s\S]*?)\$\$/g)) assert.ok(!m[1].includes("\n"), `${t.name}/${v.label}: $$ on one line`);
+    assert.ok(!/[_^]\{\{/.test(v.body), `${t.name}/${v.label}: wrap sub/superscript blanks in braces`);
+    // A leftover "{{word" means a blank didn't expand (e.g. braces inside it).
+    assert.ok(!/\{\{\s*[A-Za-z_,]/.test(expandBody(v.body)), `${t.name}/${v.label}: every {{ }} expands`);
+  }
   for (const t of imo) {
     assert.match(t.name, /^[a-zA-Z]+$/, "names are letters only (trigger regex)");
     for (const m of t.body.matchAll(/\$\$([\s\S]*?)\$\$/g)) assert.ok(!m[1].includes("\n"), `${t.name}: $$ on one line`);
     assert.ok(!/[_^]\{\{/.test(t.body), `${t.name}: wrap sub/superscript blanks in braces`);
     const expanded = expandBody(t.body);
-    assert.ok(!/\{\{|\}\}/.test(expanded.replace(/\{\{\{|\}\}\}/g, "")), `${t.name}: every {{ }} expands`);
+    assert.ok(!/\{\{\s*[A-Za-z_,]/.test(expanded), `${t.name}: every {{ }} expands`);
     // Template names must not be swallowed by a reference prefix.
     const rq = parseRefQuery(t.name);
     if (rq) assert.equal(rankRefs([], rq).length, 0);
@@ -142,8 +156,9 @@ test("imo26 templates + references", () => {
   assert.equal(rankRefs(refs, parseRefQuery("def")).length, 42);
 
   const d = refs.find((r) => r.kind === "definition" && r.num === "4.26");
-  assert.equal(formatRef(d), "Definition 4.26 (Convex function)");
-  assert.match(formatRef(d, "IMO26_ALL_DEFINITIONS"), /^\[\[IMO26_ALL_DEFINITIONS#Definition 4\.26 .*\|Definition 4\.26 \(Convex function\)\]\]$/);
+  assert.equal(formatRef(d), "Definition 4.26", "plain, exactly as the book cites it");
+  assert.equal(formatRef(d, null, true), "Definition 4.26 (Convex function)");
+  assert.match(formatRef(d, "IMO26_ALL_DEFINITIONS"), /^\[\[IMO26_ALL_DEFINITIONS#Definition 4\.26 .*\|Definition 4\.26\]\]$/);
   const rem = refs.find((r) => r.kind === "remark");
   assert.ok(!formatRef(rem, "X").startsWith("[["), "no link without a heading");
 });
@@ -154,7 +169,7 @@ test("templates", () => {
   const defs = parseTemplates(md);
   const names = defs.map((t) => t.name);
   for (const n of ["proof", "showthat", "induction", "contradiction", "epsdelta", "invariant", "solution"]) assert.ok(names.includes(n), n);
-  assert.equal(defs.find((t) => t.name === "proof").desc, "direct proof");
+  assert.equal(defs.find((t) => t.name === "proof").desc, "proof, pick a strategy");
   assert.ok(!defs.some((t) => t.body.includes("## ")), "bodies don't swallow headings");
   for (const t of defs) {
     // Display math must stay on one line (Emil's rule from the fills work).

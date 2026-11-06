@@ -65,11 +65,11 @@ export function rankRefs(refs, { kind, q }, picks = {}) {
     .map((x) => x.r);
 }
 
-// "Definition 4.26 (Convex function)", optionally as a link to the section
-// of a vault note that has a heading for it.
-export function formatRef(ref, linkNote = null) {
+// "Definition 4.26" exactly as the book cites it. Optionally with the title,
+// and/or as a link to the section of a vault note that has a heading for it.
+export function formatRef(ref, linkNote = null, withTitle = false) {
   const label = `${kindLabel(ref.kind)} ${ref.num}`;
-  const text = ref.title ? `${label} (${ref.title})` : label;
+  const text = withTitle && ref.title ? `${label} (${ref.title})` : label;
   if (!linkNote || !ref.heading) return text;
   const heading = ref.heading.replace(/[|#^[\]]/g, " ").replace(/\s+/g, " ").trim();
   return `[[${linkNote}#${heading}|${text}]]`;

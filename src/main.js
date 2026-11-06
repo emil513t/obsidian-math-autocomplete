@@ -33,7 +33,9 @@ const DEFAULT_SETTINGS = {
   templatesFile: "Math Templates.md",
   templatePicks: {},
   imo26: true,
-  refLinks: true,
+  refAsLink: false,
+  refWithTitle: false,
+  routePicks: {},
   refNote: "Math/IMO26_ALL_DEFINITIONS.md",
   refPicks: {},
 };
@@ -48,25 +50,13 @@ class TemplateSuggest extends EditorSuggest {
   }
 
   onTrigger(cursor, editor) {
-    try {
-      return this.trigger2(cursor, editor);
-    } catch (e) {
-      this.plugin.debug(`TRIGGER CRASH: ${e && e.stack}`);
-      return null;
-    }
-  }
-
-  trigger2(cursor, editor) {
+    if (!this.plugin.settings.templatesEnabled) return null;
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
-    const dbg = (why) => { if (/\\[a-zA-Z]*$/.test(before)) this.plugin.debug(`trigger ${JSON.stringify(before.slice(-30))} -> ${why}`); return null; };
-    if (!this.plugin.settings.templatesEnabled) return dbg("templates disabled in settings");
     // \word, \def4.26, or \ref followed by free search words.
     const m = before.match(/(?:^|[\s(>*_[])\\(ref(?:\s[^\\$\n]{0,40})?|[a-zA-Z]+[\w.]*)$/);
-    if (!m) return dbg("no \\word match");
-    const ctx = cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor));
-    if (ctx !== "text") return dbg(`context=${ctx}`);
-    if (!this.plugin.textSuggestions(m[1]).length) return dbg(`nothing matches (templates=${this.plugin.templates.length})`);
-    dbg("SHOW popup");
+    if (!m) return null;
+    if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
+    if (!this.plugin.textSuggestions(m[1]).length) return null;
     return {
       start: { line: cursor.line, ch: cursor.ch - m[1].length - 1 },
       end: cursor,
@@ -94,34 +84,84 @@ class TemplateSuggest extends EditorSuggest {
     top.createEl("code", { text: "\\" + t.name });
     if (t.desc) top.createSpan({ cls: "mac-template-desc", text: t.desc });
     if (t.source === "user") top.createSpan({ cls: "mac-tag", text: "yours" });
-    const first = t.body.split("\n").find((l) => l.trim()) || "";
-    left.createDiv({ cls: "mac-template-snippet", text: first.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩") });
+    if (t.variants.length > 1) top.createSpan({ cls: "mac-tag", text: `${t.variants.length} ways` });
+    const snippet = t.variants.length > 1
+      ? t.variants.map((v) => v.label).join(" · ")
+      : (t.body.split("\n").find((l) => l.trim()) || "").replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩");
+    left.createDiv({ cls: "mac-template-snippet", text: snippet });
   }
 
   selectSuggestion(item) {
     const { editor, start, end } = this.context;
     if (item.type === "ref") {
       const r = item.ref;
-      const text = formatRef(r, this.plugin.refLinkTarget());
+      const s = this.plugin.settings;
+      const text = formatRef(r, this.plugin.refLinkTarget(), s.refWithTitle);
       editor.replaceRange(text, start, end);
       editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + text.length));
-      const picks = this.plugin.settings.refPicks;
-      picks[`${r.kind}:${r.num}`] = (picks[`${r.kind}:${r.num}`] || 0) + 1;
+      s.refPicks[`${r.kind}:${r.num}`] = (s.refPicks[`${r.kind}:${r.num}`] || 0) + 1;
       this.plugin.saveSettings();
       return;
     }
     const t = item.t;
-    const indent = editor.getLine(start.line).match(/^\s*/)[0];
-    const { text } = indentInsert(expandBody(t.body), 0, indent);
-    editor.replaceRange(text, start, end);
-    const from = editor.posToOffset(start);
     const picks = this.plugin.settings.templatePicks;
     picks[t.name] = (picks[t.name] || 0) + 1;
     this.plugin.saveSettings();
+    if (t.variants.length > 1) {
+      // Like the matrix fills: second step picks the solution route.
+      new RouteModal(this.plugin, t, (v) => insertTemplate(editor, start, end, v.body)).open();
+      return;
+    }
+    insertTemplate(editor, start, end, t.body);
+  }
+}
 
-    const view = editor.cm;
-    if (view) startSession(view, from, from + text.length);
-    else editor.setCursor(editor.offsetToPos(from + text.length));
+function insertTemplate(editor, start, end, body) {
+  const indent = editor.getLine(start.line).match(/^\s*/)[0];
+  const { text } = indentInsert(expandBody(body), 0, indent);
+  editor.replaceRange(text, start, end);
+  const from = editor.posToOffset(start);
+  const view = editor.cm;
+  if (view) startSession(view, from, from + text.length);
+  else editor.setCursor(editor.offsetToPos(from + text.length));
+  editor.focus();
+}
+
+// Pick how to solve it: each route of a template cites the definitions,
+// lemmas and theorems it uses by number.
+class RouteModal extends SuggestModal {
+  constructor(plugin, template, onPick) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.t = template;
+    this.onPick = onPick;
+    this.setPlaceholder(`\\${template.name}: how do you want to solve it? (Esc keeps what you typed)`);
+  }
+
+  getSuggestions(query) {
+    const q = query.toLowerCase();
+    const picks = this.plugin.settings.routePicks;
+    return this.t.variants
+      .map((v, i) => ({ v, i, n: picks[`${this.t.name}:${v.label}`] || 0 }))
+      .filter((x) => x.v.label.toLowerCase().includes(q) || x.v.body.toLowerCase().includes(q))
+      .sort((a, b) => b.n - a.n || a.i - b.i)
+      .map((x) => x.v);
+  }
+
+  renderSuggestion(v, el) {
+    el.addClass("mac-item", "mac-template");
+    const left = el.createDiv({ cls: "mac-left mac-template-left" });
+    left.createDiv({ cls: "mac-template-top" }).createSpan({ text: v.label });
+    const first = v.body.split("\n").find((l) => l.trim()) || "";
+    left.createDiv({ cls: "mac-template-snippet", text: first.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩") });
+  }
+
+  onChooseSuggestion(v) {
+    const key = `${this.t.name}:${v.label}`;
+    const picks = this.plugin.settings.routePicks;
+    picks[key] = (picks[key] || 0) + 1;
+    this.plugin.saveSettings();
+    this.onPick(v);
   }
 }
 
@@ -268,16 +308,6 @@ class MathSuggest extends EditorSuggest {
 
 export default class MathAutocompletePlugin extends Plugin {
   async onload() {
-    this.debug(`onload start, refs=${Array.isArray(IMO26_REFS) ? IMO26_REFS.length : typeof IMO26_REFS}`);
-    try {
-      await this.load2();
-    } catch (e) {
-      this.debug(`ONLOAD CRASH: ${e && e.stack}`);
-      new Notice(`Math Autocomplete failed to load: ${e}`);
-    }
-  }
-
-  async load2() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.fileStats = new Map(); // path -> per-document counts
     this.stats = { cmds: new Map(), atoms: new Map() };
@@ -287,13 +317,7 @@ export default class MathAutocompletePlugin extends Plugin {
 
     this.registerEditorSuggest(new MathSuggest(this));
     this.registerEditorSuggest(new TemplateSuggest(this));
-    try {
-      this.registerEditorExtension(tabstopExtension);
-    } catch (e) {
-      this.debug(`tabstop extension failed: ${e}`);
-    }
-    const others = (this.app.workspace.editorSuggest?.suggests || []).map((s) => s.constructor?.name);
-    this.debug(`loaded ${this.manifest.version}; templates=${this.templates.length}; suggests=[${others.join(", ")}]`);
+    this.registerEditorExtension(tabstopExtension);
     this.addSettingTab(new MathAutocompleteSettingTab(this));
 
     this.addCommand({
@@ -354,21 +378,6 @@ export default class MathAutocompletePlugin extends Plugin {
     await this.app.workspace.getLeaf(true).openFile(f);
   }
 
-  // Temporary diagnostics: appends to debug.log in the plugin folder.
-  debug(msg) {
-    try {
-      const line = `${new Date().toISOString()} ${msg}\n`;
-      const base = this.app.vault.adapter.getBasePath?.();
-      if (base && typeof require === "function") {
-        require("fs").appendFileSync(`${base}/${this.manifest.dir}/debug.log`, line);
-      } else {
-        console.log("[math-autocomplete]", msg);
-      }
-    } catch (e) {
-      console.log("[math-autocomplete] debug failed", e, msg);
-    }
-  }
-
   buildDefaultTemplates() {
     const imo = this.settings.imo26 ? parseTemplates(IMO26_TEMPLATES_MD) : [];
     this.defaultTemplates = [...parseTemplates(DEFAULT_TEMPLATES_MD), ...imo];
@@ -393,7 +402,7 @@ export default class MathAutocompletePlugin extends Plugin {
 
   // Link target for references, if that note exists in the vault.
   refLinkTarget() {
-    if (!this.settings.refLinks) return null;
+    if (!this.settings.refAsLink) return null;
     const f = this.app.vault.getAbstractFileByPath(this.settings.refNote);
     return f instanceof TFile ? f.basename : null;
   }
@@ -468,9 +477,14 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       }));
 
     new Setting(containerEl)
+      .setName("Add the title to references")
+      .setDesc("Off: \"Definition 4.26\" exactly as the book cites it. On: \"Definition 4.26 (Convex function)\".")
+      .addToggle((t) => t.setValue(s.refWithTitle).onChange(async (v) => { s.refWithTitle = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
       .setName("Link references to your notes")
       .setDesc("Insert references as links to the matching heading in this note (plain text if the note or heading is missing).")
-      .addToggle((t) => t.setValue(s.refLinks).onChange(async (v) => { s.refLinks = v; await this.plugin.saveSettings(); }))
+      .addToggle((t) => t.setValue(s.refAsLink).onChange(async (v) => { s.refAsLink = v; await this.plugin.saveSettings(); }))
       .addText((t) => t.setValue(s.refNote).onChange(async (v) => { s.refNote = v.trim(); await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
