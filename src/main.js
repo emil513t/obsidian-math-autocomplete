@@ -48,6 +48,15 @@ class TemplateSuggest extends EditorSuggest {
   }
 
   onTrigger(cursor, editor) {
+    try {
+      return this.trigger2(cursor, editor);
+    } catch (e) {
+      this.plugin.debug(`TRIGGER CRASH: ${e && e.stack}`);
+      return null;
+    }
+  }
+
+  trigger2(cursor, editor) {
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
     const dbg = (why) => { if (/\\[a-zA-Z]*$/.test(before)) this.plugin.debug(`trigger ${JSON.stringify(before.slice(-30))} -> ${why}`); return null; };
     if (!this.plugin.settings.templatesEnabled) return dbg("templates disabled in settings");
@@ -259,6 +268,16 @@ class MathSuggest extends EditorSuggest {
 
 export default class MathAutocompletePlugin extends Plugin {
   async onload() {
+    this.debug(`onload start, refs=${Array.isArray(IMO26_REFS) ? IMO26_REFS.length : typeof IMO26_REFS}`);
+    try {
+      await this.load2();
+    } catch (e) {
+      this.debug(`ONLOAD CRASH: ${e && e.stack}`);
+      new Notice(`Math Autocomplete failed to load: ${e}`);
+    }
+  }
+
+  async load2() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.fileStats = new Map(); // path -> per-document counts
     this.stats = { cmds: new Map(), atoms: new Map() };
@@ -337,9 +356,17 @@ export default class MathAutocompletePlugin extends Plugin {
 
   // Temporary diagnostics: appends to debug.log in the plugin folder.
   debug(msg) {
-    const path = `${this.manifest.dir}/debug.log`;
-    const line = `${new Date().toISOString()} ${msg}\n`;
-    this.app.vault.adapter.append(path, line).catch(() => this.app.vault.adapter.write(path, line));
+    try {
+      const line = `${new Date().toISOString()} ${msg}\n`;
+      const base = this.app.vault.adapter.getBasePath?.();
+      if (base && typeof require === "function") {
+        require("fs").appendFileSync(`${base}/${this.manifest.dir}/debug.log`, line);
+      } else {
+        console.log("[math-autocomplete]", msg);
+      }
+    } catch (e) {
+      console.log("[math-autocomplete] debug failed", e, msg);
+    }
   }
 
   buildDefaultTemplates() {
