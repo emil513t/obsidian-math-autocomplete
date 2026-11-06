@@ -47,8 +47,8 @@ test("cursor offsets", () => {
   assert.equal(cursorOffset("\\begin{pmatrix}  \\end{pmatrix}"), 16);
 });
 
-const VAULT = "C:/Users/emill/OneDrive/Desktop/CS Shit/Obsidian/Emil";
-test("real vault scan", { skip: !fs.existsSync(VAULT) }, () => {
+const VAULT = process.env.OBSIDIAN_VAULT || "";
+test("real vault scan", { skip: !VAULT || !fs.existsSync(VAULT) }, () => {
   const files = [];
   const walk = (d) => {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {

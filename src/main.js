@@ -32,11 +32,11 @@ const DEFAULT_SETTINGS = {
   templatesEnabled: true,
   templatesFile: "Math Templates.md",
   templatePicks: {},
-  imo26: true,
+  imo26: false,
   refAsLink: false,
   refWithTitle: false,
   routePicks: {},
-  refNote: "Math/IMO26_ALL_DEFINITIONS.md",
+  refNote: "",
   refPicks: {},
 };
 
@@ -308,7 +308,7 @@ class MathSuggest extends EditorSuggest {
 
 export default class MathAutocompletePlugin extends Plugin {
   async onload() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign(structuredClone(DEFAULT_SETTINGS), await this.loadData());
     this.fileStats = new Map(); // path -> per-document counts
     this.stats = { cmds: new Map(), atoms: new Map() };
 
@@ -436,6 +436,8 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
     containerEl.empty();
     const s = this.plugin.settings;
 
+    new Setting(containerEl).setName("Math popup").setHeading();
+
     new Setting(containerEl)
       .setName("Enable popup")
       .setDesc("Show suggestions when you type \\ followed by a letter inside math.")
@@ -452,7 +454,14 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .addToggle((t) => t.setValue(s.askFill).onChange(async (v) => { s.askFill = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
-      .setName("Proof & question templates")
+      .setName("Max suggestions")
+      .addSlider((sl) => sl.setLimits(5, 40, 1).setValue(s.maxSuggestions).setDynamicTooltip()
+        .onChange(async (v) => { s.maxSuggestions = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl).setName("Proof and question templates").setHeading();
+
+    new Setting(containerEl)
+      .setName("Enable templates")
       .setDesc("Type \\proof, \\showthat, \\induction, ... in normal text (outside math) to insert a template. Tab jumps between the ⟨placeholders⟩.")
       .addToggle((t) => t.setValue(s.templatesEnabled).onChange(async (v) => { s.templatesEnabled = v; await this.plugin.saveSettings(); }));
 
@@ -466,9 +475,11 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       }))
       .addButton((b) => b.setButtonText("Open / create").onClick(() => this.plugin.openTemplatesFile()));
 
+    new Setting(containerEl).setName("Course pack: IMO26").setHeading();
+
     new Setting(containerEl)
-      .setName("IMO26 problem templates + references")
-      .setDesc("Adds templates for every exercise type in the IMO26 book (\\gauss, \\kkt, \\lagrange, ...) and its definitions, theorems, propositions, lemmas, corollaries and remarks: \\def4.26, \\thmcauchy, \\ref convex function.")
+      .setName("IMO26 problem templates and references")
+      .setDesc("For N. Lauritzen, Introduction to Mathematics and Optimization (IMO26). Adds templates for every exercise type (\\gauss, \\kkt, \\lagrange, ...) and the book's definitions, theorems, propositions, lemmas, corollaries and remarks: \\def4.26, \\thmcauchy, \\ref convex function.")
       .addToggle((t) => t.setValue(s.imo26).onChange(async (v) => {
         s.imo26 = v;
         await this.plugin.saveSettings();
@@ -485,18 +496,21 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Link references to your notes")
       .setDesc("Insert references as links to the matching heading in this note (plain text if the note or heading is missing).")
       .addToggle((t) => t.setValue(s.refAsLink).onChange(async (v) => { s.refAsLink = v; await this.plugin.saveSettings(); }))
-      .addText((t) => t.setValue(s.refNote).onChange(async (v) => { s.refNote = v.trim(); await this.plugin.saveSettings(); }));
+      .addText((t) => t.setPlaceholder("Folder/Note.md").setValue(s.refNote).onChange(async (v) => { s.refNote = v.trim(); await this.plugin.saveSettings(); }));
 
-    new Setting(containerEl)
-      .setName("Max suggestions")
-      .addSlider((sl) => sl.setLimits(5, 40, 1).setValue(s.maxSuggestions).setDynamicTooltip()
-        .onChange(async (v) => { s.maxSuggestions = v; await this.plugin.saveSettings(); }));
+    new Setting(containerEl).setName("Learning").setHeading();
 
+    const learned = Object.keys(s.boosts).length + Object.keys(s.fillPicks).length + Object.keys(s.templatePicks).length
+      + Object.keys(s.routePicks).length + Object.keys(s.refPicks).length;
     new Setting(containerEl)
       .setName("Forget picks")
-      .setDesc(`Reset what the popup learned from your selections (${Object.keys(s.boosts).length} entries).`)
+      .setDesc(`Reset what the popups learned from your selections (${learned} entries).`)
       .addButton((b) => b.setButtonText("Reset").onClick(async () => {
         s.boosts = {};
+        s.fillPicks = {};
+        s.templatePicks = {};
+        s.routePicks = {};
+        s.refPicks = {};
         await this.plugin.saveSettings();
         this.display();
       }));
