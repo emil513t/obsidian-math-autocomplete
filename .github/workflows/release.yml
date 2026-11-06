@@ -1,5 +1,6 @@
-# Push a tag that matches manifest.json's version (e.g. `git tag 0.3.0 && git push origin 0.3.0`)
-# to build the plugin and create a draft GitHub release with the files Obsidian needs.
+# Push a tag that matches manifest.json's version (e.g. `git tag 0.3.1 && git push origin 0.3.1`)
+# to build the plugin, attest the build provenance of the release files, and publish a
+# GitHub release with the files Obsidian needs.
 name: Release
 
 on:
@@ -8,7 +9,9 @@ on:
       - "*"
 
 permissions:
-  contents: write
+  contents: write      # create the release
+  id-token: write      # sign the attestations
+  attestations: write  # store the attestations
 
 jobs:
   release:
@@ -23,10 +26,20 @@ jobs:
       - run: npm run build
       - name: Check tag matches manifest version
         run: test "$(node -p "require('./manifest.json').version")" = "${GITHUB_REF_NAME}"
-      - name: Create draft release
+      - name: Collect release files
+        run: |
+          mkdir release
+          cp dist/main.js manifest.json styles.css release/
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            release/main.js
+            release/manifest.json
+            release/styles.css
+      - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp dist/main.js main.js
-          gh release create "${GITHUB_REF_NAME}" main.js manifest.json styles.css \
-            --title "${GITHUB_REF_NAME}" --draft --generate-notes
+          gh release create "${GITHUB_REF_NAME}" release/main.js release/manifest.json release/styles.css \
+            --title "${GITHUB_REF_NAME}" --generate-notes

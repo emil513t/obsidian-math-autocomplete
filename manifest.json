@@ -1,7 +1,7 @@
 {
   "id": "math-autocomplete",
   "name": "Math Autocomplete",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minAppVersion": "1.4.0",
   "description": "LaTeX autocomplete inside math with rendered previews, ranked by your own notes, plus proof and question templates with Tab placeholders and solution routes.",
   "author": "Emil",
