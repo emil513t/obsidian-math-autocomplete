@@ -78,8 +78,9 @@ export function nextPlaceholder(text, pos, dir, skip = null) {
 
 // After the user filled one placeholder with `value`, copy it into every other
 // ⟨label⟩ still in `text`. Returns the changes, relative to `text`.
+// Labels starting with "_" ({{_}}) are anonymous blanks: never mirrored.
 export function mirrorChanges(text, label, value) {
-  if (!value || value === OPEN + label + CLOSE) return [];
+  if (!value || value === OPEN + label + CLOSE || label.startsWith("_")) return [];
   return placeholders(text)
     .filter((p) => p.label === label)
     .map((p) => ({ from: p.from, to: p.to, insert: value }));

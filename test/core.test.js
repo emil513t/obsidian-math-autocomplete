@@ -103,6 +103,51 @@ import { fillsFor } from "../src/fills.js";
 import { cursorContext } from "../src/mathContext.js";
 import { parseTemplates, mergeTemplates, expandBody, rankTemplates, nextPlaceholder, mirrorChanges, placeholders } from "../src/templates.js";
 
+import { parseRefQuery, rankRefs, formatRef } from "../src/refs.js";
+
+test("imo26 templates + references", () => {
+  const imo = parseTemplates(fs.readFileSync(new URL("../src/imo26-templates.md", import.meta.url), "utf8"));
+  const generic = parseTemplates(fs.readFileSync(new URL("../src/default-templates.md", import.meta.url), "utf8"));
+  assert.ok(imo.length >= 60, `imo26 templates: ${imo.length}`);
+  const names = [...generic, ...imo].map((t) => t.name);
+  assert.equal(new Set(names).size, names.length, "no duplicate template names");
+  for (const t of imo) {
+    assert.match(t.name, /^[a-zA-Z]+$/, "names are letters only (trigger regex)");
+    for (const m of t.body.matchAll(/\$\$([\s\S]*?)\$\$/g)) assert.ok(!m[1].includes("\n"), `${t.name}: $$ on one line`);
+    assert.ok(!/[_^]\{\{/.test(t.body), `${t.name}: wrap sub/superscript blanks in braces`);
+    const expanded = expandBody(t.body);
+    assert.ok(!/\{\{|\}\}/.test(expanded.replace(/\{\{\{|\}\}\}/g, "")), `${t.name}: every {{ }} expands`);
+    // Template names must not be swallowed by a reference prefix.
+    const rq = parseRefQuery(t.name);
+    if (rq) assert.equal(rankRefs([], rq).length, 0);
+  }
+  assert.deepEqual(mirrorChanges("a ⟨_⟩ b ⟨_⟩", "_", "t"), [], "{{_}} never mirrors");
+
+  const refs = JSON.parse(fs.readFileSync(new URL("../src/refs/imo26.json", import.meta.url), "utf8"));
+  assert.equal(refs.length, 133);
+  for (const r of refs) assert.ok(r.title && r.num && r.page, `${r.kind} ${r.num}`);
+  const kinds = new Set(refs.map((r) => r.kind));
+  for (const k of ["definition", "theorem", "proposition", "lemma", "remark", "corollary"]) assert.ok(kinds.has(k), k);
+
+  assert.deepEqual(parseRefQuery("def4.2"), { kind: "definition", q: "4.2" });
+  assert.deepEqual(parseRefQuery("ref convex fun"), { kind: null, q: "convex fun" });
+  assert.equal(parseRefQuery("proof"), null);
+  assert.equal(parseRefQuery("prop").kind, "proposition");
+
+  assert.equal(rankRefs(refs, parseRefQuery("def4.26"))[0].title, "Convex function");
+  assert.equal(rankRefs(refs, parseRefQuery("thmcauchy"))[0].num, "5.24");
+  assert.equal(rankRefs(refs, parseRefQuery("ref extreme value"))[0].num, "5.84");
+  assert.equal(rankRefs(refs, parseRefQuery("lem")).length, 5);
+  assert.ok(rankRefs(refs, parseRefQuery("ref kkt")).some((r) => r.num === "9.37"));
+  assert.equal(rankRefs(refs, parseRefQuery("def")).length, 42);
+
+  const d = refs.find((r) => r.kind === "definition" && r.num === "4.26");
+  assert.equal(formatRef(d), "Definition 4.26 (Convex function)");
+  assert.match(formatRef(d, "IMO26_ALL_DEFINITIONS"), /^\[\[IMO26_ALL_DEFINITIONS#Definition 4\.26 .*\|Definition 4\.26 \(Convex function\)\]\]$/);
+  const rem = refs.find((r) => r.kind === "remark");
+  assert.ok(!formatRef(rem, "X").startsWith("[["), "no link without a heading");
+});
+
 test("templates", () => {
   const BS = String.fromCharCode(92);
   const md = fs.readFileSync(new URL("../src/default-templates.md", import.meta.url), "utf8");

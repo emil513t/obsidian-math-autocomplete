@@ -1,7 +1,7 @@
 {
   "id": "math-autocomplete",
   "name": "Math Autocomplete",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.4.0",
   "description": "Popup autocomplete for LaTeX commands inside math, with rendered previews, ranked by what you actually use in your vault. Works alongside LaTeX Suite.",
   "author": "Emil",

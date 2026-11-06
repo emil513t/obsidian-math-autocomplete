@@ -18,6 +18,9 @@ import { fillsFor } from "./fills.js";
 import { parseTemplates, mergeTemplates, expandBody, rankTemplates } from "./templates.js";
 import { tabstopExtension, startSession } from "./tabstops.js";
 import DEFAULT_TEMPLATES_MD from "./default-templates.md";
+import IMO26_TEMPLATES_MD from "./imo26-templates.md";
+import IMO26_REFS from "./refs/imo26.json";
+import { parseRefQuery, rankRefs, formatRef, kindLabel } from "./refs.js";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -29,37 +32,56 @@ const DEFAULT_SETTINGS = {
   templatesEnabled: true,
   templatesFile: "Math Templates.md",
   templatePicks: {},
+  imo26: true,
+  refLinks: true,
+  refNote: "Math/IMO26_ALL_DEFINITIONS.md",
+  refPicks: {},
 };
 
-// \proof, \showthat, ... in plain text (outside math and code).
+// Plain text (outside math and code): \proof, \showthat, ... templates and
+// book references (\def4.26, \thmcauchy, \ref convex function).
 class TemplateSuggest extends EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
+    this.limit = 40;
   }
 
   onTrigger(cursor, editor) {
-    if (!this.plugin.settings.templatesEnabled) return null;
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
-    const m = before.match(/(^|[\s(>*_])\\([a-zA-Z]+)$/);
-    if (!m) return null;
-    if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
-    if (!this.plugin.rankTemplates(m[2]).length) return null;
+    const dbg = (why) => { if (/\\[a-zA-Z]*$/.test(before)) this.plugin.debug(`trigger ${JSON.stringify(before.slice(-30))} -> ${why}`); return null; };
+    if (!this.plugin.settings.templatesEnabled) return dbg("templates disabled in settings");
+    // \word, \def4.26, or \ref followed by free search words.
+    const m = before.match(/(?:^|[\s(>*_[])\\(ref(?:\s[^\\$\n]{0,40})?|[a-zA-Z]+[\w.]*)$/);
+    if (!m) return dbg("no \\word match");
+    const ctx = cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor));
+    if (ctx !== "text") return dbg(`context=${ctx}`);
+    if (!this.plugin.textSuggestions(m[1]).length) return dbg(`nothing matches (templates=${this.plugin.templates.length})`);
+    dbg("SHOW popup");
     return {
-      start: { line: cursor.line, ch: cursor.ch - m[2].length - 1 },
+      start: { line: cursor.line, ch: cursor.ch - m[1].length - 1 },
       end: cursor,
-      query: m[2],
+      query: m[1],
     };
   }
 
   getSuggestions(ctx) {
-    return this.plugin.rankTemplates(ctx.query);
+    return this.plugin.textSuggestions(ctx.query);
   }
 
-  renderSuggestion(t, el) {
+  renderSuggestion(item, el) {
     el.addClass("mac-item", "mac-template");
     const left = el.createDiv({ cls: "mac-left mac-template-left" });
     const top = left.createDiv({ cls: "mac-template-top" });
+    if (item.type === "ref") {
+      const r = item.ref;
+      top.createEl("code", { text: `${kindLabel(r.kind)} ${r.num}` });
+      top.createSpan({ cls: "mac-template-desc", text: r.title });
+      top.createSpan({ cls: "mac-uses", text: `p. ${r.page}` });
+      left.createDiv({ cls: "mac-template-snippet", text: r.text });
+      return;
+    }
+    const t = item.t;
     top.createEl("code", { text: "\\" + t.name });
     if (t.desc) top.createSpan({ cls: "mac-template-desc", text: t.desc });
     if (t.source === "user") top.createSpan({ cls: "mac-tag", text: "yours" });
@@ -67,8 +89,19 @@ class TemplateSuggest extends EditorSuggest {
     left.createDiv({ cls: "mac-template-snippet", text: first.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩") });
   }
 
-  selectSuggestion(t) {
+  selectSuggestion(item) {
     const { editor, start, end } = this.context;
+    if (item.type === "ref") {
+      const r = item.ref;
+      const text = formatRef(r, this.plugin.refLinkTarget());
+      editor.replaceRange(text, start, end);
+      editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + text.length));
+      const picks = this.plugin.settings.refPicks;
+      picks[`${r.kind}:${r.num}`] = (picks[`${r.kind}:${r.num}`] || 0) + 1;
+      this.plugin.saveSettings();
+      return;
+    }
+    const t = item.t;
     const indent = editor.getLine(start.line).match(/^\s*/)[0];
     const { text } = indentInsert(expandBody(t.body), 0, indent);
     editor.replaceRange(text, start, end);
@@ -230,12 +263,18 @@ export default class MathAutocompletePlugin extends Plugin {
     this.fileStats = new Map(); // path -> per-document counts
     this.stats = { cmds: new Map(), atoms: new Map() };
 
-    this.defaultTemplates = parseTemplates(DEFAULT_TEMPLATES_MD);
+    this.buildDefaultTemplates();
     this.templates = mergeTemplates(this.defaultTemplates, []);
 
     this.registerEditorSuggest(new MathSuggest(this));
     this.registerEditorSuggest(new TemplateSuggest(this));
-    this.registerEditorExtension(tabstopExtension);
+    try {
+      this.registerEditorExtension(tabstopExtension);
+    } catch (e) {
+      this.debug(`tabstop extension failed: ${e}`);
+    }
+    const others = (this.app.workspace.editorSuggest?.suggests || []).map((s) => s.constructor?.name);
+    this.debug(`loaded ${this.manifest.version}; templates=${this.templates.length}; suggests=[${others.join(", ")}]`);
     this.addSettingTab(new MathAutocompleteSettingTab(this));
 
     this.addCommand({
@@ -296,8 +335,40 @@ export default class MathAutocompletePlugin extends Plugin {
     await this.app.workspace.getLeaf(true).openFile(f);
   }
 
+  // Temporary diagnostics: appends to debug.log in the plugin folder.
+  debug(msg) {
+    const path = `${this.manifest.dir}/debug.log`;
+    const line = `${new Date().toISOString()} ${msg}\n`;
+    this.app.vault.adapter.append(path, line).catch(() => this.app.vault.adapter.write(path, line));
+  }
+
+  buildDefaultTemplates() {
+    const imo = this.settings.imo26 ? parseTemplates(IMO26_TEMPLATES_MD) : [];
+    this.defaultTemplates = [...parseTemplates(DEFAULT_TEMPLATES_MD), ...imo];
+  }
+
   rankTemplates(query) {
     return rankTemplates(query, this.templates, this.settings.templatePicks);
+  }
+
+  // Everything the plain-text popup offers for `raw` (text after the \).
+  textSuggestions(raw) {
+    const out = [];
+    const word = raw.match(/^[a-zA-Z]+$/) ? raw : null;
+    const rq = this.settings.imo26 ? parseRefQuery(raw) : null;
+    // With \def, \thm, ... only templates *named* like that, so the
+    // references aren't buried under "(Def 1.10)" description matches.
+    const keep = (t) => !rq || t.name.toLowerCase().startsWith(word.toLowerCase());
+    if (word) for (const t of this.rankTemplates(word)) if (keep(t)) out.push({ type: "template", t });
+    if (rq) for (const ref of rankRefs(IMO26_REFS, rq, this.settings.refPicks)) out.push({ type: "ref", ref });
+    return out;
+  }
+
+  // Link target for references, if that note exists in the vault.
+  refLinkTarget() {
+    if (!this.settings.refLinks) return null;
+    const f = this.app.vault.getAbstractFileByPath(this.settings.refNote);
+    return f instanceof TFile ? f.basename : null;
   }
 
   rebuild() {
@@ -358,6 +429,22 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
         this.plugin.loadUserTemplates();
       }))
       .addButton((b) => b.setButtonText("Open / create").onClick(() => this.plugin.openTemplatesFile()));
+
+    new Setting(containerEl)
+      .setName("IMO26 problem templates + references")
+      .setDesc("Adds templates for every exercise type in the IMO26 book (\\gauss, \\kkt, \\lagrange, ...) and its definitions, theorems, propositions, lemmas, corollaries and remarks: \\def4.26, \\thmcauchy, \\ref convex function.")
+      .addToggle((t) => t.setValue(s.imo26).onChange(async (v) => {
+        s.imo26 = v;
+        await this.plugin.saveSettings();
+        this.plugin.buildDefaultTemplates();
+        this.plugin.loadUserTemplates();
+      }));
+
+    new Setting(containerEl)
+      .setName("Link references to your notes")
+      .setDesc("Insert references as links to the matching heading in this note (plain text if the note or heading is missing).")
+      .addToggle((t) => t.setValue(s.refLinks).onChange(async (v) => { s.refLinks = v; await this.plugin.saveSettings(); }))
+      .addText((t) => t.setValue(s.refNote).onChange(async (v) => { s.refNote = v.trim(); await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
       .setName("Max suggestions")
