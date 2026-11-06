@@ -32,3 +32,24 @@
   max-width: 60%;
   font-size: 0.9em;
 }
+.mac-template-left {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.mac-template-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mac-template-desc {
+  color: var(--text-muted);
+}
+.mac-template-snippet {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  max-width: 60ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

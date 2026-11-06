@@ -10,11 +10,14 @@ import {
   finishRenderMath,
   debounce,
 } from "obsidian";
-import { isCursorInMath } from "./mathContext.js";
+import { isCursorInMath, cursorContext } from "./mathContext.js";
 import { scanDocument, mergeStats } from "./stats.js";
 import { cursorOffset, previewSource } from "./dictionary.js";
 import { rankSuggestions } from "./rank.js";
 import { fillsFor } from "./fills.js";
+import { parseTemplates, mergeTemplates, expandBody, rankTemplates } from "./templates.js";
+import { tabstopExtension, startSession } from "./tabstops.js";
+import DEFAULT_TEMPLATES_MD from "./default-templates.md";
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -23,7 +26,62 @@ const DEFAULT_SETTINGS = {
   askFill: true,
   boosts: {},
   fillPicks: {},
+  templatesEnabled: true,
+  templatesFile: "Math Templates.md",
+  templatePicks: {},
 };
+
+// \proof, \showthat, ... in plain text (outside math and code).
+class TemplateSuggest extends EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+  }
+
+  onTrigger(cursor, editor) {
+    if (!this.plugin.settings.templatesEnabled) return null;
+    const before = editor.getLine(cursor.line).slice(0, cursor.ch);
+    const m = before.match(/(^|[\s(>*_])\\([a-zA-Z]+)$/);
+    if (!m) return null;
+    if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
+    if (!this.plugin.rankTemplates(m[2]).length) return null;
+    return {
+      start: { line: cursor.line, ch: cursor.ch - m[2].length - 1 },
+      end: cursor,
+      query: m[2],
+    };
+  }
+
+  getSuggestions(ctx) {
+    return this.plugin.rankTemplates(ctx.query);
+  }
+
+  renderSuggestion(t, el) {
+    el.addClass("mac-item", "mac-template");
+    const left = el.createDiv({ cls: "mac-left mac-template-left" });
+    const top = left.createDiv({ cls: "mac-template-top" });
+    top.createEl("code", { text: "\\" + t.name });
+    if (t.desc) top.createSpan({ cls: "mac-template-desc", text: t.desc });
+    if (t.source === "user") top.createSpan({ cls: "mac-tag", text: "yours" });
+    const first = t.body.split("\n").find((l) => l.trim()) || "";
+    left.createDiv({ cls: "mac-template-snippet", text: first.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩") });
+  }
+
+  selectSuggestion(t) {
+    const { editor, start, end } = this.context;
+    const indent = editor.getLine(start.line).match(/^\s*/)[0];
+    const { text } = indentInsert(expandBody(t.body), 0, indent);
+    editor.replaceRange(text, start, end);
+    const from = editor.posToOffset(start);
+    const picks = this.plugin.settings.templatePicks;
+    picks[t.name] = (picks[t.name] || 0) + 1;
+    this.plugin.saveSettings();
+
+    const view = editor.cm;
+    if (view) startSession(view, from, from + text.length);
+    else editor.setCursor(editor.offsetToPos(from + text.length));
+  }
+}
 
 // Re-indent a multi-line insert to the current line's indentation, keeping the
 // cursor offset pointing at the same character.
@@ -172,8 +230,19 @@ export default class MathAutocompletePlugin extends Plugin {
     this.fileStats = new Map(); // path -> per-document counts
     this.stats = { cmds: new Map(), atoms: new Map() };
 
+    this.defaultTemplates = parseTemplates(DEFAULT_TEMPLATES_MD);
+    this.templates = mergeTemplates(this.defaultTemplates, []);
+
     this.registerEditorSuggest(new MathSuggest(this));
+    this.registerEditorSuggest(new TemplateSuggest(this));
+    this.registerEditorExtension(tabstopExtension);
     this.addSettingTab(new MathAutocompleteSettingTab(this));
+
+    this.addCommand({
+      id: "open-templates-file",
+      name: "Open (or create) the editable templates file",
+      callback: () => this.openTemplatesFile(),
+    });
 
     this.addCommand({
       id: "rescan-vault",
@@ -186,8 +255,15 @@ export default class MathAutocompletePlugin extends Plugin {
 
     this.app.workspace.onLayoutReady(() => {
       this.scanVault();
+      this.loadUserTemplates();
       const rescan = debounce((file) => this.scanFile(file).then(() => this.rebuild()), 2000, true);
-      this.registerEvent(this.app.vault.on("modify", (f) => f instanceof TFile && f.extension === "md" && rescan(f)));
+      const reloadTemplates = debounce(() => this.loadUserTemplates(), 500, true);
+      this.registerEvent(this.app.vault.on("modify", (f) => {
+        if (!(f instanceof TFile) || f.extension !== "md") return;
+        if (f.path === this.settings.templatesFile) reloadTemplates();
+        else rescan(f);
+      }));
+      this.registerEvent(this.app.vault.on("create", (f) => f instanceof TFile && f.path === this.settings.templatesFile && reloadTemplates()));
       this.registerEvent(this.app.vault.on("delete", (f) => { this.fileStats.delete(f.path); this.rebuild(); }));
       this.registerEvent(this.app.vault.on("rename", (f, old) => {
         const s = this.fileStats.get(old);
@@ -202,8 +278,26 @@ export default class MathAutocompletePlugin extends Plugin {
 
   async scanVault() {
     this.fileStats.clear();
-    await Promise.all(this.app.vault.getMarkdownFiles().map((f) => this.scanFile(f)));
+    const files = this.app.vault.getMarkdownFiles().filter((f) => f.path !== this.settings.templatesFile);
+    await Promise.all(files.map((f) => this.scanFile(f)));
     this.rebuild();
+  }
+
+  async loadUserTemplates() {
+    const f = this.app.vault.getAbstractFileByPath(this.settings.templatesFile);
+    const user = f instanceof TFile ? parseTemplates(await this.app.vault.read(f)) : [];
+    this.templates = mergeTemplates(this.defaultTemplates, user);
+  }
+
+  async openTemplatesFile() {
+    const path = this.settings.templatesFile;
+    let f = this.app.vault.getAbstractFileByPath(path);
+    if (!(f instanceof TFile)) f = await this.app.vault.create(path, DEFAULT_TEMPLATES_MD);
+    await this.app.workspace.getLeaf(true).openFile(f);
+  }
+
+  rankTemplates(query) {
+    return rankTemplates(query, this.templates, this.settings.templatePicks);
   }
 
   rebuild() {
@@ -249,6 +343,21 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Offer fills after inserting")
       .setDesc("After picking \\frac, \\sum, \\int, \\lim, a matrix and more, offer filled versions: the ones you write most first, then common ones.")
       .addToggle((t) => t.setValue(s.askFill).onChange(async (v) => { s.askFill = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Proof & question templates")
+      .setDesc("Type \\proof, \\showthat, \\induction, ... in normal text (outside math) to insert a template. Tab jumps between the ⟨placeholders⟩.")
+      .addToggle((t) => t.setValue(s.templatesEnabled).onChange(async (v) => { s.templatesEnabled = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Templates file")
+      .setDesc("Vault note with your own templates (## \\name — description, then the body; {{variable}} for blanks). Same names override the built-in ones.")
+      .addText((t) => t.setValue(s.templatesFile).onChange(async (v) => {
+        s.templatesFile = v.trim() || DEFAULT_SETTINGS.templatesFile;
+        await this.plugin.saveSettings();
+        this.plugin.loadUserTemplates();
+      }))
+      .addButton((b) => b.setButtonText("Open / create").onClick(() => this.plugin.openTemplatesFile()));
 
     new Setting(containerEl)
       .setName("Max suggestions")

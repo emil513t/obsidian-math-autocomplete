@@ -3,6 +3,12 @@
 
 // Returns true if the end of `text` (i.e. the cursor) sits inside $...$ or $$...$$.
 export function isCursorInMath(text) {
+  return cursorContext(text) === "math";
+}
+
+// Where the end of `text` sits: "math" ($..$ / $$..$$), "code" (fence or
+// `inline`), or "text" (plain markdown).
+export function cursorContext(text) {
   let inFence = false;
   let inDisplay = false;
   let inInline = false;
@@ -20,7 +26,7 @@ export function isCursorInMath(text) {
       if (rest) {
         inFence = !inFence;
         i = text.indexOf("\n", i);
-        if (i === -1) return false;
+        if (i === -1) return "code";
         i++;
         continue;
       }
@@ -53,7 +59,8 @@ export function isCursorInMath(text) {
     }
     i++;
   }
-  return !inFence && (inDisplay || inInline);
+  if (inFence || inCode) return "code";
+  return inDisplay || inInline ? "math" : "text";
 }
 
 // Pulls every math snippet ($$..$$ and $..$) out of a markdown document.

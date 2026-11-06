@@ -100,6 +100,63 @@ test("environment fills", () => {
 });
 
 import { fillsFor } from "../src/fills.js";
+import { cursorContext } from "../src/mathContext.js";
+import { parseTemplates, mergeTemplates, expandBody, rankTemplates, nextPlaceholder, mirrorChanges, placeholders } from "../src/templates.js";
+
+test("templates", () => {
+  const BS = String.fromCharCode(92);
+  const md = fs.readFileSync(new URL("../src/default-templates.md", import.meta.url), "utf8");
+  const defs = parseTemplates(md);
+  const names = defs.map((t) => t.name);
+  for (const n of ["proof", "showthat", "induction", "contradiction", "epsdelta", "invariant", "solution"]) assert.ok(names.includes(n), n);
+  assert.equal(defs.find((t) => t.name === "proof").desc, "direct proof");
+  assert.ok(!defs.some((t) => t.body.includes("## ")), "bodies don't swallow headings");
+  for (const t of defs) {
+    // Display math must stay on one line (Emil's rule from the fills work).
+    for (const m of t.body.matchAll(/\$\$([\s\S]*?)\$\$/g)) assert.ok(!m[1].includes("\n"), `${t.name} $$ one line`);
+    assert.ok(placeholders(expandBody(t.body)).length > 0, `${t.name} has placeholders`);
+  }
+
+  // Contexts: only plain text gets templates.
+  assert.equal(cursorContext("hi \\pr"), "text");
+  assert.equal(cursorContext("hi $x \\pr"), "math");
+  assert.equal(cursorContext("```\n\\pr"), "code");
+  assert.equal(cursorContext("`\\pr"), "code");
+
+  // User file overrides by name and adds new ones.
+  const user = parseTemplates(`## ${BS}proof - mine\nMy {{x}}\n\n## ${BS}lemma\nLemma {{y}}\n# other\nignored`);
+  assert.equal(user.length, 2);
+  assert.equal(user[1].body, "Lemma {{y}}");
+  const all = mergeTemplates(defs, user);
+  assert.equal(all.find((t) => t.name === "proof").body, "My {{x}}");
+  assert.equal(all.find((t) => t.name === "proof").source, "user");
+  assert.ok(all.some((t) => t.name === "lemma"));
+
+  // Ranking: prefix first, picks break ties, description search for 2+ chars.
+  assert.equal(rankTemplates("pr", defs)[0].name, "proof");
+  assert.equal(rankTemplates("ind", defs)[0].name, "induction");
+  assert.ok(rankTemplates("limit", defs).some((t) => t.name === "epsdelta"), "matches description");
+  assert.equal(rankTemplates("zzz", defs).length, 0);
+  assert.equal(rankTemplates("c", defs, { counterexample: 3 })[0].name, "counterexample");
+
+  // Placeholders, jumping, mirroring.
+  const text = expandBody("Show {{a}} then {{b}} and {{a}} again");
+  assert.equal(text, "Show ⟨a⟩ then ⟨b⟩ and ⟨a⟩ again");
+  const ps = placeholders(text);
+  assert.equal(ps.length, 3);
+  assert.equal(nextPlaceholder(text, 0, 1).label, "a");
+  assert.equal(nextPlaceholder(text, ps[0].to, 1).label, "b");
+  assert.equal(nextPlaceholder(text, ps[2].to, 1).from, 5, "wraps to first");
+  assert.equal(nextPlaceholder(text, ps[1].from, -1).from, ps[0].from);
+  assert.equal(nextPlaceholder("no markers", 0, 1), null);
+
+  const filled = "Show x+1 then ⟨b⟩ and ⟨a⟩ again";
+  const ch = mirrorChanges(filled, "a", "x+1");
+  assert.equal(ch.length, 1);
+  assert.equal(filled.slice(0, ch[0].from) + ch[0].insert + filled.slice(ch[0].to), "Show x+1 then ⟨b⟩ and x+1 again");
+  assert.deepEqual(mirrorChanges(filled, "a", ""), [], "empty value doesn't erase");
+  assert.deepEqual(mirrorChanges(text, "a", "⟨a⟩"), [], "unfilled doesn't mirror");
+});
 
 test("general fills", () => {
   const BS = String.fromCharCode(92);
