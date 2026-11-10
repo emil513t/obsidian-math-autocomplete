@@ -181,6 +181,7 @@ export function toPython(v, style = "sympy") {
 const FUNCS = {
   sin: "sin", cos: "cos", tan: "tan", ln: "log", log: "log", exp: "exp",
   arcsin: "asin", arccos: "acos", arctan: "atan", sinh: "sinh", cosh: "cosh", tanh: "tanh",
+  factorial: "factorial", binomial: "binomial", abs: "Abs",
 };
 const NP_FUNCS = { asin: "arcsin", acos: "arccos", atan: "arctan" };
 const SPACING = new Set([",", ";", ":", "!", " ", "quad", "qquad"]);
@@ -221,7 +222,7 @@ function parseAtom(s, i, single) {
   if (/[A-Za-z]/.test(c)) {
     // Bare function names without a backslash (sin(c), exp(y), sqrt(x)),
     // otherwise sin(c) would become s*i*n*c.
-    const fn = !single && s.slice(i).match(/^(arcsin|arccos|arctan|sinh|cosh|tanh|sin|cos|tan|exp|ln|log|sqrt)(?![A-Za-z_])/);
+    const fn = !single && s.slice(i).match(/^(arcsin|arccos|arctan|sinh|cosh|tanh|sin|cos|tan|exp|ln|log|sqrt|factorial|binomial|abs)(?![A-Za-z_])/);
     if (fn) {
       i += fn[1].length;
       if (fn[1] === "sqrt") {

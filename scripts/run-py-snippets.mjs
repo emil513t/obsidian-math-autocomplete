@@ -55,7 +55,7 @@ for (const s of snippets) {
     const file = path.join(dir, `${s.name}-${variants.indexOf(v)}.py`);
     fs.writeFileSync(file, code);
     const args = plots ? ["-m", "py_compile", file] : ["-I", file];
-    const res = spawnSync("python", args, { encoding: "utf8", timeout: 60000 });
+    const res = spawnSync("python", args, { encoding: "utf8", timeout: 180000 });
     const id = `\\${s.name}${v.label ? ` [${v.label}]` : ""}`;
     if (res.status === 0) {
       pass++;

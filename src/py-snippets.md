@@ -3,25 +3,105 @@
 Type `\name` inside a ```python block. Inputs (@in) come from the note's ```vars block when one fits; otherwise a Tab placeholder.
 Never start a body line with "# " (that ends the snippet); put comments after code.
 
-## \truthtable — truth table of a proposition (Def 1.10)
+## \truthtable — truth table of a proposition, e.g. (p ∧ q) ∨ ¬r (Def 1.10)
 @uses sympy
-@in P any sp.Implies(p, q)
-@sym p q
-@ex sp.Implies(p, q) := sp.Implies(p, q)
+@ex proposition as text := (p ∧ q) ∨ ¬r
 from sympy.logic.boolalg import truth_table
-print($SYMS, "| P")
-for row, value in truth_table(P, $SYMS):
-    print(row, "|", int(bool(value)))
+def logic(s):
+    for a, b in [("<=>", " iff "), ("⇔", " iff "), ("\\iff", " iff "), ("\\Leftrightarrow", " iff "), ("=>", " imp "), ("⇒", " imp "), ("→", " imp "), ("\\implies", " imp "), ("\\Rightarrow", " imp "), ("\\rightarrow", " imp "), ("∧", " and "), ("\\land", " and "), ("\\wedge", " and "), ("&", " and "), ("∨", " or "), ("\\lor", " or "), ("\\vee", " or "), ("|", " or "), ("¬", " not "), ("\\neg", " not "), ("\\lnot", " not "), ("~", " not ")]:
+        s = s.replace(a, b)
+    toks, pos = __import__("re").findall(r"\(|\)|\w+", s), [0]
+    peek = lambda: toks[pos[0]] if pos[0] < len(toks) else None
+    def take():
+        pos[0] += 1
+        return toks[pos[0] - 1]
+    def atom():
+        t = take()
+        if t == "(":
+            e = iff()
+            take()
+            return e
+        return sp.Not(atom()) if t == "not" else sp.Symbol(t)
+    def conj():
+        e = atom()
+        while peek() == "and":
+            take()
+            e = sp.And(e, atom())
+        return e
+    def disj():
+        e = conj()
+        while peek() == "or":
+            take()
+            e = sp.Or(e, conj())
+        return e
+    def imp():
+        e = disj()
+        if peek() == "imp":
+            take()
+            return sp.Implies(e, imp())
+        return e
+    def iff():
+        e = imp()
+        while peek() == "iff":
+            take()
+            e = sp.Equivalent(e, imp())
+        return e
+    return iff()
+P = logic({{proposition as text}})
+V = sorted(P.free_symbols, key=str)
+print("P =", P)
+print(*V, "| P")
+for row, value in truth_table(P, V):
+    print(*row, "|", int(bool(value)))
 
-## \equivalent — are two propositions logically equivalent?
+## \equivalent — are two propositions logically equivalent? e.g. p => q and ¬p ∨ q (Ex 1.20)
 @uses sympy
-@in P any sp.Implies(p, q)
-@in Q any sp.Or(sp.Not(p), q)
-@sym p q
-@ex sp.Implies(p, q) := sp.Implies(p, q)
-@ex sp.Or(sp.Not(p), q) := sp.Or(sp.Not(p), q)
-print("P <=> Q always:", not sp.satisfiable(sp.Not(sp.Equivalent(P, Q))))
-print("simplified P:", sp.simplify_logic(P), "  simplified Q:", sp.simplify_logic(Q))
+@ex first as text := p => q
+@ex second as text := ¬q => ¬p
+def logic(s):
+    for a, b in [("<=>", " iff "), ("⇔", " iff "), ("\\iff", " iff "), ("\\Leftrightarrow", " iff "), ("=>", " imp "), ("⇒", " imp "), ("→", " imp "), ("\\implies", " imp "), ("\\Rightarrow", " imp "), ("\\rightarrow", " imp "), ("∧", " and "), ("\\land", " and "), ("\\wedge", " and "), ("&", " and "), ("∨", " or "), ("\\lor", " or "), ("\\vee", " or "), ("|", " or "), ("¬", " not "), ("\\neg", " not "), ("\\lnot", " not "), ("~", " not ")]:
+        s = s.replace(a, b)
+    toks, pos = __import__("re").findall(r"\(|\)|\w+", s), [0]
+    peek = lambda: toks[pos[0]] if pos[0] < len(toks) else None
+    def take():
+        pos[0] += 1
+        return toks[pos[0] - 1]
+    def atom():
+        t = take()
+        if t == "(":
+            e = iff()
+            take()
+            return e
+        return sp.Not(atom()) if t == "not" else sp.Symbol(t)
+    def conj():
+        e = atom()
+        while peek() == "and":
+            take()
+            e = sp.And(e, atom())
+        return e
+    def disj():
+        e = conj()
+        while peek() == "or":
+            take()
+            e = sp.Or(e, conj())
+        return e
+    def imp():
+        e = disj()
+        if peek() == "imp":
+            take()
+            return sp.Implies(e, imp())
+        return e
+    def iff():
+        e = imp()
+        while peek() == "iff":
+            take()
+            e = sp.Equivalent(e, imp())
+        return e
+    return iff()
+P, Q = logic({{first as text}}), logic({{second as text}})
+print("P =", P, "   Q =", Q)
+print("P <=> Q always (logically equivalent):", not sp.satisfiable(sp.Not(sp.Equivalent(P, Q))))
+print("simplified P:", sp.simplify_logic(P), "   simplified Q:", sp.simplify_logic(Q))
 
 ## \sets — intersection, union, difference, subset of two sets (Def 1.27)
 @in A set
@@ -33,20 +113,74 @@ print("A ^ B =", A ^ B)
 print("A <= B:", A <= B, "  B <= A:", B <= A, "  A = B:", A == B)
 print("|A | B| = |A| + |B| - |A & B|:", len(A | B) == len(A) + len(B) - len(A & B))
 
-## \cartesian — Cartesian product A × B and the power set
+## \cartesian — Cartesian product A × B, power set, product identities (Def 1.50)
+### A x B and the power set
 @uses itertools
 @in A set
 @in B set
 AxB = set(itertools.product(A, B))
-print("A × B =", sorted(AxB), " |A × B| =", len(AxB))
+print("A x B =", sorted(AxB), " |A x B| =", len(AxB))
 P = [set(c) for k in range(len(A) + 1) for c in itertools.combinations(sorted(A), k)]
 print("P(A) =", P, " |P(A)| =", len(P))
+### check product identities with four sets A, B, C, D (Ex 1.52)
+@uses itertools
+@ex A := {1, 2}
+@ex B := {3, 4}
+@ex C := {2, 5}
+@ex D := {4, 6}
+A, B, C, D = {{A}}, {{B}}, {{C}}, {{D}}
+X = lambda S, T: set(itertools.product(S, T))
+print("A x B = B x A:", X(A, B) == X(B, A))
+print("empty set x A =", X(set(), A))
+print("(A x B) & (C x D) = (A & C) x (B & D):", X(A, B) & X(C, D) == X(A & C, B & D))
+print("(A x B) - (C x D) = (A - C) x (B - D):", X(A, B) - X(C, D) == X(A - C, B - D))
+print("  left :", sorted(X(A, B) - X(C, D)), "\n  right:", sorted(X(A - C, B - D)))
 
-## \setbuilder — list a set-builder set {x in U | condition}
+## \mediant — Stern-Brocot tree: mediants and the path to a fraction (Ex 1.75)
+@uses sympy
+@ex fraction := sp.Rational(3, 5)
+target = sp.Rational({{fraction}})
+left, right, path = (0, 1), (1, 0), ""
+while True:
+    m = (left[0] + right[0], left[1] + right[1])
+    print(f"left {left[0]}/{left[1]}   mediant {m[0]}/{m[1]}   right {right[0]}/{right[1]}")
+    if sp.Rational(*m) == target:
+        break
+    if target < sp.Rational(*m):
+        right, path = m, path + "L"
+    else:
+        left, path = m, path + "R"
+print("path from 1/1:", path or "(it is 1/1)")
+
+## \primes — primes, factorization, Euclid's p1*p2*...*pn + 1 (Ex 1.84)
+@uses sympy
+@ex how many primes := 6
+ps = [sp.prime(i) for i in range(1, {{how many primes}} + 1)]
+print("first primes:", ps)
+prod = 1
+for p in ps:
+    prod *= p
+    print(f"{prod} + 1 = {prod + 1}   prime: {sp.isprime(prod + 1)}   factorization: {sp.factorint(prod + 1)}")
+
+## \setbuilder — list a set-builder set {x in U | condition} (Def 1.27)
+### x from a finite set U
 @in U set
 @ex condition on x := x % 2 == 0
 S = {x for x in U if {{condition on x}}}
 print("S =", sorted(S))
+### integers n in a range (e.g. x^2 - 5x + 6 = 0, twin primes n and n + 2)
+@uses sympy
+@ex from := 1
+@ex to := 50
+@ex condition on n := sp.isprime(n) and sp.isprime(n + 2)
+S = [n for n in range({{from}}, {{to}} + 1) if {{condition on n}}]
+print("S =", S, "  |S| =", len(S))
+### integer pairs (x, y) in a box (e.g. x^2 + y^2 < 5)
+@ex from := -5
+@ex to := 5
+@ex condition on x, y := x**2 + y**2 < 5
+S = [(x, y) for x in range({{from}}, {{to}} + 1) for y in range({{from}}, {{to}} + 1) if {{condition on x, y}}]
+print("S =", S, "  |S| =", len(S))
 
 ## \intersection — where two things meet
 ### two curves y = f(x), y = g(x)
@@ -121,13 +255,65 @@ print("candidates for f^-1(y):", inv)
 for h in inv:
     print("check f(f^-1(y)) =", sp.simplify(f.subs($SYM, h)))
 
-## \composition — f∘g and g∘f
+## \composition — compositions f∘g, g∘f, and with vector functions
+### f o g and g o f (one variable)
 @uses sympy
 @in f expr
 @in g expr
 @sym x
 print("(fog)(x) =", sp.simplify(f.subs($SYM, g)))
 print("(gof)(x) =", sp.simplify(g.subs($SYM, f)))
+### g(f(t)) with f : R -> R^n and g : R^n -> R (Ex 1.103)
+@uses sympy
+@ex f components in t := [t**2, t**3]
+@ex g in x, y, z := sp.cos(x*y) + x*sp.sin(x + y)
+t, x, y, z = sp.symbols('t x y z')
+F = {{f components in t}}
+G = {{g in x, y, z}}
+print("(g o f)(t) =", sp.simplify(G.subs(dict(zip([x, y, z], F)), simultaneous=True)))
+
+## \network — perceptrons and small neural networks: AND, OR, XOR, parameters (Ex 1.122-1.126)
+### evaluate two perceptrons and an output perceptron on all 0/1 inputs
+@uses sympy itertools
+@ex perceptron 1 (w1, w2, b) := (-1, -1, 1.5)
+@ex perceptron 2 (w1, w2, b) := (1, 1, -0.5)
+@ex output perceptron (w1, w2, b) := (1, 1, -1.5)
+step = lambda z: 1 if z > 0 else 0
+p = lambda w, u: step(w[0]*u[0] + w[1]*u[1] + w[2])
+P1, P2, P3 = {{perceptron 1 (w1, w2, b)}}, {{perceptron 2 (w1, w2, b)}}, {{output perceptron (w1, w2, b)}}
+print("x y | p1 p2 | out = p3(p1, p2)")
+for u in itertools.product([0, 1], repeat=2):
+    h = (p(P1, u), p(P2, u))
+    print(*u, "|", *h, "|", p(P3, h))
+### one perceptron on the truth table (AND / OR)
+@ex weights (w1, w2, b) := (1, 1, -1.5)
+@uses itertools
+step = lambda z: 1 if z > 0 else 0
+w = {{weights (w1, w2, b)}}
+for u in itertools.product([0, 1], repeat=2):
+    print(*u, "->", step(w[0]*u[0] + w[1]*u[1] + w[2]))
+### count the parameters of a fully connected network
+@ex layer sizes (input, hidden..., output) := [2, 3, 3, 1]
+sizes = {{layer sizes (input, hidden..., output)}}
+total = 0
+for a_, b_ in zip(sizes, sizes[1:]):
+    print(f"{a_} -> {b_}: {a_}*{b_} weights + {b_} biases = {a_*b_ + b_}")
+    total += a_*b_ + b_
+print("total parameters:", total)
+
+## \horner — evaluate a polynomial with Horner's scheme (Ex 2.19)
+@uses sympy
+@in f expr
+@sym x
+@ex value of x := 2
+c = sp.Poly(f, $SYM).all_coeffs()
+x0 = {{value of x}}
+acc = 0
+for a_ in c:
+    acc = acc*x0 + a_
+    print("acc =", acc)
+print("Horner form:", sp.horner(f), "   f(x0) =", acc, "=", f.subs($SYM, x0))
+print("multiplications:", len(c) - 1, "  additions:", len(c) - 1)
 
 ## \preimage — preimage f^-1(S) of an interval (Def 1.115)
 @uses sympy
@@ -139,7 +325,8 @@ lo, hi = {{lower bound}}, {{upper bound}}
 pre = sp.solveset(f >= lo, $SYM, sp.S.Reals).intersect(sp.solveset(f <= hi, $SYM, sp.S.Reals))
 print("f^-1([lo, hi]) =", pre)
 
-## \sumind — check a sum formula by induction (Thm 1.86)
+## \sumind — induction: sum formulas and inequalities (Thm 1.86)
+### sum formula: base case, step, sympy's own sum
 @uses sympy
 @ex term with k := k**3
 @ex closed formula in n := (n*(n + 1)/2)**2
@@ -149,6 +336,41 @@ formula = {{closed formula in n}}
 print("base case n=1:", term.subs(k, 1), "=", formula.subs(n, 1))
 print("step: formula(n) + term(n+1) - formula(n+1) =", sp.simplify(formula + term.subs(k, n + 1) - formula.subs(n, n + 1)))
 print("sympy's own sum:", sp.factor(sp.summation(term, (k, 1, n))))
+### inequality for n = from..to (e.g. 2^n < n! for n >= 4)
+@uses sympy
+@ex inequality in n := 2**n < sp.factorial(n)
+@ex from := 1
+@ex to := 12
+factorial = sp.factorial
+for n in range({{from}}, {{to}} + 1):
+    print("n =", n, ":", bool({{inequality in n}}))
+
+## \hash — sha-256 and md5 hash of a text (Ex 1.98)
+@uses hashlib
+@ex text := "hello"
+s_ = {{text}}
+print("sha256:", hashlib.sha256(s_.encode()).hexdigest())
+print("md5:   ", hashlib.md5(s_.encode()).hexdigest())
+s2 = s_[:-1] + chr(ord(s_[-1]) + 1)
+print("last letter changed to", repr(s2), "->", hashlib.sha256(s2.encode()).hexdigest())
+
+## \tablefn — functions given by a table: composition, injective, surjective, inverse (Ex 1.102)
+@ex f as table := {1: 7, 2: 8, 3: 9, 4: 7}
+@ex codomain of f := {7, 8, 9}
+@ex g as table := {1: 1, 2: 3, 3: 4}
+f_ = {{f as table}}
+T = set({{codomain of f}})
+g_ = {{g as table}}
+fog = {x: f_[g_[x]] for x in g_ if g_[x] in f_}
+print("f o g =", fog)
+for name_, h in [("f", f_), ("f o g", fog)]:
+    inj = len(set(h.values())) == len(h)
+    sur = set(h.values()) == T
+    print(f"{name_}: injective {inj}, surjective onto {sorted(T)} {sur}, bijective {inj and sur}")
+    if inj:
+        print("   inverse (on the image):", {v: k for k, v in h.items()})
+    else:
+        print("   values hit twice:", sorted({v for v in h.values() if list(h.values()).count(v) > 1}))
 
 ## \gauss — solve Ax = b by Gauss elimination (Sec 2.3)
 @uses sympy
@@ -188,15 +410,33 @@ print("roots (with multiplicity):", sp.roots(sp.Poly(p, $SYM)))
 print("real roots:", sp.real_roots(sp.Poly(p, $SYM)))
 print("numeric:", sp.Poly(p, $SYM).nroots())
 
-## \interpolate — polynomial through given points (Sec 2.5)
+## \interpolate — polynomial through given points, Shamir secret sharing (Sec 2.5)
+### the interpolating polynomial
 @uses sympy
 @in pts points
 @sym x
 P = sp.expand(sp.interpolate(pts, $SYM))
 print("interpolating polynomial:", P)
 print("check:", [(a, P.subs($SYM, a), b) for a, b in pts])
+### Shamir secret sharing: the secret is p(0) (Ex 2.39)
+@uses sympy
+@in pts points
+@sym x
+P = sp.expand(sp.interpolate(pts, $SYM))
+print("polynomial through the shares:", P)
+print("secret p(0) =", P.subs($SYM, 0))
 
-## \matmul — matrix arithmetic: products, transpose, powers
+## \markov — stochastic matrix: powers P^n and the stable distribution (Ex 3.10)
+@uses sympy
+@in P matrix
+print("columns sum to 1:", [sp.simplify(sum(P[:, j])) for j in range(P.cols)])
+for k_ in [1, 2, 5, 10, 50]:
+    print(f"P^{k_} =", sp.N(P**k_, 4).tolist())
+v = sp.Matrix(sp.symbols(f'p1:{P.rows + 1}'))
+print("stable distribution (P v = v, entries sum to 1):", sp.solve(list(P*v - v) + [sum(v) - 1], list(v), dict=True))
+
+## \matmul — matrix arithmetic, and identities with general matrices (Ch3)
+### products, transpose, powers
 @uses sympy
 @in A matrix
 @in B matrix
@@ -206,8 +446,18 @@ print("A + B =", (A + B).tolist() if A.shape == B.shape else "undefined")
 print("A^T =", A.T.tolist())
 if A.is_square:
     print("A^2 =", (A**2).tolist())
+### check an identity with general 2x2 matrices, e.g. (A+B)^2 = A^2 + 2AB + B^2 (Ex 3.18)
+@uses sympy
+@ex left side := (A + B)**2
+@ex right side := A**2 + 2*A*B + B**2
+A = sp.Matrix(2, 2, sp.symbols('a1:5'))
+B = sp.Matrix(2, 2, sp.symbols('b1:5'))
+D_ = sp.expand({{left side}} - ({{right side}}))
+print("left - right =", D_.tolist())
+print("always equal:", D_ == sp.zeros(2, 2))
 
-## \matinv — inverse matrix, determinant, check (Ch3)
+## \matinv — inverse matrix, determinant, check, by row reduction (Ch3)
+### inverse and check
 @uses sympy
 @in A matrix
 d = A.det()
@@ -218,6 +468,33 @@ if d != 0:
     print("A*A^-1 = I:", A*Ainv == sp.eye(A.rows))
 else:
     print("not invertible")
+### by row reduction of [A | I] (Ex 3.34)
+@uses sympy
+@in A matrix
+M = A.row_join(sp.eye(A.rows))
+print("[A | I] =", M.tolist())
+R, piv = M.rref()
+print("rref [A | I] =", R.tolist())
+if list(piv[:A.rows]) == list(range(A.rows)):
+    print("A^-1 =", R[:, A.rows:].tolist())
+else:
+    print("not invertible: the left block does not reduce to I")
+
+## \eliminate — optimize with a constraint by eliminating a variable (Ex 4.2, 4.5)
+@uses sympy
+@in f expr
+@in g expr
+@sym x y
+@ex eliminate := y
+@ex keep := x
+for s_ in sp.solve(g, {{eliminate}}):
+    F = sp.simplify(f.subs({{eliminate}}, s_))
+    print({{eliminate}}, "=", s_, "  ->  f =", F)
+    for c in sp.solve(sp.diff(F, {{keep}}), {{keep}}):
+        if c.is_real is False or F.subs({{keep}}, c).is_real is False:
+            continue
+        d2 = sp.simplify(sp.diff(F, {{keep}}, 2).subs({{keep}}, c))
+        print("   critical", {{keep}}, "=", c, "  f =", sp.simplify(F.subs({{keep}}, c)), "  f'' =", d2)
 
 ## \det — determinant (and by cofactor expansion along row 1)
 @uses sympy
@@ -244,7 +521,8 @@ if A.is_diagonalizable():
     P, D = A.diagonalize()
     print("P =", P.tolist(), " D =", D.tolist())
 
-## \posdef — (semi)definiteness of a symmetric matrix (Ch3/8)
+## \posdef — (semi)definiteness of a symmetric matrix, also with parameters (Ch3/8)
+### numbers
 @uses sympy
 @in A matrix
 print("symmetric:", A == A.T)
@@ -257,6 +535,40 @@ print("positive semidefinite:", A.is_positive_semidefinite)
 print("negative definite:", A.is_negative_definite)
 print("negative semidefinite:", A.is_negative_semidefinite)
 print("indefinite:", A.is_indefinite)
+### entries with parameters: for which values is it positive (semi)definite? (Ex 8.37)
+@uses sympy itertools
+@ex matrix with parameters := [[2, 1, a], [1, 1, 1], [a, 1, b]]
+a, b, c, d, t = sp.symbols('a b c d t', real=True)
+A = sp.Matrix({{matrix with parameters}})
+n_ = A.rows
+lead = [sp.factor(A[:k, :k].det()) for k in range(1, n_ + 1)]
+print("positive definite  <=>", " and ".join(f"({m}) > 0" for m in lead))
+allm = sorted({sp.factor(A.extract(list(I), list(I)).det()) for k in range(1, n_ + 1) for I in itertools.combinations(range(n_), k)}, key=str)
+print("positive semidefinite  <=>", " and ".join(f"({m}) >= 0" for m in allm))
+free = sorted(A.free_symbols, key=str)
+if len(free) == 1:
+    print("solved:", sp.reduce_inequalities([m > 0 for m in lead], free))
+
+## \kernelperceptron — kernel perceptron on labeled points (Ex 9.19)
+@uses numpy
+@ex labeled points := [((-1, -1), -1), ((-1, 1), -1), ((1, -1), -1), ((0, 0), 1), ((1, 1), 1)]
+@ex kernel K(u, v) := (1 + u @ v)**2
+data = {{labeled points}}
+X = np.array([p for p, _ in data], float)
+Y = np.array([l for _, l in data], float)
+K = lambda u, v: {{kernel K(u, v)}}
+alpha = np.zeros(len(X))
+score = lambda x: sum(alpha[j]*Y[j]*K(X[j], x) for j in range(len(X)))
+for epoch in range(1000):
+    errors = 0
+    for i in range(len(X)):
+        if Y[i]*score(X[i]) <= 0:
+            alpha[i] += 1
+            errors += 1
+    if errors == 0:
+        break
+print("alpha:", alpha.tolist(), "  passes:", epoch + 1)
+print("predicted:", [int(np.sign(score(x))) for x in X], "  labels:", Y.astype(int).tolist())
 
 ## \quadform — quadratic form x^T A x and back
 @uses sympy
@@ -373,7 +685,7 @@ print("u - proj (perp v) =", list(u - proj), "  check *v =", sp.simplify((u - pr
 cols = [A.col(j) for j in range(A.cols)]
 print("orthonormal basis of the columns:", [list(w) for w in sp.GramSchmidt(cols, True)])
 
-## \leastsquares — best fit by least squares (Thm 5.16)
+## \leastsquares — best fit by least squares: lines, polynomials, circles (Thm 5.16)
 ### solve A^T A x = A^T b
 @uses sympy
 @in A matrix
@@ -390,6 +702,35 @@ M = np.column_stack([xs_, np.ones_like(xs_)])
 (alpha, beta), *_ = np.linalg.lstsq(M, ys_, rcond=None)
 print(f"y = {alpha:.4f} x + {beta:.4f}")
 print("normal equations agree:", np.allclose(np.linalg.solve(M.T @ M, M.T @ ys_), [alpha, beta]))
+### fit a polynomial of degree n through points (Ex 5.21)
+@uses numpy
+@in pts points
+@ex degree n := 2
+xs_, ys_ = np.array([p[0] for p in pts], float), np.array([p[1] for p in pts], float)
+M = np.vander(xs_, {{degree n}} + 1)
+coef, *_ = np.linalg.lstsq(M, ys_, rcond=None)
+print("normal equations M^T M c = M^T y:", (M.T @ M).tolist(), (M.T @ ys_).tolist())
+print("coefficients, highest power first:", (np.round(coef, 4) + 0.0).tolist())
+### fit a circle (x - a)^2 + (y - b)^2 = r^2 through points (Ex 5.23)
+@uses numpy
+@in pts points
+xs_, ys_ = np.array([p[0] for p in pts], float), np.array([p[1] for p in pts], float)
+M = np.column_stack([2*xs_, 2*ys_, np.ones_like(xs_)])
+(a_, b_, c_), *_ = np.linalg.lstsq(M, xs_**2 + ys_**2, rcond=None)
+print("solve 2ax + 2by + c = x^2 + y^2:", f"a = {a_:.4f}, b = {b_:.4f}, c = {c_:.4f}")
+print(f"center ({a_:.4f}, {b_:.4f}), radius {np.sqrt(c_ + a_**2 + b_**2):.4f}")
+
+## \softmax — softmax weights with a dial beta, and the 2-class sigmoid (Ex 5.30, 7.36)
+@uses numpy
+@ex scores := [2.0, 1.0, 0.1]
+@ex beta := 1
+s_ = np.array({{scores}}, dtype=float)
+for b_ in sorted({0.0, 1.0, 10.0, 100.0, float({{beta}})}):
+    w = np.exp(b_*s_ - np.max(b_*s_))
+    w /= w.sum()
+    print(f"beta = {b_}:", np.round(w, 4).tolist(), "  sum =", round(float(w.sum()), 6))
+if len(s_) == 2:
+    print("two classes: sigma(s1 - s2) =", 1/(1 + np.exp(-(s_[0] - s_[1]))))
 
 ## \limit — limits, one-sided and along paths (Def 5.62)
 ### one variable
@@ -450,7 +791,8 @@ cands = {c: f.subs($SYM, c) for c in [a, b, *crit]}
 print("candidates:", cands)
 print("max at", max(cands, key=lambda c: cands[c]), " min at", min(cands, key=lambda c: cands[c]))
 
-## \derivative — derivatives, at a point, tangent line (Ch6)
+## \derivative — derivatives: at a point, n-th order, from the definition (Ch6)
+### f', f'', at a point, tangent line
 @uses sympy
 @in f expr
 @sym x
@@ -460,6 +802,20 @@ d1 = sp.diff(f, $SYM)
 print("f' =", sp.simplify(d1), "  f'' =", sp.simplify(sp.diff(f, $SYM, 2)))
 print("f'(a) =", d1.subs($SYM, a))
 print("tangent: y =", sp.expand(f.subs($SYM, a) + d1.subs($SYM, a)*($SYM - a)))
+### n-th derivative (e.g. f^(17) of sin x)
+@uses sympy
+@in f expr
+@sym x
+@ex order n := 17
+print("f^(n) =", sp.simplify(sp.diff(f, $SYM, {{order n}})))
+### from the definition: limit of (f(x + h) - f(x))/h (Def 6.17)
+@uses sympy
+@in f expr
+@sym x
+h = sp.symbols('h')
+q = sp.simplify((f.subs($SYM, $SYM + h) - f)/h)
+print("difference quotient (f(x+h) - f(x))/h =", q)
+print("limit h -> 0:", sp.limit(q, h, 0))
 
 ## \implicit — implicit differentiation dy/dx of F(x, y) = 0
 @uses sympy
@@ -468,7 +824,8 @@ print("tangent: y =", sp.expand(f.subs($SYM, a) + d1.subs($SYM, a)*($SYM - a)))
 s1, s2 = $SYMS
 print("dy/dx =", sp.simplify(sp.idiff(F, s2, s1)))
 
-## \newton — Newton–Raphson for f(x) = 0 (Sec 6.3.5)
+## \newton — Newton–Raphson for f(x) = 0, and for systems F(x, y) = 0 (Sec 6.3.5)
+### one equation f(x) = 0
 @uses sympy
 @in f expr
 @sym x
@@ -481,16 +838,94 @@ for k in range(20):
     print(k + 1, xk)
     if abs(step) < 1e-12:
         break
+### system F(x, y) = 0 with the Jacobian (Ex 7.14)
+@uses sympy
+@in F vector
+@sym x y
+@ex start point := [1, 1]
+J = F.jacobian($SYMS)
+v = sp.Matrix({{start point}}).evalf()
+for k in range(30):
+    sub = dict(zip($SYMS, v))
+    try:
+        step = J.subs(sub).solve(F.subs(sub))
+    except Exception:
+        print("Jacobian is singular at", list(v), "- try another start point")
+        break
+    v = v - step
+    print(k + 1, [float(c) for c in v])
+    if step.norm() < 1e-12:
+        break
 
-## \crit — critical points and extrema, one variable (Ch6)
+## \logistic — logistic regression: sigmoid, log-likelihood, gradient, fit (Ex 7.30-7.34)
+@uses numpy
+@in pts points
+@ex steps := 20000
+@ex learning rate := 0.1
+xs_, ys_ = np.array([p[0] for p in pts], float), np.array([p[1] for p in pts], float)
+sig = lambda z: 1/(1 + np.exp(-z))
+a_, b_ = 0.0, 0.0
+for _ in range(int({{steps}})):
+    p_ = sig(a_ + b_*xs_)
+    a_ += {{learning rate}}*np.mean(ys_ - p_)
+    b_ += {{learning rate}}*np.mean((ys_ - p_)*xs_)
+p_ = np.clip(sig(a_ + b_*xs_), 1e-12, 1 - 1e-12)
+print(f"P(y = 1 | x) = sigma({a_:.4f} + {b_:.4f} x)")
+print("log-likelihood:", float(np.sum(ys_*np.log(p_) + (1 - ys_)*np.log(1 - p_))))
+print("gradient (d/da, d/db):", float(np.sum(ys_ - p_)), float(np.sum((ys_ - p_)*xs_)))
+if b_ != 0:
+    print("x where P = 1/2:", -a_/b_)
+
+## \crit — critical points and extrema with the higher-derivative test, one variable (Thm 6.50)
+### all critical points
 @uses sympy
 @in f expr
 @sym x
-f1, f2 = sp.diff(f, $SYM), sp.diff(f, $SYM, 2)
-for c in sp.solve(f1, $SYM):
-    s2 = sp.simplify(f2.subs($SYM, c))
-    kind = "local min" if s2.is_positive else "local max" if s2.is_negative else "test inconclusive (f''=0)"
-    print("x =", c, " f =", sp.simplify(f.subs($SYM, c)), " f'' =", s2, "->", kind)
+def classify(c):
+    k_, dk = 2, sp.diff(f, $SYM, 2)
+    while sp.simplify(dk.subs($SYM, c)) == 0 and k_ < 12:
+        k_, dk = k_ + 1, sp.diff(dk, $SYM)
+    v = sp.simplify(dk.subs($SYM, c))
+    if v == 0: return k_, v, "test inconclusive"
+    if k_ % 2: return k_, v, f"neither (first nonzero derivative has odd order {k_})"
+    return k_, v, "local min" if v.is_positive else "local max" if v.is_negative else "depends on parameters"
+try:
+    cs = sp.solve(sp.diff(f, $SYM), $SYM)
+except NotImplementedError:
+    cs = []
+    print("sympy cannot solve f' = 0 exactly; use the 'at a given point' route")
+for c in cs:
+    k_, v, kind = classify(c)
+    print("x =", c, "  f =", sp.simplify(f.subs($SYM, c)), f"  f^({k_}) =", v, "->", kind)
+### at a given point x0 (e.g. e^x + log(1 + 2x) - 3x at 0)
+@uses sympy
+@in f expr
+@sym x
+@ex point x0 := 0
+c = {{point x0}}
+d1 = sp.simplify(sp.diff(f, $SYM).subs($SYM, c))
+print("f'(x0) =", d1)
+if d1 != 0:
+    print("not a critical point, so not a local extremum (f' != 0)")
+else:
+    k_, dk = 2, sp.diff(f, $SYM, 2)
+    while sp.simplify(dk.subs($SYM, c)) == 0 and k_ < 12:
+        k_, dk = k_ + 1, sp.diff(dk, $SYM)
+    v = sp.simplify(dk.subs($SYM, c))
+    print(f"first nonzero derivative: order {k_}, value {v} ->", "neither" if k_ % 2 else "local min" if v > 0 else "local max")
+
+## \annuity — loan with yearly payments: the real interest rate (Ex 6.35)
+@uses sympy
+@ex loan := 1000000
+@ex payment per year := 45000
+@ex years := 30
+@ex claimed rate := 0.01
+r = sp.symbols('r', positive=True)
+L_, P_, n_, r0 = {{loan}}, {{payment per year}}, {{years}}, {{claimed rate}}
+rate = sp.nsolve(L_ - P_*(1 - (1 + r)**(-n_))/r, r, 0.03)
+print(f"real interest rate: {float(rate)*100:.4f} %")
+fair = L_*r0/(1 - (1 + r0)**(-n_))
+print(f"payment at the claimed rate: {float(fair):.2f} per year;  saved over {n_} years: {float((P_ - fair)*n_):.2f}")
 
 ## \taylor — Taylor polynomial of degree n at a (Thm 6.50)
 @uses sympy
@@ -631,7 +1066,8 @@ print("J =", J.tolist())
 if J.is_square:
     print("det J =", sp.simplify(J.det()))
 
-## \chainrule — chain rule: D(F∘G) = DF(G)·DG (Thm 7.23)
+## \chainrule — chain rule: D(F∘G) = DF(G)·DG, and (g∘f)'(t) (Thm 7.23)
+### F, G : R^n -> R^n, D(F o G) = DF(G) DG
 @uses sympy
 @in F vector
 @in G vector
@@ -641,6 +1077,20 @@ lhs = sp.simplify(F.subs(dict(zip($SYMS, G)), simultaneous=True).jacobian($SYMS)
 rhs = sp.simplify(JF.subs(dict(zip($SYMS, G)), simultaneous=True)*JG)
 print("D(FoG) =", lhs.tolist())
 print("chain rule agrees:", sp.simplify(lhs - rhs) == sp.zeros(*lhs.shape))
+### (g o f)'(t) for f : R -> R^n and g : R^n -> R (Ex 7.28)
+@uses sympy
+@ex f components in t := [t, t**2, t**3]
+@ex g in x, y, z := x**2 + 3*y**6 + 2*z**5
+t, x, y, z = sp.symbols('t x y z')
+F = sp.Matrix({{f components in t}})
+G = {{g in x, y, z}}
+V = [x, y, z][:len(F)]
+sub = dict(zip(V, F))
+chain = sum(sp.diff(G, v).subs(sub, simultaneous=True)*sp.diff(Fi, t) for v, Fi in zip(V, F))
+direct = sp.diff(G.subs(sub, simultaneous=True), t)
+print("chain rule  grad g(f(t)) . f'(t) =", sp.expand(chain))
+print("direct      d/dt g(f(t))         =", sp.expand(direct))
+print("agree:", sp.simplify(chain - direct) == 0)
 
 ## \critxy — critical points + classification with the Hessian (Ch7/8)
 @uses sympy
@@ -656,7 +1106,7 @@ for p in sp.solve(grad, $SYMS, dict=True):
     else: kind = "inconclusive (H semidefinite)"
     print(p, " f =", sp.simplify(f.subs(p)), " H =", Hp.tolist(), "->", kind)
 
-## \hessian — Hessian matrix, at a point, definiteness (Def 8.2)
+## \hessian — Hessian matrix, at a point, definiteness, mixed partials (Def 8.2)
 ### at a point
 @uses sympy
 @in f expr
@@ -684,6 +1134,15 @@ def where_nonpositive(m_):
     return f"check {m_} <= 0 by hand"
 print("where each minor is <= 0 (empty = always > 0):", [where_nonpositive(m_) for m_ in minors])
 print("positive definite everywhere:", H.is_positive_definite, " positive semidefinite everywhere:", H.is_positive_semidefinite)
+### mixed partials: is f_xy = f_yx? (Clairaut, Thm 7.11)
+@uses sympy
+@in f expr
+@sym x y
+X_, Y_ = $SYMS[0], $SYMS[1]
+fx, fy = sp.diff(f, X_), sp.diff(f, Y_)
+print("f_x =", sp.simplify(fx), "   f_y =", sp.simplify(fy))
+print("f_xy =", sp.simplify(sp.diff(fx, Y_)), "   f_yx =", sp.simplify(sp.diff(fy, X_)))
+print("equal:", sp.simplify(sp.diff(fx, Y_) - sp.diff(fy, X_)) == 0)
 
 ## \lagrange — Lagrange multipliers: extremes of f subject to g = 0 (Thm 7.39)
 @uses sympy
@@ -699,7 +1158,8 @@ for p in cands:
 if cands:
     print("max f:", sp.N(max(f.subs(p) for p in cands), 6), "  min f:", sp.N(min(f.subs(p) for p in cands), 6))
 
-## \compactopt — max/min on a compact set: interior + boundary g = 0 (Prop 7.46)
+## \compactopt — max/min on a compact set: interior + boundary (Prop 7.46)
+### boundary is a curve g = 0
 @uses sympy
 @in f expr
 @in g expr
@@ -712,6 +1172,30 @@ for p in sp.solve([sp.diff(f, s) for s in $SYMS], $SYMS, dict=True):
 for p in sp.solve([sp.diff(f - lam*g, s) for s in $SYMS] + [g], $SYMS + [lam], dict=True):
     if all(p[s].is_real for s in $SYMS):
         cands.append(("boundary", {s: p[s] for s in $SYMS}))
+vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
+for v in vals: print(*v)
+print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
+### polygon / rectangle given by inequalities g_i <= 0 (Ex 7.48-7.50)
+@uses sympy itertools
+@in f expr
+@in gs list
+@sym x y
+lam = sp.symbols('lam')
+V = $SYMS
+inside = lambda p: all(sp.N(g_.subs(p)) <= 1e-9 for g_ in gs)
+cands = []
+for p in sp.solve([sp.diff(f, s) for s in V], V, dict=True):
+    if all(c.is_real for c in p.values()) and inside(p):
+        cands.append(("interior", p))
+for g_ in gs:
+    for p in sp.solve([sp.diff(f - lam*g_, s) for s in V] + [g_], V + [lam], dict=True):
+        q = {s: p[s] for s in V if s in p}
+        if len(q) == len(V) and all(c.is_real for c in q.values()) and inside(q):
+            cands.append((f"edge {g_} = 0", q))
+for g1, g2 in itertools.combinations(gs, 2):
+    for p in sp.solve([g1, g2], V, dict=True):
+        if len(p) == len(V) and inside(p):
+            cands.append(("vertex", p))
 vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
 for v in vals: print(*v)
 print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
@@ -786,7 +1270,9 @@ d_ = X.shape[1]
 cons = [{"type": "ineq", "fun": (lambda i: lambda wb: yl[i]*(X[i] @ wb[:d_] + wb[d_]) - 1)(i)} for i in range(len(X))]
 res = opt.minimize(lambda wb: 0.5*wb[:d_] @ wb[:d_], np.zeros(d_ + 1), constraints=cons)
 w, b = res.x[:d_], res.x[d_]
-print("w =", w, " b =", b, " margin =", 2/np.linalg.norm(w))
+print("w =", np.round(w, 4), " b =", round(float(b), 4), " margin =", 2/np.linalg.norm(w))
+print("support vectors (on the margin, y(w.x + b) = 1):", [X[i].tolist() for i in range(len(X)) if abs(yl[i]*(X[i] @ w + b) - 1) < 1e-4])
+print("all correct side:", all(yl*(X @ w + b) > 0))
 
 ## \integral — definite, indefinite, double, numeric integrals
 ### definite and indefinite
@@ -835,6 +1321,7 @@ print("area between them:", sp.simplify(area), "~", sp.N(area))
 k = sp.symbols('k', integer=True, positive=True)
 S = sp.summation({{term with k}}, (k, 1, {{upper limit}}))
 print("sum =", S, "~", sp.N(S))
+print("simplified:", sp.nsimplify(sp.simplify(sp.radsimp(S))) if S.is_finite else S)
 
 ## \solve — solve an equation / inequality over the reals
 @uses sympy

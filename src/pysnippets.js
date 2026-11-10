@@ -23,6 +23,7 @@ const IMPORTS = {
   integrate: "import scipy.integrate as si",
   itertools: "import itertools",
   torch: "import torch",
+  hashlib: "import hashlib",
 };
 
 const KIND_HINT = {
@@ -195,7 +196,7 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {} 
   body = body.replace(/\$SYMS\b/g, symList).replace(/\$SYM\b/g, syms[0] || "x");
   body = body.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (m, label) => {
     const typed = (answers[label] ?? "").trim();
-    return typed ? answerToPy(typed, style) : m;
+    return typed ? answerToPy(typed, style, label) : m;
   });
   const text = [...header, ...defs, ...(header.length || defs.length ? [""] : []), body].join("\n").replace(/\n{3,}/g, "\n\n");
   return { text, used, syms };
@@ -207,20 +208,20 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {} 
 export const KEYWORDS = {
   compgraph: "computational graph computation graph backpropagation backprop back propagation autodiff automatic differentiation autograd reverse mode forward pass backward pass pytorch torch neural network chain rule adjoint",
   gradient: "nabla grad partial derivatives partials directional derivative steepest at a point",
-  hessian: "second derivatives second order partials definiteness at a point",
+  hessian: "second derivatives second order partials definiteness at a point mixed partials clairaut symmetric f_xy",
   jacobian: "derivative matrix total derivative differential",
-  chainrule: "composite composition derivative",
-  derivative: "differentiate diff slope tangent line rate of change",
+  chainrule: "composite composition derivative g of f t vector function",
+  derivative: "differentiate diff slope tangent line rate of change nth derivative definition difference quotient limit",
   tangentplane: "linear approximation linearization",
   critxy: "stationary points saddle point local minimum maximum extrema extremum two variables classify",
-  crit: "stationary points local minimum maximum extrema extremum",
+  crit: "stationary points local minimum maximum extrema extremum higher derivative test local max min at a point",
   evt: "extreme value theorem global maximum minimum closed interval",
   lagrange: "constraint constrained multiplier multipliers optimization equality",
   kkt: "karush kuhn tucker inequality constraints constrained optimization",
-  compactopt: "compact set global max min boundary",
+  compactopt: "compact set global max min boundary rectangle triangle polygon region vertices edges",
   convexopt: "constrained minimum numeric optimize scipy",
   newtonopt: "minimize newton optimization",
-  newton: "newton raphson root finding numeric",
+  newton: "newton raphson root finding numeric system jacobian iteration",
   ivt: "intermediate value theorem bisection root",
   mvt: "mean value theorem",
   lhopital: "hopital l'hopital indeterminate",
@@ -235,46 +236,58 @@ export const KEYWORDS = {
   subs: "evaluate plug in value at point",
   gauss: "gaussian elimination row reduce reduction rref echelon linear system equations",
   linsolve: "linear system equations solve ax b",
-  matinv: "inverse invert matrix",
+  matinv: "inverse invert matrix row reduction gauss jordan",
   det: "determinant cofactor",
   rank: "null space kernel column space image dimension basis",
   eigen: "eigenvalues eigenvectors diagonalize diagonalization characteristic polynomial",
-  posdef: "positive definite semidefinite negative indefinite symmetric",
+  posdef: "positive definite semidefinite negative indefinite symmetric parameters for which values principal minors",
   quadform: "quadratic form",
-  matmul: "matrix multiplication product transpose power",
+  matmul: "matrix multiplication product transpose power identity general matrices symbolic",
   dot: "dot product inner product norm length angle orthogonal",
   projection: "project orthogonal projection",
   gramschmidt: "gram schmidt orthonormal basis orthogonalize",
-  leastsquares: "least squares regression best fit line linear regression",
+  leastsquares: "least squares regression best fit line linear regression polynomial quadratic circle normal equations",
   lp: "linear programming linprog simplex optimize",
   fm: "fourier motzkin elimination",
   convexset: "convex set",
   convexfn: "convex function convexity",
   strictconvex: "strictly convex",
   line: "line through points parametric",
-  svm: "support vector machine margin hyperplane classifier",
+  svm: "support vector machine margin hyperplane classifier support vectors",
   perceptron: "classifier linear separable",
-  truthtable: "truth table logic proposition",
-  equivalent: "logically equivalent logic",
+  truthtable: "truth table logic proposition and or not implies",
+  equivalent: "logically equivalent logic de morgan contrapositive",
   sets: "set union intersection difference subset",
-  cartesian: "cartesian product power set",
-  setbuilder: "set builder",
+  cartesian: "cartesian product power set product identities pairs",
+  setbuilder: "set builder predicate integers pairs twin primes list elements",
   intersection: "intersect meet where",
   injective: "one to one injection",
   surjective: "onto surjection",
   inversefn: "inverse function",
-  composition: "compose composite function",
+  composition: "compose composite function vector function g of f",
   preimage: "inverse image",
-  sumind: "induction proof sum formula",
+  sumind: "induction proof sum formula inequality induction check n",
   polydiv: "polynomial division long division remainder",
   roots: "zeros factor polynomial",
-  interpolate: "interpolation polynomial through points",
+  interpolate: "interpolation polynomial through points shamir secret sharing lagrange interpolation",
   monotone: "increasing decreasing monotonic",
   plot: "plot graph draw curve function",
   contour: "contour level curves level sets",
   region: "shade region feasible inequalities",
   lambdify: "numpy function fast numeric",
   implicit: "implicit differentiation dy dx",
+  mediant: "stern brocot tree fractions mediant naive addition rational",
+  primes: "prime numbers factorization factor euclid primorial infinitely many primes",
+  hash: "sha256 sha-256 md5 hash function cryptographic",
+  tablefn: "table function injective surjective bijective composition inverse finite",
+  network: "neural network perceptron xor and or hidden layer weights bias parameters count",
+  horner: "horner evaluate polynomial multiplications fast",
+  markov: "markov chain stochastic matrix stable distribution stationary powers steady state",
+  eliminate: "word problem optimization constraint eliminate substitute fence box cylinder area volume maximize minimize",
+  softmax: "softmax temperature dial beta probabilities attention sigmoid classes",
+  annuity: "loan interest rate payments bank annuity mortgage",
+  logistic: "logistic regression sigmoid log likelihood classification probability",
+  kernelperceptron: "kernel perceptron nonlinear separation feature map",
 };
 
 // Rank snippets for a query of one or more words: \compg, \computational graph,
@@ -311,19 +324,71 @@ const STOP = new Set(["of", "the", "a", "an", "at", "in", "for", "to", "and", "w
 
 // ---------- the inputs form: ask for everything before inserting ----------
 
-const PY_ONLY = /\b(sp|np|plt|opt|si|math|torch)\.|\*\*|==|<=|>=|!=|\blambda\b|\bfor\b|\brange\(|["']/;
+const PY_ONLY = /\b(sp|np|plt|opt|si|math|torch|hashlib|itertools)\.|\*\*|\blambda\b|\bfor\b|\brange\(|["'%@]|^\{[^{}]*:/;
 const POINTISH = /point|direction|x0|start/i;
+const TEXTISH = /\b(text|string|word|name)\b/i;
 
-// A typed value (LaTeX or Python) as a Python expression. Lists and (a, b)
-// tuples are converted element by element; Python is kept as it is.
-export function answerToPy(text, style = "sympy") {
-  const t = text.trim();
+// Split t at top-level (outside brackets) matches of re; keeps the separators.
+function splitAt(t, re) {
+  const out = [];
+  let depth = 0, cur = "";
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) depth--;
+    if (depth === 0) {
+      const m = t.slice(i).match(re);
+      if (m && m.index === 0 && m[0].length) {
+        out.push(cur, m[0]);
+        cur = "";
+        i += m[0].length - 1;
+        continue;
+      }
+    }
+    cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+const CMP = /^(<=|>=|==|!=|\\leq?|\\geq?|\\neq|≤|≥|≠|<|>|=)/;
+const CMP_PY = { "\\le": "<=", "\\leq": "<=", "≤": "<=", "\\ge": ">=", "\\geq": ">=", "≥": ">=", "\\neq": "!=", "≠": "!=", "=": "==" };
+const LOGIC = /^(\s+(and|or)\s+|\s*\\(land|lor|wedge|vee)\s*)/;
+
+// A typed value (LaTeX or Python) as a Python expression. Lists, (a, b)
+// tuples and {a, b} sets are converted element by element; conditions
+// (x^2 - 5x + 6 = 0, x < 1 and y > 2) become Python comparisons; Python is
+// kept as it is. A label like "text" keeps the answer as a string.
+export function answerToPy(text, style = "sympy", label = "") {
+  let t = text.trim();
+  if (TEXTISH.test(label) && !/^["']/.test(t)) return JSON.stringify(t);
   if (PY_ONLY.test(t)) return t;
   const lib = style === "numpy" ? "np" : style === "plain" ? "math" : "sp";
+  const set = t.match(/^\\?\{([\s\S]*?)\\?\}$/);
+  if (set && balancedPair(t.replace(/^\\\{/, "{").replace(/\\\}$/, "}"))) {
+    const items = splitTop(set[1], ",").filter((x) => x !== "");
+    if (items.length > 1 || /^\\\{/.test(t)) return `{${items.map((x) => answerToPy(x, style)).join(", ")}}`;
+  }
   const list = listItems(t);
   if (list) return `[${list.map((x) => answerToPy(x, style)).join(", ")}]`;
+  const logic = splitAt(t, LOGIC);
+  if (logic.length > 1) {
+    return logic.map((p, i) => (i % 2 ? (/or|lor|vee/.test(p) ? " or " : " and ") : answerToPy(p, style))).join("");
+  }
+  const cmp = splitAt(t, CMP);
+  if (cmp.length > 1) {
+    return cmp.map((p, i) => (i % 2 ? ` ${CMP_PY[p] || p} ` : answerToPy(p, style))).join("");
+  }
   if (/^-?\d+(\.\d+)?$/.test(t)) return t;
+  t = t.replace(/(\b[A-Za-z0-9]+|\([^()]*\))!(?!=)/g, "factorial($1)");
   return latexToPy(t, lib);
+}
+
+// An equation typed for an expression input (\pi r^2 h = V) as lhs - (rhs).
+function equationAsExpr(typed, style) {
+  const cmp = splitAt(typed, CMP);
+  if (cmp.length === 3 && cmp[1] === "=") return `${answerToPy(cmp[0], style)} - (${answerToPy(cmp[2], style)})`;
+  return null;
 }
 
 // [a, b, c] / (a, b, c) / \begin{pmatrix} a \\ b \end{pmatrix} -> ["a", "b", "c"]; else null.
@@ -354,6 +419,10 @@ function balancedPair(t) {
 
 function typedInput(inp, typed, style) {
   if (inp.kind === "any" || PY_ONLY.test(typed)) return typed;
+  if (inp.kind === "expr") {
+    const eq = equationAsExpr(typed, style);
+    if (eq) return eq;
+  }
   if (inp.kind === "set" || inp.kind === "list" || inp.kind === "points") {
     const items = listItems(typed.replace(/^\{([\s\S]*)\}$/, "[$1]"));
     if (items) {
