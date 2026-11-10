@@ -16,7 +16,7 @@ import { scanDocument, mergeStats } from "./stats.js";
 import { cursorOffset, previewSource } from "./dictionary.js";
 import { rankSuggestions } from "./rank.js";
 import { fillsFor } from "./fills.js";
-import { parseTemplates, mergeTemplates, expandBody, rankTemplates } from "./templates.js";
+import { parseTemplates, mergeTemplates, expandBody, rankTemplates, exerciseQuery, rankExercises, textQuestions, fillTextAnswers } from "./templates.js";
 import { tabstopExtension, startSession } from "./tabstops.js";
 import DEFAULT_TEMPLATES_MD from "./default-templates.md";
 import IMO26_TEMPLATES_MD from "./imo26-templates.md";
@@ -224,6 +224,7 @@ const DEFAULT_SETTINGS = {
   fillPicks: {},
   templatesEnabled: true,
   templatesFile: "Math Templates.md",
+  exerciseFile: "Math/IMO26 Exercise Templates.md",
   templatePicks: {},
   imo26: false,
   refAsLink: false,
@@ -316,7 +317,7 @@ class TemplateSuggest extends EditorSuggest {
     if (!this.plugin.settings.templatesEnabled) return null;
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
     // \word, \def4.26, or \ref followed by free search words.
-    const m = before.match(/(?:^|[\s(>*_[])\\(ref(?:\s[^\\$\n]{0,40})?|[a-zA-Z]+[\w.]*)$/);
+    const m = before.match(/(?:^|[\s(>*_[])\\((?:ref|ex)(?:\s[^\\$\n]{0,60})?|[a-zA-Z]+[\w.]*)$/);
     if (!m) return null;
     if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
     if (!this.plugin.textSuggestions(m[1]).length) return null;
@@ -372,10 +373,10 @@ class TemplateSuggest extends EditorSuggest {
     this.plugin.saveSettings();
     if (t.variants.length > 1) {
       // Like the matrix fills: second step picks the solution route.
-      new RouteModal(this.plugin, t, (v) => insertTemplate(editor, start, end, v.body)).open();
+      new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v)).open();
       return;
     }
-    insertTemplate(editor, start, end, t.body);
+    this.plugin.insertTextTemplate(editor, start, end, t.name, { label: "", body: t.body });
   }
 }
 
@@ -388,6 +389,56 @@ function insertTemplate(editor, start, end, body) {
   if (view) startSession(view, from, from + text.length);
   else editor.setCursor(editor.offsetToPos(from + text.length));
   editor.focus();
+}
+
+// The math inputs of a text template (A, f, x0, ...), prefilled from the
+// note's ```vars block. Blank answers stay as Tab stops.
+class TextInputsModal extends Modal {
+  constructor(plugin, name, route, questions, onDone) {
+    super(plugin.app);
+    this.name = name;
+    this.route = route;
+    this.questions = questions;
+    this.onDone = onDone;
+    this.answers = Object.fromEntries(questions.map((q) => [q.key, q.value]));
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("mac-inputs");
+    const title = `\\${this.name}${this.route.label ? ": " + this.route.label : ""}`;
+    if (this.setTitle) this.setTitle(title);
+    else contentEl.createEl("h3", { text: title });
+    const fields = [];
+    for (const q of this.questions) {
+      new Setting(contentEl)
+        .setName(q.label)
+        .setDesc(q.from ? `from @${q.from} in your vars block` : "")
+        .addText((t) => {
+          t.setValue(q.value);
+          t.inputEl.addClass("mac-inputs-field");
+          t.onChange((val) => { this.answers[q.key] = val; });
+          t.inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); this.submit(); }
+          });
+          fields.push(t);
+        });
+    }
+    new Setting(contentEl)
+      .addButton((b) => b.setButtonText("Leave all as Tab stops").onClick(() => this.submit(true)))
+      .addButton((b) => b.setButtonText("Insert").setCta().onClick(() => this.submit()));
+    contentEl.createDiv({ cls: "mac-inputs-help", text: "LaTeX, e.g. x^2 + 1, \\mathbb{R}, (1, 2). Empty fields stay as Tab stops. Enter inserts, Esc cancels." });
+    setTimeout(() => { fields[0].inputEl.focus(); fields[0].inputEl.select(); }, 0);
+  }
+
+  submit(keepBlanks = false) {
+    this.close();
+    this.onDone(keepBlanks ? {} : this.answers);
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
 }
 
 // Pick how to solve it: each route of a template cites the definitions,
@@ -590,6 +641,7 @@ export default class MathAutocompletePlugin extends Plugin {
 
     this.buildDefaultTemplates();
     this.templates = mergeTemplates(this.defaultTemplates, []);
+    this.exercises = [];
 
     this.registerEditorSuggest(new MathSuggest(this));
     this.registerEditorSuggest(new TemplateSuggest(this));
@@ -633,14 +685,21 @@ export default class MathAutocompletePlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       this.scanVault();
       this.loadUserTemplates();
+      this.loadExercises();
       const rescan = debounce((file) => this.scanFile(file).then(() => this.rebuild()), 2000, true);
       const reloadTemplates = debounce(() => this.loadUserTemplates(), 500, true);
+      const reloadExercises = debounce(() => this.loadExercises(), 500, true);
       this.registerEvent(this.app.vault.on("modify", (f) => {
         if (!(f instanceof TFile) || f.extension !== "md") return;
         if (f.path === this.settings.templatesFile) reloadTemplates();
+        else if (f.path === this.settings.exerciseFile) reloadExercises();
         else rescan(f);
       }));
-      this.registerEvent(this.app.vault.on("create", (f) => f instanceof TFile && f.path === this.settings.templatesFile && reloadTemplates()));
+      this.registerEvent(this.app.vault.on("create", (f) => {
+        if (!(f instanceof TFile)) return;
+        if (f.path === this.settings.templatesFile) reloadTemplates();
+        if (f.path === this.settings.exerciseFile) reloadExercises();
+      }));
       this.registerEvent(this.app.vault.on("delete", (f) => { this.fileStats.delete(f.path); this.pyFileCounts.delete(f.path); this.rebuild(); }));
       this.registerEvent(this.app.vault.on("rename", (f, old) => {
         const s = this.fileStats.get(old);
@@ -660,7 +719,8 @@ export default class MathAutocompletePlugin extends Plugin {
   async scanVault() {
     this.fileStats.clear();
     this.pyFileCounts.clear();
-    const files = this.app.vault.getMarkdownFiles().filter((f) => f.path !== this.settings.templatesFile);
+    const skip = new Set([this.settings.templatesFile, this.settings.exerciseFile]);
+    const files = this.app.vault.getMarkdownFiles().filter((f) => !skip.has(f.path));
     await Promise.all(files.map((f) => this.scanFile(f)));
     this.rebuild();
   }
@@ -669,6 +729,24 @@ export default class MathAutocompletePlugin extends Plugin {
     const f = this.app.vault.getAbstractFileByPath(this.settings.templatesFile);
     const user = f instanceof TFile ? parseTemplates(await this.app.vault.read(f)) : [];
     this.templates = mergeTemplates(this.defaultTemplates, user);
+  }
+
+  // \ex1.19 templates: one per IMO26 exercise, generated into the vault
+  // (docs/imo26-coverage/exercise_templates.py) since they hold book text.
+  async loadExercises() {
+    const f = this.app.vault.getAbstractFileByPath(this.settings.exerciseFile);
+    this.exercises = f instanceof TFile
+      ? parseTemplates(await this.app.vault.read(f)).filter((t) => /^ex\d/.test(t.name)).map((t) => ({ ...t, source: "exercise" }))
+      : [];
+  }
+
+  // Asks for the template's math inputs (prefilled from ```vars), then inserts.
+  insertTextTemplate(editor, start, end, name, route) {
+    const vars = this.settings.varsEnabled ? parseVars(editor.getValue()) : [];
+    const questions = this.settings.askInputs ? textQuestions(route.body, vars, (v) => toLatex(v)) : [];
+    if (!questions.length) return insertTemplate(editor, start, end, route.body);
+    new TextInputsModal(this, name, route, questions, (answers) =>
+      insertTemplate(editor, start, end, fillTextAnswers(route.body, answers))).open();
   }
 
   async openTemplatesFile() {
@@ -702,6 +780,8 @@ export default class MathAutocompletePlugin extends Plugin {
     // references aren't buried under "(Def 1.10)" description matches.
     const keep = (t) => !rq || t.name.toLowerCase().startsWith(word.toLowerCase());
     if (word) for (const t of this.rankTemplates(word)) if (keep(t)) out.push({ type: "template", t });
+    const eq = this.settings.imo26 ? exerciseQuery(raw) : null;
+    if (eq) for (const t of rankExercises(eq, this.exercises, this.settings.templatePicks)) out.push({ type: "template", t });
     if (rq) for (const ref of rankRefs(IMO26_REFS, rq, this.settings.refPicks)) out.push({ type: "ref", ref });
     return out;
   }
@@ -791,7 +871,7 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Ask for inputs first")
-      .setDesc("After picking a snippet (\\gradient, \\hessian, ...), a form asks for everything it needs (function, point, direction, ...), prefilled from your vars block, and inserts finished code. Off: insert with Tab stops instead.")
+      .setDesc("After picking a snippet (\\gradient, \\hessian, ...), a form asks for everything it needs (function, point, direction, ...), prefilled from your vars block, and inserts finished code. Text templates (\\proof, \\ex1.19, ...) ask for their math inputs the same way. Off: insert with Tab stops instead.")
       .addToggle((t) => t.setValue(s.askInputs).onChange(async (v) => { s.askInputs = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
@@ -821,6 +901,15 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
         await this.plugin.saveSettings();
         this.plugin.buildDefaultTemplates();
         this.plugin.loadUserTemplates();
+      }));
+
+    new Setting(containerEl)
+      .setName("Exercise templates file")
+      .setDesc("Vault note with one template per exercise: \\ex1.19, or \\ex followed by words from the exercise. Generate it with docs/imo26-coverage/exercise_templates.py (it holds book text, so it is not shipped with the plugin).")
+      .addText((t) => t.setValue(s.exerciseFile).onChange(async (v) => {
+        s.exerciseFile = v.trim() || DEFAULT_SETTINGS.exerciseFile;
+        await this.plugin.saveSettings();
+        this.plugin.loadExercises();
       }));
 
     new Setting(containerEl)

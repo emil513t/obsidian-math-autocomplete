@@ -769,3 +769,47 @@ $p(x, y) = \text{step}(w_1 x + w_2 y + b)$ with $w_1 = {{w1}}$, $w_2 = {{w2}}$, 
 This computes {{AND / OR / ...}}.
 ### impossible (XOR): contradiction from the inequalities
 **Proof.** Suppose $w_1, w_2, b$ work. Then $b \le 0$, $w_1 + b > 0$, $w_2 + b > 0$, $w_1 + w_2 + b \le 0$. Adding the middle two: $w_1 + w_2 + 2b > 0$, so $w_1 + w_2 + b > -b \ge 0$ — a contradiction. $\blacksquare$
+
+## \explain — Ch1-9: explain / argue why / give a precise reason
+### answer + reason from a definition
+**Answer.** {{answer}}
+
+**Why.** By {{Definition X.Y}}, {{what the definition says here}}. In this case {{apply it}}, so {{answer}}.
+### answer + reason from a theorem
+**Answer.** {{answer}}
+
+**Why.** {{Theorem X.Y}} applies because {{its hypotheses hold}}; it gives {{conclusion}}, which is {{answer}}.
+### explain a computation step by step
+| step | what happens | rule used |
+|---|---|---|
+| 1 | {{_}} | {{_}} |
+| 2 | {{_}} | {{_}} |
+| 3 | {{_}} | {{_}} |
+
+So {{result}}.
+### explain what the code / output shows
+**What I ran.** {{code or cell}}
+
+**What came out.** {{output}}
+
+**Why.** {{explanation in terms of the math}}
+### yes / no question
+**{{Yes / No}}.** {{one-sentence reason}}
+
+{{example or proof of the reason}}
+
+## \chatbot — Ch1: work with a chatbot prompt
+### prompt log
+**Prompt.** {{prompt}}
+
+**Chatbot answer (summary).** {{summary}}
+
+**What I checked myself.** {{check}}
+
+**What I learned / what was wrong.** {{takeaway}}
+### write my own prompt
+**My prompt.** {{prompt}}
+
+**Why it is phrased like this.** {{reason}}
+
+**Result.** {{summary}}

@@ -16,6 +16,7 @@ Type `\proof`, `\showthat`, `\induction`, `\contradiction`, `\iff`, `\counterexa
 1. Pick a template. If it has several **solution routes** (e.g. `\proof`: direct, unfold a definition, apply a theorem, contradiction, contrapositive, cases, both directions, induction), pick one in the second menu.
 2. The template is inserted with `⟨placeholders⟩`. **Tab** jumps to the next one, **Shift+Tab** goes back.
 3. Placeholders with the same name are filled once: type the claim at the top and it is copied to "Hence ⟨claim⟩" at the bottom.
+4. If the template has math inputs ($f(x) = ⟨f⟩$, $⟨A⟩$, $x_0 = ⟨x0⟩$), a small form asks for them first, prefilled from the note's `vars` block: a variable `f` fills in its value where the template says `f(x) = ⟨f⟩`. Empty fields stay as Tab stops.
 
 ### Your own templates
 
@@ -50,6 +51,7 @@ For N. Lauritzen, *Introduction to Mathematics and Optimization* (Aarhus Univers
   - `\ref extreme value` searches all of them
 
   Inserted as the book cites them ("Definition 4.26"); adding the title or a link to your own notes is optional.
+- **Exercise templates** (optional, generated locally): one per exercise of the book, `\ex1.19` by number or `\ex truth table` by words from the exercise. Each one inserts the exercise followed by the solution routes of its general template, plus the Python snippet that computes it. Because they hold the book's text they are not shipped; generate the note with `python -I docs/imo26-coverage/exercise_templates.py "<vault>/Math/IMO26 Exercise Templates.md"` (needs the local `ex.json` extract).
 
 ## Settings
 

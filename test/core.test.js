@@ -363,3 +363,51 @@ test("general fills", () => {
   assert.ok(previewSource(DICTIONARY.get("pmatrix").template).includes(`a & b ${BS}${BS} c & d`));
   assert.equal(previewSource(DICTIONARY.get("begin").template), `${BS}text{env}`);
 });
+
+import { exerciseQuery, rankExercises, textQuestions, fillTextAnswers } from "../src/templates.js";
+
+test("exercise templates and text inputs", () => {
+  const D = String.fromCharCode(36);
+  assert.deepEqual(exerciseQuery("ex1.19"), { num: "1.19", words: [] });
+  assert.deepEqual(exerciseQuery("ex truth table"), { num: null, words: ["truth", "table"] });
+  assert.equal(exerciseQuery("explain"), null);
+  assert.equal(exerciseQuery("def4.26"), null);
+
+  const B = String.fromCharCode(92);
+  const md = [
+    `## ${B}ex1.1 — first [${B}proof]`, "**Exercise 1.1** Prove it.", `### ${B}proof: direct`, "body",
+    `## ${B}ex1.19 — Construct the truth table [${B}truthtable]`, "**Exercise 1.19** truth table for p.", `### ${B}truthtable: one`, "x",
+    `## ${B}ex1.190 — fake`, "**Exercise 1.190** other.",
+  ].join("\n");
+  const ex = parseTemplates(md);
+  assert.deepEqual(ex.map((t) => t.name), ["ex1.1", "ex1.19", "ex1.190"]);
+  assert.equal(ex[1].variants[0].label, `${B}truthtable: one`);
+  assert.ok(ex[1].variants[0].body.startsWith("**Exercise 1.19**"), "statement prepended to each route");
+  assert.deepEqual(rankExercises(exerciseQuery("ex1.19"), ex).map((t) => t.name), ["ex1.19", "ex1.190"]);
+  assert.deepEqual(rankExercises(exerciseQuery("ex1.1"), ex).map((t) => t.name)[0], "ex1.1");
+  assert.deepEqual(rankExercises(exerciseQuery("ex truth table"), ex).map((t) => t.name), ["ex1.19"]);
+
+  const body = `Divide ${D}f(x) = {{f}}${D} by ${D}{{d}}${D}. Let ${D}x ${B}in {{A}}${D}, {{reason}}, ${D}{{_}}${D} and ${D}{{f}}${D} again.`;
+  const vars = [{ name: "f", kind: "scalar" }, { name: "A", kind: "matrix" }];
+  const qs = textQuestions(body, vars, (v) => `LATEX(${v.name})`);
+  assert.deepEqual(qs.map((q) => q.key), ["f", "d", "A"], "prose and anonymous blanks are not asked");
+  assert.equal(qs[0].value, "LATEX(f)", "value slot gets the variable's value");
+  assert.equal(qs[2].value, "A", "name slot gets the variable's name");
+  assert.equal(qs[1].value, "");
+  const filled = fillTextAnswers(body, { f: "x^2", d: "", A: "S" });
+  assert.ok(filled.includes(`${D}f(x) = x^2${D}`) && filled.includes(`${D}x^2${D} again`));
+  assert.ok(filled.includes("{{d}}") && filled.includes("{{reason}}"), "empty answers stay as blanks");
+});
+
+test("generated exercise file", { skip: !fs.existsSync("docs/imo26-coverage/IMO26 Exercise Templates.md") }, () => {
+  const ex = parseTemplates(fs.readFileSync("docs/imo26-coverage/IMO26 Exercise Templates.md", "utf8"));
+  assert.equal(ex.length, 289);
+  for (const t of ex) {
+    assert.match(t.name, /^ex\d+\.\d+$/);
+    assert.ok(t.variants.length >= 1, t.name);
+    for (const v of t.variants) assert.ok(v.body.startsWith(`**Exercise ${t.name.slice(2)}**`), t.name);
+  }
+  assert.equal(rankExercises(exerciseQuery("ex1.19"), ex)[0].name, "ex1.19");
+  assert.equal(rankExercises(exerciseQuery("ex truth table hand"), ex)[0].name, "ex1.19");
+  assert.ok(rankExercises(exerciseQuery("ex lagrange"), ex).length > 0);
+});

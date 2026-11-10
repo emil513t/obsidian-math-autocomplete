@@ -33,7 +33,7 @@ export function parseTemplates(md) {
     if (cur.body) out.push(cur);
   };
   for (const line of md.replace(/\r\n/g, "\n").split("\n")) {
-    const h = line.match(/^##\s+\\([A-Za-z][\w-]*)\s*(?:(?:—|–|-|:|\|)\s*(.*))?$/);
+    const h = line.match(/^##\s+\\([A-Za-z][\w.-]*?)\s*(?:(?:—|–|-|:|\|)\s*(.*))?$/);
     if (h) {
       flush();
       cur = { name: h[1], desc: (h[2] || "").trim(), lines: [] };
@@ -98,4 +98,63 @@ export function mirrorChanges(text, label, value) {
   return placeholders(text)
     .filter((p) => p.label === label)
     .map((p) => ({ from: p.from, to: p.to, insert: value }));
+}
+
+// Exercise templates (\ex1.19, or \ex followed by words from the exercise).
+// Returns null when `raw` is not an exercise query.
+export function exerciseQuery(raw) {
+  const m = raw.match(/^ex(?:(\d[\d.]*)|\s+(.*)|)$/i);
+  if (!m) return null;
+  if (m[1] !== undefined) return { num: m[1], words: [] };
+  const words = (m[2] || "").toLowerCase().split(/\s+/).filter(Boolean);
+  return { num: null, words };
+}
+
+export function rankExercises(q, exercises, picks = {}) {
+  const hay = (t) => (t.hay ??= (t.name + " " + t.desc + " " + t.body).toLowerCase());
+  return exercises
+    .map((t, i) => ({ t, i, picked: picks[t.name] || 0 }))
+    .filter(({ t }) => {
+      if (q.num !== null) {
+        const n = t.name.slice(2);
+        return n === q.num || n.startsWith(q.num.endsWith(".") ? q.num : q.num + ".") || n.startsWith(q.num);
+      }
+      return q.words.every((w) => hay(t).includes(w));
+    })
+    .sort((a, b) => {
+      if (q.num !== null) {
+        const ea = a.t.name.slice(2) === q.num, eb = b.t.name.slice(2) === q.num;
+        if (ea !== eb) return ea ? -1 : 1;
+      }
+      return b.picked - a.picked || a.i - b.i;
+    })
+    .map((x) => x.t);
+}
+
+// Blanks the inputs form asks for before a text template is inserted: short
+// names used inside $...$ (A, f, x0, alpha, f'), not prose like {{reason}}.
+// A matching ```vars variable prefills the answer: its LaTeX value when the
+// blank is a value slot (`f(x) = {{f}}`), otherwise just its name.
+export function textQuestions(body, vars = [], latexOf = (v) => v.name) {
+  const byName = vars instanceof Map ? vars : new Map(vars.map((v) => [v.name, v]));
+  const math = [...body.matchAll(/\$\$[^$]*\$\$|\$[^$\n]*\$/g)].map((m) => [m.index, m.index + m[0].length]);
+  const inMath = (i) => math.some(([a, b]) => i > a && i < b);
+  const seen = new Map();
+  for (const m of body.matchAll(/\{\{\s*([^{}\n]+?)\s*\}\}/g)) {
+    const label = m[1];
+    if (label.startsWith("_") || !/^[A-Za-z][\w']{0,9}$/.test(label)) continue;
+    const q = seen.get(label) || { key: label, label, math: false, valueSlot: false };
+    q.math ||= inMath(m.index);
+    q.valueSlot ||= /=\s*$/.test(body.slice(0, m.index));
+    seen.set(label, q);
+  }
+  return [...seen.values()].filter((q) => q.math).map((q) => {
+    const v = byName.get(q.label);
+    return { key: q.key, label: q.label, from: v ? v.name : null, value: v ? (q.valueSlot ? latexOf(v) : v.name) : "" };
+  });
+}
+
+// Puts the form's answers into the body. Empty answers stay {{blanks}}.
+export function fillTextAnswers(body, answers) {
+  return body.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (all, label) => (answers[label] ? answers[label] : all));
 }
