@@ -56,3 +56,10 @@
 
 .mac-vars { display: flex; flex-direction: column; gap: 0.25em; }
 .mac-vars-row .math-block { margin: 0.2em 0; }
+
+.mac-inputs-syms { color: var(--text-muted); font-size: var(--font-ui-small); margin-bottom: 0.5em; }
+.mac-inputs-field { width: 22em; font-family: var(--font-monospace); }
+.mac-inputs-error { color: var(--text-error); min-height: 1.4em; font-size: var(--font-ui-small); }
+.mac-inputs-help { color: var(--text-faint); font-size: var(--font-ui-smaller); }
+.mac-shake { animation: mac-shake 0.3s; }
+@keyframes mac-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { parsePySnippets, buildPySnippet } from "../src/pysnippets.js";
+import { parsePySnippets, buildPySnippet, snippetQuestions } from "../src/pysnippets.js";
 import { parseVars } from "../src/vars.js";
 
 const md = fs.readFileSync(new URL("../src/py-snippets.md", import.meta.url), "utf8");
@@ -42,7 +42,11 @@ for (const s of snippets) {
   const variants = s.all;
   for (const v of variants) {
     const vars = v.syms.length >= 2 ? TWO : ONE;
-    const { text } = buildPySnippet(v, { vars });
+    // Same path as the inputs form: the form's prefilled answers (vars + @ex,
+    // point-like ones sized to the variables) go in as typed answers.
+    const { questions } = snippetQuestions(v, { vars });
+    const answers = Object.fromEntries(questions.map((q) => [q.key, q.value]));
+    const { text } = buildPySnippet(v, { vars, answers });
     let code = text.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (m, label) => {
       if (label in v.examples) return v.examples[label];
       throw new Error(`\\${s.name} [${v.label}]: no @ex for placeholder "${label}"`);

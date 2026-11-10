@@ -4,6 +4,7 @@ import {
   Setting,
   EditorSuggest,
   SuggestModal,
+  Modal,
   TFile,
   Notice,
   renderMath,
@@ -23,7 +24,7 @@ import IMO26_REFS from "./refs/imo26.json";
 import { parseRefQuery, rankRefs, formatRef, kindLabel } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
 import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, PY_LANGS } from "./vars.js";
-import { parsePySnippets, buildPySnippet, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
+import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
 import PY_SNIPPETS_MD from "./py-snippets.md";
 
 const PY_SNIPPETS = parsePySnippets(PY_SNIPPETS_MD);
@@ -77,9 +78,96 @@ class PySnippetSuggest extends EditorSuggest {
     const picks = this.plugin.settings.templatePicks;
     picks["py:" + t.name] = (picks["py:" + t.name] || 0) + 1;
     this.plugin.saveSettings();
-    const insert = (v) => insertTemplate(editor, start, end, buildPySnippet(v, state).text);
+    const put = (v, answers) => insertTemplate(editor, start, end, buildPySnippet(v, { ...state, answers }).text);
+    const insert = (v) => {
+      const { questions } = snippetQuestions(v, state);
+      if (!this.plugin.settings.askInputs || !questions.length) return put(v, {});
+      new InputsModal(this.plugin, t.name, v, state, questions, (answers) => put(v, answers)).open();
+    };
     if (t.all.length > 1) new RouteModal(this.plugin, { ...t, name: "py:" + t.name, variants: t.all }, insert).open();
     else insert(t.all[0]);
+  }
+}
+
+// Asks for everything a Python snippet needs (prefilled from the note's vars
+// and sensible defaults) so it inserts complete, with nothing left to replace.
+export class InputsModal extends Modal {
+  constructor(plugin, name, route, state, questions, onDone) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.name = name;
+    this.route = route;
+    this.state = state;
+    this.questions = questions;
+    this.onDone = onDone;
+    this.answers = Object.fromEntries(questions.map((q) => [q.key, q.value]));
+    this.touched = new Set();
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("mac-inputs");
+    this.setTitle?.(`\\${this.name}${this.route.label ? ": " + this.route.label : ""}`);
+    if (!this.setTitle) contentEl.createEl("h3", { text: `\\${this.name}` });
+    this.symsEl = contentEl.createDiv({ cls: "mac-inputs-syms" });
+    this.fields = new Map();
+    for (const q of this.questions) {
+      const s = new Setting(contentEl).setName(q.label);
+      s.setDesc(q.from ? `from @${q.from} in your vars block` : q.hint ? `e.g. ${q.hint}` : "");
+      s.addText((t) => {
+        t.setValue(q.value).setPlaceholder(q.hint || "");
+        t.inputEl.addClass("mac-inputs-field");
+        t.onChange((val) => {
+          this.answers[q.key] = val;
+          this.touched.add(q.key);
+          this.refresh(q.key);
+        });
+        t.inputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); this.submit(); }
+        });
+        this.fields.set(q.key, t);
+      });
+    }
+    this.errorEl = contentEl.createDiv({ cls: "mac-inputs-error" });
+    new Setting(contentEl)
+      .addButton((b) => b.setButtonText("Leave blanks as Tab stops").onClick(() => this.submit(true)))
+      .addButton((b) => b.setButtonText("Insert").setCta().onClick(() => this.submit()));
+    contentEl.createDiv({ cls: "mac-inputs-help", text: "Type LaTeX or Python: x^2 + 3xy, \\frac{1}{2}, [1, 2, 3], (1, 1). Enter inserts, Esc cancels." });
+    this.refresh(null);
+    const first = this.fields.get(this.questions[0].key);
+    setTimeout(() => { first.inputEl.focus(); first.inputEl.select(); }, 0);
+  }
+
+  // Live: the variables found, untouched point-like defaults resized to them,
+  // and a warning when a point has the wrong number of values.
+  refresh(changed) {
+    const ctx = { vars: this.state.vars, before: this.state.before };
+    const { syms } = checkAnswers(this.route, ctx, this.answers);
+    if (changed !== null) {
+      for (const q of this.questions) {
+        if (q.type !== "placeholder" || this.touched.has(q.key)) continue;
+        const resized = sizeDefault(this.route.examples[q.key], q.key, syms.length);
+        if (resized != null && resized !== this.answers[q.key]) {
+          this.answers[q.key] = resized;
+          this.fields.get(q.key).setValue(resized);
+        }
+      }
+    }
+    const { error } = checkAnswers(this.route, ctx, this.answers);
+    this.symsEl.setText(syms.length ? `Variables: ${syms.join(", ")}` : "");
+    this.errorEl.setText(error || "");
+    this.error = error;
+  }
+
+  submit(keepBlanks = false) {
+    if (!keepBlanks && this.error) { this.errorEl.addClass("mac-shake"); setTimeout(() => this.errorEl.removeClass("mac-shake"), 300); return; }
+    const answers = keepBlanks ? Object.fromEntries(Object.entries(this.answers).filter(([k]) => this.touched.has(k) || this.questions.find((q) => q.key === k).from)) : this.answers;
+    this.close();
+    this.onDone(answers);
+  }
+
+  onClose() {
+    this.contentEl.empty();
   }
 }
 
@@ -145,6 +233,7 @@ const DEFAULT_SETTINGS = {
   varsEnabled: true,
   pythonStyle: "sympy",
   pythonEnabled: true,
+  askInputs: true,
 };
 
 // @name inserts a variable from the note's ```vars block: LaTeX in math,
@@ -698,6 +787,11 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Python snippets and completion")
       .setDesc("Inside ```python blocks: \\hessian, \\kkt, \\intersection, \\gauss, ... insert a whole computation with this note's variables already filled in, and sp. / np. / plt. complete with what your notes use most.")
       .addToggle((t) => t.setValue(s.pythonEnabled).onChange(async (v) => { s.pythonEnabled = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Ask for inputs first")
+      .setDesc("After picking a snippet (\\gradient, \\hessian, ...), a form asks for everything it needs (function, point, direction, ...), prefilled from your vars block, and inserts finished code. Off: insert with Tab stops instead.")
+      .addToggle((t) => t.setValue(s.askInputs).onChange(async (v) => { s.askInputs = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
 

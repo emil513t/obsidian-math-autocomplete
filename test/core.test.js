@@ -37,6 +37,29 @@ test("python snippets use the note's variables", async () => {
   // No variable at all: a Tab placeholder.
   assert.ok(/A = \{\{A: \[\[1, 2\], \[3, 4\]\]\}\}/.test(buildPySnippet(posdef, {}).text));
 
+  // Inputs form: every question prefilled, point sized to the variables.
+  const { snippetQuestions, checkAnswers, answerToPy, sizeDefault } = await import("../src/pysnippets.js");
+  const grad = all.find((s) => s.name === "gradient").all[0];
+  const three = parseVars("```vars\nf = x^2 + yz + sin(z)\n```\n");
+  const q = snippetQuestions(grad, { vars: three });
+  assert.deepEqual(q.syms, ["x", "y", "z"]);
+  assert.deepEqual(q.questions.map((x) => [x.key, x.value, x.from]), [
+    ["f", "x^2 + yz + sin(z)", "f"], ["point", "[1, 1, 1]", null], ["direction", "[1, 0, 0]", null]]);
+  const filled = buildPySnippet(grad, { vars: three, answers: { f: "x^2 + yz + sin(z)", point: "(1, 2, \\frac{1}{2})", direction: "[0, 1, 0]" } }).text;
+  assert.ok(!filled.includes("{{"), filled);
+  assert.ok(filled.includes("[1, 2, sp.Rational(1, 2)]") && filled.includes("sp.Matrix([0, 1, 0])"), filled);
+  // Typed f with no vars block: its symbols come from what was typed.
+  const typed = buildPySnippet(grad, { answers: { f: "a^2 b + e^{c}", point: "[1, 1, 1]", direction: "[1, 0, 0]" } });
+  assert.deepEqual(typed.syms, ["a", "b", "c"]);
+  assert.ok(typed.text.includes("f = a**2*b + sp.E**c"), typed.text);
+  assert.equal(checkAnswers(grad, { vars: three }, { f: "", point: "[1, 1]", direction: "" }).error, "There are 3 variables (x, y, z), but point has 2 values.");
+  assert.equal(checkAnswers(grad, { vars: three }, { f: "", point: "[1, 1, 1,]", direction: "" }).error, null);
+  assert.equal(answerToPy("sp.Matrix([1, 2])"), "sp.Matrix([1, 2])");
+  assert.equal(answerToPy("(x + 1)"), "(x + 1)");
+  assert.equal(answerToPy("\\begin{pmatrix} 1 \\\\ 2 \\end{pmatrix}"), "[1, 2]");
+  assert.equal(sizeDefault("[0, 0]", "point", 3), "[0, 0, 0]");
+  assert.equal(sizeDefault("2", "point", 3), "2");
+
   assert.equal(codeBlockBefore("text\n```python\nimport numpy as np\nx = 1\n\\hes"), "import numpy as np\nx = 1");
   assert.deepEqual([...definedNames("x, y = 1, 2\ndef f(t):\n  return t\nfor k in range(3): pass")].sort(), ["f", "k", "x", "y"]);
   assert.deepEqual(freeSymbols("sp.sin(x)**2 + a*y + sp.pi"), ["x", "a", "y"]);

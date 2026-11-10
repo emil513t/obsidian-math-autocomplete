@@ -13,7 +13,7 @@
 // symbol; {{label}} is a Tab placeholder.
 
 import { parseTemplates } from "./templates.js";
-import { toPython } from "./vars.js";
+import { toPython, parseValue, splitTop, latexToPy } from "./vars.js";
 
 const IMPORTS = {
   sympy: "import sympy as sp",
@@ -124,7 +124,9 @@ function replaceName(body, from, to) {
 // Returns the body with an import / symbols / variables header, and the
 // variables it used: [{ input, var }].
 // s: one route from parsePySnippets (s.all[i]), or the snippet itself.
-export function buildPySnippet(s, { vars = new Map(), before = "" } = {}) {
+// answers: { name or placeholder label: typed text } from the inputs form;
+// an empty or missing answer falls back to the note's vars / a Tab placeholder.
+export function buildPySnippet(s, { vars = new Map(), before = "", answers = {} } = {}) {
   let body = s.body;
   const defined = definedNames(before);
   const style = s.uses.includes("sympy") ? "sympy" : s.uses.includes("numpy") ? "numpy" : "plain";
@@ -142,6 +144,16 @@ export function buildPySnippet(s, { vars = new Map(), before = "" } = {}) {
 
   for (const inp of s.inputs) {
     if (defined.has(inp.name)) continue; // already in the code above: reuse it
+    const typed = (answers[inp.name] ?? "").trim();
+    if (typed) {
+      const py = typedInput(inp, typed, style);
+      defs.push(`${inp.name} = ${py}`);
+      used.push({ input: inp.name, var: inp.name, typed: true });
+      if (inp.kind !== "set" && inp.kind !== "any") {
+        for (const n of freeSymbols(py)) if (!vars.has(n) && !syms.includes(n)) syms.push(n);
+      }
+      continue;
+    }
     // Same name first (A for A), else the first unused variable of the right
     // kind that isn't meant for another input of this snippet.
     const same = vars.get(inp.name);
@@ -181,8 +193,130 @@ export function buildPySnippet(s, { vars = new Map(), before = "" } = {}) {
 
   const symList = `[${syms.join(", ")}]`;
   body = body.replace(/\$SYMS\b/g, symList).replace(/\$SYM\b/g, syms[0] || "x");
+  body = body.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (m, label) => {
+    const typed = (answers[label] ?? "").trim();
+    return typed ? answerToPy(typed, style) : m;
+  });
   const text = [...header, ...defs, ...(header.length || defs.length ? [""] : []), body].join("\n").replace(/\n{3,}/g, "\n\n");
   return { text, used, syms };
+}
+
+// ---------- the inputs form: ask for everything before inserting ----------
+
+const PY_ONLY = /\b(sp|np|plt|opt|si|math|torch)\.|\*\*|==|<=|>=|!=|\blambda\b|\bfor\b|\brange\(|["']/;
+const POINTISH = /point|direction|x0|start/i;
+
+// A typed value (LaTeX or Python) as a Python expression. Lists and (a, b)
+// tuples are converted element by element; Python is kept as it is.
+export function answerToPy(text, style = "sympy") {
+  const t = text.trim();
+  if (PY_ONLY.test(t)) return t;
+  const lib = style === "numpy" ? "np" : style === "plain" ? "math" : "sp";
+  const list = listItems(t);
+  if (list) return `[${list.map((x) => answerToPy(x, style)).join(", ")}]`;
+  if (/^-?\d+(\.\d+)?$/.test(t)) return t;
+  return latexToPy(t, lib);
+}
+
+// [a, b, c] / (a, b, c) / \begin{pmatrix} a \\ b \end{pmatrix} -> ["a", "b", "c"]; else null.
+function listItems(t) {
+  const env = t.match(/^\\begin\{[pbv]?matrix\}([\s\S]*)\\end\{[pbv]?matrix\}$/);
+  if (env) {
+    const rows = splitTop(env[1], "\\\\").filter((r) => r.trim());
+    if (rows.length > 1 && rows.every((r) => splitTop(r, "&").length === 1)) return rows.map((r) => r.trim());
+    const cols = rows.length === 1 ? splitTop(rows[0], "&") : null;
+    return cols && cols.length > 1 ? cols : null;
+  }
+  const br = t.match(/^\[([\s\S]*)\]$/) || t.match(/^\(([\s\S]*)\)$/);
+  if (!br || !balancedPair(t)) return null;
+  const items = splitTop(br[1], ",").filter((x) => x !== "");
+  if (t.startsWith("(") && items.length < 2) return null; // (x + 1) is just brackets
+  return items;
+}
+
+function balancedPair(t) {
+  let depth = 0;
+  for (let i = 0; i < t.length; i++) {
+    if ("([{".includes(t[i])) depth++;
+    else if (")]}".includes(t[i])) depth--;
+    if (depth === 0 && i < t.length - 1) return false;
+  }
+  return depth === 0;
+}
+
+function typedInput(inp, typed, style) {
+  if (inp.kind === "any" || PY_ONLY.test(typed)) return typed;
+  if (inp.kind === "set" || inp.kind === "list" || inp.kind === "points") {
+    const items = listItems(typed.replace(/^\{([\s\S]*)\}$/, "[$1]"));
+    if (items) {
+      const py = items.map((x) => answerToPy(x, style));
+      if (inp.kind === "set") return `{${py.join(", ")}}`;
+      if (inp.kind === "points") return `[${py.map((p) => p.startsWith("[") ? `(${p.slice(1, -1)})` : p).join(", ")}]`;
+      return `[${py.join(", ")}]`;
+    }
+  }
+  const v = parseValue(inp.name, typed);
+  return v ? pyValue(v, inp.kind, style) : typed;
+}
+
+// The note-side text of a vars variable, to prefill the form.
+function sourceText(v) {
+  if (v.kind === "scalar") return v.value;
+  if (v.kind === "vector") return `[${v.value.join(", ")}]`;
+  return `[${v.value.map((r) => `[${r.join(", ")}]`).join(", ")}]`;
+}
+
+// Resize a point-like default ([1, 1]) to the number of variables.
+export function sizeDefault(example, label, n) {
+  if (example == null || !POINTISH.test(label) || n < 2) return example;
+  const items = listItems(example.trim());
+  if (!items || items.length === n || items.some((x) => listItems(x))) return example;
+  const same = items.every((x) => x === items[0]);
+  const out = Array.from({ length: n }, (_, i) => items[i] ?? (same ? items[0] : "0"));
+  return `[${out.join(", ")}]`;
+}
+
+// Everything route `s` needs answered to insert with no blanks left:
+// its inputs (prefilled from the note's vars) and its {{placeholders}}
+// (prefilled from @ex, point-like ones sized to the variables).
+export function snippetQuestions(s, { vars = new Map(), before = "" } = {}) {
+  const defined = definedNames(before);
+  const { used, syms } = buildPySnippet(s, { vars, before });
+  const questions = [];
+  for (const inp of s.inputs) {
+    if (defined.has(inp.name)) continue;
+    const u = used.find((x) => x.input === inp.name);
+    const v = u && vars.get(u.var);
+    questions.push({
+      key: inp.name, type: "input", kind: inp.kind, label: inp.name,
+      value: v ? sourceText(v) : "", from: v ? v.name : null,
+      hint: inp.hint || KIND_HINT[inp.kind] || "value",
+    });
+  }
+  const seen = new Set();
+  for (const m of s.body.matchAll(/\{\{\s*([^{}\n]+?)\s*\}\}/g)) {
+    const label = m[1];
+    if (seen.has(label)) continue;
+    seen.add(label);
+    const ex = s.examples[label];
+    questions.push({ key: label, type: "placeholder", label, value: sizeDefault(ex, label, syms.length) ?? "", from: null, hint: ex ?? "" });
+  }
+  return { questions, syms };
+}
+
+// Problems with the answers: a point with the wrong number of coordinates.
+// Returns { syms, error } (error null when fine).
+export function checkAnswers(s, ctx, answers) {
+  const { syms } = buildPySnippet(s, { ...ctx, answers });
+  if (syms.length < 2) return { syms, error: null };
+  for (const [label, text] of Object.entries(answers)) {
+    if (!POINTISH.test(label) || !text.trim() || s.inputs.some((i) => i.name === label)) continue;
+    const items = listItems(text.trim());
+    if (items && !items.some((x) => listItems(x)) && items.length !== syms.length) {
+      return { syms, error: `There are ${syms.length} variables (${syms.join(", ")}), but ${label} has ${items.length} value${items.length === 1 ? "" : "s"}.` };
+    }
+  }
+  return { syms, error: null };
 }
 
 // x, y, z first, then the rest alphabetically: matches how notes write them.
