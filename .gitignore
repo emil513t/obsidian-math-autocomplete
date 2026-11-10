@@ -4,3 +4,4 @@ dist/
 # IMO26 book text (copyrighted) stays local
 docs/imo26-coverage/ex.json
 docs/imo26-coverage/COVERAGE.md
+__pycache__/
