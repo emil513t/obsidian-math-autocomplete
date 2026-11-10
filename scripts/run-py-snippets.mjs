@@ -47,7 +47,7 @@ for (const s of snippets) {
       if (label in v.examples) return v.examples[label];
       throw new Error(`\\${s.name} [${v.label}]: no @ex for placeholder "${label}"`);
     });
-    const plots = v.uses.includes("plt");
+    const plots = v.uses.includes("plt") || v.uses.includes("torch");
     const file = path.join(dir, `${s.name}-${variants.indexOf(v)}.py`);
     fs.writeFileSync(file, code);
     const args = plots ? ["-m", "py_compile", file] : ["-I", file];

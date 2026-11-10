@@ -5,7 +5,7 @@
 // Snippet file format (src/py-snippets.md), same as the text templates plus
 // directive lines in the intro:
 //   ## \hessian — Hessian matrix and definiteness (Def 8.2)
-//   @uses sympy              imports: sympy | numpy | plt | scipy | itertools
+//   @uses sympy              imports: sympy | numpy | plt | scipy | itertools | torch
 //   @in f expr               an input: name + kind (expr, matrix, vector, set, number, any)
 //   @sym x y                 default symbols when no variable says otherwise
 //   ### route label          optional solution routes, as in the text templates
@@ -22,6 +22,7 @@ const IMPORTS = {
   scipy: "import scipy.optimize as opt",
   integrate: "import scipy.integrate as si",
   itertools: "import itertools",
+  torch: "import torch",
 };
 
 const KIND_HINT = {

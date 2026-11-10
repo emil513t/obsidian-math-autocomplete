@@ -546,6 +546,63 @@ print("gradf(point) =", list(grad.subs(pt)))
 d = sp.Matrix({{direction}})
 print("directional derivative along d/|d|:", sp.simplify((grad.subs(pt).T*d)[0]/d.norm()))
 
+## \compgraph — computational graph of f, forward + backward pass, gradient by backpropagation
+### sympy: graph, forward pass, backward pass (by hand, every step printed)
+@uses sympy
+@in f expr
+@sym x y
+@ex point := [1, 1]
+syms = list($SYMS)
+pt = dict(zip(syms, {{point}}))
+order, name, k = [], {}, 0
+def visit(e):
+    global k
+    if e in name or e.is_Number:
+        return
+    for a in e.args:
+        visit(a)
+    if e.is_Symbol:
+        name[e] = str(e)
+    else:
+        k += 1
+        name[e] = "v%d" % k
+    order.append(e)
+visit(f)
+show = lambda a: sp.Symbol(name[a]) if a in name else a
+print("Computational graph, forward pass at", {{point}})
+for e in order:
+    if e.is_Symbol:
+        print(f"  {name[e]} = {e.subs(pt)}   (input)")
+    else:
+        print(f"  {name[e]} = {e.func(*[show(a) for a in e.args], evaluate=False)} = {e.subs(pt)}   ({e.func.__name__})")
+print("f =", name[f], "=", f.subs(pt))
+adj = {e: sp.Integer(0) for e in order}
+adj[f] = sp.Integer(1)
+print("Backward pass, adjoint adj[v] = df/dv, chain rule from f down to the inputs:")
+for e in reversed(order):
+    if e.is_Symbol:
+        continue
+    ds = [sp.Dummy() for _ in e.args]
+    for i, a in enumerate(e.args):
+        if a.is_Number:
+            continue
+        local = sp.diff(e.func(*ds), ds[i]).subs(dict(zip(ds, e.args))).subs(pt)
+        adj[a] += adj[e] * local
+        print(f"  d{name[e]}/d{name[a]} = {local}   adj[{name[a]}] += {adj[e]}*{local}")
+print("gradf(point) by backpropagation =", [adj.get(s, 0) for s in syms])
+print("check: gradf =", [sp.diff(f, s) for s in syms], "->", [sp.diff(f, s).subs(pt) for s in syms])
+### pytorch: autograd (run in Google Colab)
+@uses sympy torch
+@in f expr
+@sym x y
+@ex point := [1, 1]
+f_t = sp.lambdify($SYMS, f, modules=[{"sin": torch.sin, "cos": torch.cos, "exp": torch.exp, "log": torch.log, "sqrt": torch.sqrt}])
+inputs = [torch.tensor(float(c), requires_grad=True) for c in {{point}}]
+out = f_t(*inputs)
+out.backward()
+print("f(point) =", out.item())
+print("gradf(point) by torch autograd =", [t.grad.item() for t in inputs])
+
 ## \tangentplane — tangent plane of z = f(x, y) at a point
 @uses sympy
 @in f expr
