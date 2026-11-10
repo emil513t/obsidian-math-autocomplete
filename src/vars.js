@@ -219,6 +219,17 @@ function parseAtom(s, i, single) {
     return { node: { t: "num", v: m[0] }, i: i + m[0].length };
   }
   if (/[A-Za-z]/.test(c)) {
+    // Bare function names without a backslash (sin(c), exp(y), sqrt(x)),
+    // otherwise sin(c) would become s*i*n*c.
+    const fn = !single && s.slice(i).match(/^(arcsin|arccos|arctan|sinh|cosh|tanh|sin|cos|tan|exp|ln|log|sqrt)(?![A-Za-z_])/);
+    if (fn) {
+      i += fn[1].length;
+      if (fn[1] === "sqrt") {
+        const a = parseAtom(s, i, true);
+        return { node: { t: "sqrt", idx: null, arg: a.node }, i: a.i };
+      }
+      return { node: { t: "fn", v: FUNCS[fn[1]] }, i };
+    }
     let v = c;
     i++;
     if (!single && s[i] === "_") {

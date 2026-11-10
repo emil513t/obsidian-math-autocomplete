@@ -89,6 +89,8 @@ M = \begin{pmatrix}
   assert.equal(latexToPy(String.raw`\frac{\sqrt{2}}{2} \sin^2 x + 2(x+1)`), "sp.sqrt(2)/2*sp.sin(x)**2 + 2*(x + 1)");
   assert.equal(latexToPy(String.raw`e^{-x} \cdot \pi`), "sp.E**(-x)*sp.pi");
   assert.equal(latexToPy(String.raw`x^23`), "x**2*3");
+  assert.equal(latexToPy("a^2 + sin(c) + exp(y)"), "a**2 + sp.sin(c) + sp.exp(y)");
+  assert.equal(latexToPy("sqrt(x) + xyz"), "sp.sqrt(x) + x*y*z");
   assert.equal(latexToPy(String.raw`\frac{a+1}{b}`, "np"), "(a + 1)/b");
 
   assert.equal(fenceLanguage("a\n```python\nx = "), "python");
