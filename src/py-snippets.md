@@ -591,6 +591,16 @@ for e in reversed(order):
         print(f"  d{name[e]}/d{name[a]} = {local}   adj[{name[a]}] += {adj[e]}*{local}")
 print("gradf(point) by backpropagation =", [adj.get(s, 0) for s in syms])
 print("check: gradf =", [sp.diff(f, s) for s in syms], "->", [sp.diff(f, s).subs(pt) for s in syms])
+print()
+print("Drawn graph: copy the lines below into a mermaid code block in the note")
+print("graph LR")
+for e in order:
+    label = str(e) if e.is_Symbol else f"{name[e]} = {e.func(*[show(a) for a in e.args], evaluate=False)}"
+    print(f'  n_{name[e]}["{label}<br/>value {e.subs(pt)}, adj {adj[e]}"]')
+for e in order:
+    for a in e.args:
+        if a in name:
+            print(f"  n_{name[a]} --> n_{name[e]}")
 ### pytorch: autograd (run in Google Colab)
 @uses sympy torch
 @in f expr

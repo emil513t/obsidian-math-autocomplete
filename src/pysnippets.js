@@ -201,6 +201,114 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {} 
   return { text, used, syms };
 }
 
+// ---------- finding a snippet by the words an exercise uses ----------
+
+// Extra words people (and exercise texts) use for each snippet.
+export const KEYWORDS = {
+  compgraph: "computational graph computation graph backpropagation backprop back propagation autodiff automatic differentiation autograd reverse mode forward pass backward pass pytorch torch neural network chain rule adjoint",
+  gradient: "nabla grad partial derivatives partials directional derivative steepest at a point",
+  hessian: "second derivatives second order partials definiteness at a point",
+  jacobian: "derivative matrix total derivative differential",
+  chainrule: "composite composition derivative",
+  derivative: "differentiate diff slope tangent line rate of change",
+  tangentplane: "linear approximation linearization",
+  critxy: "stationary points saddle point local minimum maximum extrema extremum two variables classify",
+  crit: "stationary points local minimum maximum extrema extremum",
+  evt: "extreme value theorem global maximum minimum closed interval",
+  lagrange: "constraint constrained multiplier multipliers optimization equality",
+  kkt: "karush kuhn tucker inequality constraints constrained optimization",
+  compactopt: "compact set global max min boundary",
+  convexopt: "constrained minimum numeric optimize scipy",
+  newtonopt: "minimize newton optimization",
+  newton: "newton raphson root finding numeric",
+  ivt: "intermediate value theorem bisection root",
+  mvt: "mean value theorem",
+  lhopital: "hopital l'hopital indeterminate",
+  taylor: "approximation expansion polynomial series maclaurin",
+  limit: "lim limits",
+  continuous: "continuity",
+  integral: "integrate antiderivative double integral area under",
+  area: "between curves",
+  sum: "series summation sigma",
+  solve: "equation inequality solutions",
+  simplify: "factor expand partial fractions",
+  subs: "evaluate plug in value at point",
+  gauss: "gaussian elimination row reduce reduction rref echelon linear system equations",
+  linsolve: "linear system equations solve ax b",
+  matinv: "inverse invert matrix",
+  det: "determinant cofactor",
+  rank: "null space kernel column space image dimension basis",
+  eigen: "eigenvalues eigenvectors diagonalize diagonalization characteristic polynomial",
+  posdef: "positive definite semidefinite negative indefinite symmetric",
+  quadform: "quadratic form",
+  matmul: "matrix multiplication product transpose power",
+  dot: "dot product inner product norm length angle orthogonal",
+  projection: "project orthogonal projection",
+  gramschmidt: "gram schmidt orthonormal basis orthogonalize",
+  leastsquares: "least squares regression best fit line linear regression",
+  lp: "linear programming linprog simplex optimize",
+  fm: "fourier motzkin elimination",
+  convexset: "convex set",
+  convexfn: "convex function convexity",
+  strictconvex: "strictly convex",
+  line: "line through points parametric",
+  svm: "support vector machine margin hyperplane classifier",
+  perceptron: "classifier linear separable",
+  truthtable: "truth table logic proposition",
+  equivalent: "logically equivalent logic",
+  sets: "set union intersection difference subset",
+  cartesian: "cartesian product power set",
+  setbuilder: "set builder",
+  intersection: "intersect meet where",
+  injective: "one to one injection",
+  surjective: "onto surjection",
+  inversefn: "inverse function",
+  composition: "compose composite function",
+  preimage: "inverse image",
+  sumind: "induction proof sum formula",
+  polydiv: "polynomial division long division remainder",
+  roots: "zeros factor polynomial",
+  interpolate: "interpolation polynomial through points",
+  monotone: "increasing decreasing monotonic",
+  plot: "plot graph draw curve function",
+  contour: "contour level curves level sets",
+  region: "shade region feasible inequalities",
+  lambdify: "numpy function fast numeric",
+  implicit: "implicit differentiation dy dx",
+};
+
+// Rank snippets for a query of one or more words: \compg, \computational graph,
+// \gradient at point. Every word must appear in the name, description or
+// keywords; name-prefix matches come first.
+export function rankPySnippets(query, snippets, picks = {}) {
+  const q = query.toLowerCase().trim();
+  const words = q.split(/[\s-]+/).filter(Boolean).filter((w) => !STOP.has(w) || q.split(/\s+/).length === 1);
+  return snippets
+    .map((t, i) => {
+      const n = t.name.toLowerCase();
+      const hay = `${n} ${t.desc.toLowerCase()} ${KEYWORDS[t.name] || ""}`;
+      let score = 0;
+      if (!q) score = 1;
+      else if (!q.includes(" ") && n.startsWith(q)) score = t.name.startsWith(query) ? 6 : 5;
+      else if (words.length && fitsWords(words, hay, n)) {
+        score = 1 + (n.startsWith(words[0]) ? 2 : 0) + words.filter((w) => (KEYWORDS[t.name] || "").includes(w) || t.desc.toLowerCase().includes(w)).length / 10;
+        if (hay.includes(q)) score += 1; // the whole phrase, e.g. "computational graph"
+      }
+      return { t, i, score, picked: picks[t.name] || 0 };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || b.picked - a.picked || a.i - b.i)
+    .map((x) => x.t);
+}
+
+// Every word matches, or all but one when the query has 3+ words.
+function fitsWords(words, hay, n) {
+  const hit = words.filter((w) => (w.length >= 2 ? hay.includes(w) : n.startsWith(w))).length;
+  return hit === words.length || (words.length >= 3 && hit >= words.length - 1);
+}
+
+const STOP = new Set(["of", "the", "a", "an", "at", "in", "for", "to", "and", "with", "on", "by", "is", "f", "x", "y"]);
+
 // ---------- the inputs form: ask for everything before inserting ----------
 
 const PY_ONLY = /\b(sp|np|plt|opt|si|math|torch)\.|\*\*|==|<=|>=|!=|\blambda\b|\bfor\b|\brange\(|["']/;

@@ -59,6 +59,12 @@ test("python snippets use the note's variables", async () => {
   assert.equal(answerToPy("\\begin{pmatrix} 1 \\\\ 2 \\end{pmatrix}"), "[1, 2]");
   assert.equal(sizeDefault("[0, 0]", "point", 3), "[0, 0, 0]");
   assert.equal(sizeDefault("2", "point", 3), "2");
+  // Found by the words an exercise uses, spaces allowed.
+  const { rankPySnippets } = await import("../src/pysnippets.js");
+  for (const [q, want] of [["computational graph", "compgraph"], ["backprop", "compgraph"], ["partial derivatives", "gradient"],
+    ["gradient at point", "gradient"], ["solve linear system", "gauss"], ["saddle point", "critxy"], ["hess", "hessian"]]) {
+    assert.equal(rankPySnippets(q, all)[0]?.name, want, q);
+  }
 
   assert.equal(codeBlockBefore("text\n```python\nimport numpy as np\nx = 1\n\\hes"), "import numpy as np\nx = 1");
   assert.deepEqual([...definedNames("x, y = 1, 2\ndef f(t):\n  return t\nfor k in range(3): pass")].sort(), ["f", "k", "x", "y"]);

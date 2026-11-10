@@ -24,7 +24,7 @@ import IMO26_REFS from "./refs/imo26.json";
 import { parseRefQuery, rankRefs, formatRef, kindLabel } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
 import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, PY_LANGS } from "./vars.js";
-import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
+import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, rankPySnippets, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
 import PY_SNIPPETS_MD from "./py-snippets.md";
 
 const PY_SNIPPETS = parsePySnippets(PY_SNIPPETS_MD);
@@ -46,7 +46,8 @@ class PySnippetSuggest extends EditorSuggest {
   onTrigger(cursor, editor) {
     if (!this.plugin.settings.pythonEnabled) return null;
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
-    const m = before.match(/(?:^|[\s(=,])\\([a-zA-Z]*)$/);
+    // Words with spaces too: \computational graph, \gradient at point.
+    const m = before.match(/(?:^|[\s(=,])\\([a-zA-Z][a-zA-Z0-9' -]{0,50}|)$/);
     if (!m) return null;
     const docBefore = inPython(editor, cursor);
     if (docBefore === null) return null;
@@ -685,7 +686,7 @@ export default class MathAutocompletePlugin extends Plugin {
   rankPySnippets(query) {
     const picks = Object.fromEntries(Object.entries(this.settings.templatePicks)
       .filter(([k]) => k.startsWith("py:")).map(([k, n]) => [k.slice(3), n]));
-    return rankTemplates(query, PY_SNIPPETS, picks);
+    return rankPySnippets(query, PY_SNIPPETS, picks);
   }
 
   rankTemplates(query) {
