@@ -61,6 +61,10 @@ const ALIGN_VARIANTS = [
 ];
 
 // Environment name if `insert` is a bare environment template we can fill.
+export function isMatrixEnv(env) {
+  return MATRIX_ENVS.has(env);
+}
+
 export function envOf(insert) {
   const m = insert.match(/^\\begin\{(\w+)\}  \\end\{\1\}$/);
   return m ? m[1] : null;

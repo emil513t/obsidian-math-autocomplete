@@ -21,6 +21,110 @@ import DEFAULT_TEMPLATES_MD from "./default-templates.md";
 import IMO26_TEMPLATES_MD from "./imo26-templates.md";
 import IMO26_REFS from "./refs/imo26.json";
 import { parseRefQuery, rankRefs, formatRef, kindLabel } from "./refs.js";
+import { envOf, isMatrixEnv } from "./variants.js";
+import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, PY_LANGS } from "./vars.js";
+import { parsePySnippets, buildPySnippet, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
+import PY_SNIPPETS_MD from "./py-snippets.md";
+
+const PY_SNIPPETS = parsePySnippets(PY_SNIPPETS_MD);
+
+function inPython(editor, cursor) {
+  const docBefore = editor.getRange({ line: 0, ch: 0 }, cursor);
+  return PY_LANGS.has(fenceLanguage(docBefore) ?? "") ? docBefore : null;
+}
+
+// \hessian, \kkt, \intersection, ... inside ```python: a whole computation,
+// with the note's ```vars variables filled in as its inputs.
+class PySnippetSuggest extends EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.limit = 40;
+  }
+
+  onTrigger(cursor, editor) {
+    if (!this.plugin.settings.pythonEnabled) return null;
+    const before = editor.getLine(cursor.line).slice(0, cursor.ch);
+    const m = before.match(/(?:^|[\s(=,])\\([a-zA-Z]*)$/);
+    if (!m) return null;
+    const docBefore = inPython(editor, cursor);
+    if (docBefore === null) return null;
+    if (!this.plugin.rankPySnippets(m[1]).length) return null;
+    this.state = { vars: parseVars(editor.getValue()), before: codeBlockBefore(docBefore) };
+    return { start: { line: cursor.line, ch: cursor.ch - m[1].length - 1 }, end: cursor, query: m[1] };
+  }
+
+  getSuggestions(ctx) {
+    return this.plugin.rankPySnippets(ctx.query);
+  }
+
+  renderSuggestion(t, el) {
+    el.addClass("mac-item", "mac-template");
+    const left = el.createDiv({ cls: "mac-left mac-template-left" });
+    const top = left.createDiv({ cls: "mac-template-top" });
+    top.createEl("code", { text: "\\" + t.name });
+    if (t.desc) top.createSpan({ cls: "mac-template-desc", text: t.desc });
+    if (t.all.length > 1) top.createSpan({ cls: "mac-tag", text: `${t.all.length} ways` });
+    const { used } = buildPySnippet(t.all[0], this.state);
+    if (used.length) top.createSpan({ cls: "mac-tag", text: "uses " + used.map((u) => "@" + u.var).join(", ") });
+    const snippet = t.all.length > 1 ? t.all.map((v) => v.label).join(" · ") : (t.body.split("\n").find((l) => l.trim()) || "");
+    left.createDiv({ cls: "mac-template-snippet", text: snippet });
+  }
+
+  selectSuggestion(t) {
+    const { editor, start, end } = this.context;
+    const state = this.state;
+    const picks = this.plugin.settings.templatePicks;
+    picks["py:" + t.name] = (picks["py:" + t.name] || 0) + 1;
+    this.plugin.saveSettings();
+    const insert = (v) => insertTemplate(editor, start, end, buildPySnippet(v, state).text);
+    if (t.all.length > 1) new RouteModal(this.plugin, { ...t, name: "py:" + t.name, variants: t.all }, insert).open();
+    else insert(t.all[0]);
+  }
+}
+
+// sp.<...>, np.<...>, np.linalg.<...>, plt.<...>: members ranked by how often
+// your notes use them.
+class PyMemberSuggest extends EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.limit = 20;
+  }
+
+  onTrigger(cursor, editor) {
+    if (!this.plugin.settings.pythonEnabled) return null;
+    const before = editor.getLine(cursor.line).slice(0, cursor.ch);
+    const m = before.match(/(?<![\w.])((?:sp|np|plt|opt|si)(?:\.(?:linalg|random))?)\.([A-Za-z_]\w*)$/);
+    if (!m) return null;
+    if (inPython(editor, cursor) === null) return null;
+    const list = rankMembers(m[1], m[2], this.plugin.pyCounts);
+    if (!list.length || (list.length === 1 && list[0].name === m[2])) return null;
+    this.lib = m[1];
+    return { start: { line: cursor.line, ch: cursor.ch - m[2].length }, end: cursor, query: m[2] };
+  }
+
+  getSuggestions(ctx) {
+    return rankMembers(this.lib, ctx.query, this.plugin.pyCounts);
+  }
+
+  renderSuggestion(item, el) {
+    el.addClass("mac-item");
+    const left = el.createDiv({ cls: "mac-left" });
+    left.createEl("code", { text: `${this.lib}.${item.name}${item.call ? "()" : ""}` });
+    if (item.uses) {
+      left.createSpan({ cls: "mac-uses", text: `${item.uses}×` });
+      left.createSpan({ cls: "mac-tag", text: "from your notes" });
+    }
+  }
+
+  selectSuggestion(item) {
+    const { editor, start, end } = this.context;
+    const text = item.name + (item.call ? "()" : "");
+    editor.replaceRange(text, start, end);
+    editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + item.name.length + (item.call ? 1 : 0)));
+  }
+}
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -38,7 +142,76 @@ const DEFAULT_SETTINGS = {
   routePicks: {},
   refNote: "",
   refPicks: {},
+  varsEnabled: true,
+  pythonStyle: "sympy",
+  pythonEnabled: true,
 };
+
+// @name inserts a variable from the note's ```vars block: LaTeX in math,
+// $name = ...$ in text, Python in python code blocks.
+class VarSuggest extends EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.limit = 30;
+  }
+
+  onTrigger(cursor, editor) {
+    if (!this.plugin.settings.varsEnabled) return null;
+    const before = editor.getLine(cursor.line).slice(0, cursor.ch);
+    const m = before.match(/(?:^|[^\w@])@([A-Za-z]\w*)?$/);
+    if (!m) return null;
+    const docBefore = editor.getRange({ line: 0, ch: 0 }, cursor);
+    const lang = fenceLanguage(docBefore);
+    let kind;
+    if (lang !== null) {
+      if (!PY_LANGS.has(lang)) return null;
+      kind = "python";
+    } else {
+      kind = cursorContext(docBefore);
+      if (kind === "code") return null;
+    }
+    const vars = parseVars(editor.getValue());
+    const query = m[1] || "";
+    if (!matchVars(vars, query).length) return null;
+    const startCh = cursor.ch - query.length - 1;
+    this.state = { kind, vars, atLineStart: before.slice(0, startCh).trim() === "" };
+    return { start: { line: cursor.line, ch: startCh }, end: cursor, query };
+  }
+
+  getSuggestions(ctx) {
+    return matchVars(this.state.vars, ctx.query);
+  }
+
+  renderSuggestion(v, el) {
+    el.addClass("mac-item");
+    const left = el.createDiv({ cls: "mac-left mac-template-left" });
+    const top = left.createDiv({ cls: "mac-template-top" });
+    top.createEl("code", { text: "@" + v.name });
+    top.createSpan({ cls: "mac-tag", text: v.kind === "matrix" ? `${v.value.length}×${v.value[0].length} matrix` : v.kind });
+    if (this.state.kind === "python") {
+      left.createDiv({ cls: "mac-template-snippet", text: toPython(v, this.plugin.settings.pythonStyle) });
+    }
+    if (!this.plugin.settings.showPreview) return;
+    const right = el.createDiv({ cls: "mac-preview" });
+    try {
+      right.appendChild(renderMath(`${latexName(v.name)} = ${toLatex(v)}`, false));
+      finishRenderMath();
+    } catch (_) {
+      // Preview is decoration only.
+    }
+  }
+
+  selectSuggestion(v) {
+    const { editor, start, end } = this.context;
+    const text = insertFor(v, this.state.kind, {
+      style: this.plugin.settings.pythonStyle,
+      atLineStart: this.state.atLineStart,
+    });
+    editor.replaceRange(text, start, end);
+    editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + text.length));
+  }
+}
 
 // Plain text (outside math and code): \proof, \showthat, ... templates and
 // book references (\def4.26, \thmcauchy, \ref convex function).
@@ -301,7 +474,18 @@ class MathSuggest extends EditorSuggest {
     this.plugin.recordPick(item.insert);
 
     if (item.kind !== "builtin" || !this.plugin.settings.askFill) return;
-    const fills = fillsFor(item.name, item.insert, this.plugin.stats.atoms);
+    let fills = fillsFor(item.name, item.insert, this.plugin.stats.atoms);
+    const env = envOf(item.insert);
+    if (fills && env && isMatrixEnv(env)) {
+      // The note's own matrices and vectors first: the exercise's values.
+      const mine = [...parseVars(editor.getValue()).values()]
+        .filter((v) => v.kind !== "scalar")
+        .map((v) => {
+          const t = toLatex(v, env);
+          return { id: "var:" + v.name, label: `${v.name} (this note's variable)`, text: t, cursor: t.length, preview: t };
+        });
+      fills = [...mine, ...fills];
+    }
     if (fills) new FillModal(this.plugin, editor, item.name, fills, from, text.length).open();
   }
 }
@@ -310,6 +494,8 @@ export default class MathAutocompletePlugin extends Plugin {
   async onload() {
     this.settings = Object.assign(structuredClone(DEFAULT_SETTINGS), await this.loadData());
     this.fileStats = new Map(); // path -> per-document counts
+    this.pyFileCounts = new Map(); // path -> lib.member counts in python blocks
+    this.pyCounts = new Map();
     this.stats = { cmds: new Map(), atoms: new Map() };
 
     this.buildDefaultTemplates();
@@ -317,6 +503,25 @@ export default class MathAutocompletePlugin extends Plugin {
 
     this.registerEditorSuggest(new MathSuggest(this));
     this.registerEditorSuggest(new TemplateSuggest(this));
+    this.registerEditorSuggest(new VarSuggest(this));
+    this.registerEditorSuggest(new PySnippetSuggest(this));
+    this.registerEditorSuggest(new PyMemberSuggest(this));
+
+    // Reading view: show the ```vars block as rendered math.
+    this.registerMarkdownCodeBlockProcessor("vars", (src, el) => {
+      const vars = parseBlock(src);
+      if (!vars.length) { el.createEl("pre", { text: src }); return; }
+      const box = el.createDiv({ cls: "mac-vars" });
+      for (const v of vars) {
+        const row = box.createDiv({ cls: "mac-vars-row" });
+        try {
+          row.appendChild(renderMath(`${latexName(v.name)} = ${toLatex(v)}`, true));
+        } catch (_) {
+          row.createEl("code", { text: `${v.name} = ${toLatex(v)}` });
+        }
+      }
+      finishRenderMath();
+    });
     this.registerEditorExtension(tabstopExtension);
     this.addSettingTab(new MathAutocompleteSettingTab(this));
 
@@ -346,20 +551,25 @@ export default class MathAutocompletePlugin extends Plugin {
         else rescan(f);
       }));
       this.registerEvent(this.app.vault.on("create", (f) => f instanceof TFile && f.path === this.settings.templatesFile && reloadTemplates()));
-      this.registerEvent(this.app.vault.on("delete", (f) => { this.fileStats.delete(f.path); this.rebuild(); }));
+      this.registerEvent(this.app.vault.on("delete", (f) => { this.fileStats.delete(f.path); this.pyFileCounts.delete(f.path); this.rebuild(); }));
       this.registerEvent(this.app.vault.on("rename", (f, old) => {
         const s = this.fileStats.get(old);
         if (s) { this.fileStats.delete(old); this.fileStats.set(f.path, s); }
+        const c = this.pyFileCounts.get(old);
+        if (c) { this.pyFileCounts.delete(old); this.pyFileCounts.set(f.path, c); }
       }));
     });
   }
 
   async scanFile(file) {
-    this.fileStats.set(file.path, scanDocument(await this.app.vault.cachedRead(file)));
+    const text = await this.app.vault.cachedRead(file);
+    this.fileStats.set(file.path, scanDocument(text));
+    this.pyFileCounts.set(file.path, scanPython(text));
   }
 
   async scanVault() {
     this.fileStats.clear();
+    this.pyFileCounts.clear();
     const files = this.app.vault.getMarkdownFiles().filter((f) => f.path !== this.settings.templatesFile);
     await Promise.all(files.map((f) => this.scanFile(f)));
     this.rebuild();
@@ -381,6 +591,12 @@ export default class MathAutocompletePlugin extends Plugin {
   buildDefaultTemplates() {
     const imo = this.settings.imo26 ? parseTemplates(IMO26_TEMPLATES_MD) : [];
     this.defaultTemplates = [...parseTemplates(DEFAULT_TEMPLATES_MD), ...imo];
+  }
+
+  rankPySnippets(query) {
+    const picks = Object.fromEntries(Object.entries(this.settings.templatePicks)
+      .filter(([k]) => k.startsWith("py:")).map(([k, n]) => [k.slice(3), n]));
+    return rankTemplates(query, PY_SNIPPETS, picks);
   }
 
   rankTemplates(query) {
@@ -409,6 +625,7 @@ export default class MathAutocompletePlugin extends Plugin {
 
   rebuild() {
     this.stats = mergeStats(this.fileStats.values());
+    this.pyCounts = mergeCounts(this.pyFileCounts.values());
   }
 
   suggest(query, limit) {
@@ -457,6 +674,30 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Max suggestions")
       .addSlider((sl) => sl.setLimits(5, 40, 1).setValue(s.maxSuggestions).setDynamicTooltip()
         .onChange(async (v) => { s.maxSuggestions = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl).setName("Note variables").setHeading();
+
+    new Setting(containerEl)
+      .setName("Enable @variables")
+      .setDesc("Define values once in a ```vars block (A = [[1, 2], [3, 4]], n = 5, f = x^2 + 3x). Type @A to insert it: LaTeX in math, $A = ...$ in text, Python in python code blocks. Matrices also show up in the matrix fill list.")
+      .addToggle((t) => t.setValue(s.varsEnabled).onChange(async (v) => { s.varsEnabled = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Python style")
+      .setDesc("How matrices and fractions are written in Python. @A at the start of a line inserts A = ... .")
+      .addDropdown((d) => d
+        .addOption("sympy", "SymPy: sp.Matrix, sp.Rational (exact)")
+        .addOption("numpy", "NumPy: np.array")
+        .addOption("plain", "Plain lists")
+        .setValue(s.pythonStyle)
+        .onChange(async (v) => { s.pythonStyle = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl).setName("Python").setHeading();
+
+    new Setting(containerEl)
+      .setName("Python snippets and completion")
+      .setDesc("Inside ```python blocks: \\hessian, \\kkt, \\intersection, \\gauss, ... insert a whole computation with this note's variables already filled in, and sp. / np. / plt. complete with what your notes use most.")
+      .addToggle((t) => t.setValue(s.pythonEnabled).onChange(async (v) => { s.pythonEnabled = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
 

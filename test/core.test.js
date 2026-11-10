@@ -6,6 +6,95 @@ import { isCursorInMath, extractMath } from "../src/mathContext.js";
 import { scanDocument, mergeStats } from "../src/stats.js";
 import { rankSuggestions } from "../src/rank.js";
 import { cursorOffset, previewSource, DICTIONARY } from "../src/dictionary.js";
+import { parseVars, fenceLanguage, insertFor, toLatex, toPython, matchVars, latexToPy } from "../src/vars.js";
+
+test("python snippets use the note's variables", async () => {
+  const { parsePySnippets, buildPySnippet, codeBlockBefore, scanPython, rankMembers, definedNames, freeSymbols } = await import("../src/pysnippets.js");
+  const md = fs.readFileSync(new URL("../src/py-snippets.md", import.meta.url), "utf8");
+  const all = parsePySnippets(md);
+  const names = all.map((s) => s.name);
+  for (const n of ["hessian", "posdef", "kkt", "lagrange", "intersection", "gauss", "eigen", "integral", "taylor", "critxy", "sets", "truthtable"]) {
+    assert.ok(names.includes(n), n);
+  }
+  for (const s of all) for (const v of s.all) assert.ok(v.body.trim(), `\\${s.name} [${v.label}] has a body`);
+
+  const vars = parseVars("```vars\nf = x^2 + xy + 3y^2\nA = [[2, 1], [1, 2]]\nv = [1, 2]\n```\n");
+  const hess = all.find((s) => s.name === "hessian").all[0];
+  const { text, used } = buildPySnippet(hess, { vars });
+  assert.deepEqual(used, [{ input: "f", var: "f" }]);
+  assert.ok(text.startsWith("import sympy as sp\nx, y = sp.symbols('x y')\nf = x**2 + x*y + 3*y**2\n"), text);
+  assert.ok(text.includes("sp.hessian(f, [x, y])"));
+
+  // Already defined above in the same block: nothing is repeated.
+  const before = "import sympy as sp\nx, y = sp.symbols('x y')\nf = x**2\n";
+  const again = buildPySnippet(hess, { vars, before }).text;
+  assert.ok(!again.includes("import sympy") && !again.includes("sp.symbols") && !again.includes("f = "), again);
+
+  // A differently named variable of the right kind is copied in.
+  const posdef = all.find((s) => s.name === "posdef").all[0];
+  const B = parseVars("```vars\nM = [[1, 0], [0, 3]]\n```\n");
+  assert.ok(buildPySnippet(posdef, { vars: B }).text.includes("A = sp.Matrix([[1, 0], [0, 3]])"));
+  // No variable at all: a Tab placeholder.
+  assert.ok(/A = \{\{A: \[\[1, 2\], \[3, 4\]\]\}\}/.test(buildPySnippet(posdef, {}).text));
+
+  assert.equal(codeBlockBefore("text\n```python\nimport numpy as np\nx = 1\n\\hes"), "import numpy as np\nx = 1");
+  assert.deepEqual([...definedNames("x, y = 1, 2\ndef f(t):\n  return t\nfor k in range(3): pass")].sort(), ["f", "k", "x", "y"]);
+  assert.deepEqual(freeSymbols("sp.sin(x)**2 + a*y + sp.pi"), ["x", "a", "y"]);
+
+  const counts = scanPython("```python\nnp.linspace(0, 1)\nnp.linspace(0, 2)\nnp.linalg.norm(v)\n```\n$np.array$");
+  assert.equal(counts.get("np.linspace"), 2);
+  assert.equal(counts.get("np.linalg.norm"), 1);
+  assert.equal(rankMembers("np", "li", counts)[0].name, "linspace");
+  assert.ok(rankMembers("np", "pi", counts).find((m) => m.name === "pi" && !m.call));
+  assert.equal(rankMembers("np.linalg", "no", counts)[0].name, "norm");
+});
+
+test("note variables", () => {
+  const doc = String.raw`# Ex
+$$A = ...$$
+` + "```vars\n" + String.raw`A = [[1, 2], [3, 4]]
+B = \begin{bmatrix} 1 & 0 \\ \frac{1}{2} & 1 \end{bmatrix}
+C = 1 & 2 \\ 3 & 4
+v = [1, -1, 2]
+n = 5   # steps
+h = 1/2
+f = x^2 + 3x
+M = \begin{pmatrix}
+  a & \sqrt[3]{2} \\
+  x_1 & 0.5
+\end{pmatrix}
+` + "```\n" + "```vars\nn = 7\n```\n";
+  const vars = parseVars(doc);
+  assert.deepEqual([...vars.keys()], ["A", "B", "C", "v", "n", "h", "f", "M"]);
+  assert.equal(vars.get("n").value, "7"); // later block wins
+  const A = vars.get("A");
+  assert.equal(toLatex(A), String.raw`\begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}`);
+  assert.equal(toLatex(A, "bmatrix"), String.raw`\begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix}`);
+  assert.deepEqual(vars.get("C").value, A.value);
+  assert.equal(toLatex(vars.get("B")), String.raw`\begin{bmatrix} 1 & 0 \\ \frac{1}{2} & 1 \end{bmatrix}`);
+  assert.equal(toPython(vars.get("B")), "sp.Matrix([[1, 0], [sp.Rational(1, 2), 1]])");
+  assert.equal(toPython(A, "numpy"), "np.array([[1, 2], [3, 4]])");
+  assert.equal(toPython(A, "plain"), "[[1, 2], [3, 4]]");
+  assert.equal(toPython(vars.get("v")), "sp.Matrix([1, -1, 2])");
+  assert.equal(toLatex(vars.get("v")), String.raw`\begin{pmatrix} 1 \\ -1 \\ 2 \end{pmatrix}`);
+  assert.equal(toPython(vars.get("M")), "sp.Matrix([[a, sp.root(2, 3)], [x_1, 0.5]])");
+  assert.equal(toLatex(vars.get("h")), String.raw`\frac{1}{2}`);
+  assert.equal(insertFor(vars.get("f"), "python", { atLineStart: true }), "f = x**2 + 3*x");
+  assert.equal(insertFor(A, "python"), "sp.Matrix([[1, 2], [3, 4]])");
+  assert.equal(insertFor(vars.get("n"), "text"), "$n = 7$");
+  assert.equal(insertFor(A, "math"), toLatex(A));
+  assert.deepEqual(matchVars(vars, "").length, 8);
+  assert.deepEqual(matchVars(vars, "a").map((v) => v.name), ["A"]);
+
+  assert.equal(latexToPy(String.raw`\frac{\sqrt{2}}{2} \sin^2 x + 2(x+1)`), "sp.sqrt(2)/2*sp.sin(x)**2 + 2*(x + 1)");
+  assert.equal(latexToPy(String.raw`e^{-x} \cdot \pi`), "sp.E**(-x)*sp.pi");
+  assert.equal(latexToPy(String.raw`x^23`), "x**2*3");
+  assert.equal(latexToPy(String.raw`\frac{a+1}{b}`, "np"), "(a + 1)/b");
+
+  assert.equal(fenceLanguage("a\n```python\nx = "), "python");
+  assert.equal(fenceLanguage("```python\n```\n"), null);
+  assert.equal(fenceLanguage("text"), null);
+});
 
 test("math detection", () => {
   assert.equal(isCursorInMath("hello $x + \\fr"), true);
