@@ -63,3 +63,8 @@
 .mac-inputs-help { color: var(--text-faint); font-size: var(--font-ui-smaller); }
 .mac-shake { animation: mac-shake 0.3s; }
 @keyframes mac-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* Errors from computed vars / objects */
+.mac-error {
+  color: var(--text-error);
+}

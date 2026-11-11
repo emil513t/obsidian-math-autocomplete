@@ -1,9 +1,9 @@
 {
   "id": "math-autocomplete",
   "name": "Math Autocomplete",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "minAppVersion": "1.4.0",
-  "description": "LaTeX autocomplete inside math with rendered previews, ranked by your own notes, plus proof and question templates with Tab placeholders and solution routes.",
+  "description": "LaTeX autocomplete inside math ranked by your own notes, proof and question templates, note variables, and Hessians, inverses and more computed offline from your own variables.",
   "author": "Emil",
   "isDesktopOnly": false,
   "authorUrl": "https://github.com/emil513t"

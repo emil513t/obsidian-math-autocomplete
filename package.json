@@ -1,11 +1,11 @@
 {
   "name": "obsidian-math-autocomplete",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=cjs --platform=browser --target=es2020 --external:obsidian --external:@codemirror/state --external:@codemirror/view --loader:.md=text --outfile=dist/main.js",
-    "test": "node --test test/core.test.js",
+    "test": "node --test test/core.test.js test/objects.test.js",
     "install-vault": "node scripts/install.mjs",
     "test:py": "node scripts/run-py-snippets.mjs"
   },

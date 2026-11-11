@@ -23,7 +23,8 @@ import IMO26_TEMPLATES_MD from "./imo26-templates.md";
 import IMO26_REFS from "./refs/imo26.json";
 import { parseRefQuery, rankRefs, formatRef, kindLabel } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
-import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, PY_LANGS } from "./vars.js";
+import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS } from "./vars.js";
+import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions } from "./objects.js";
 import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, rankPySnippets, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
 import PY_SNIPPETS_MD from "./py-snippets.md";
 
@@ -233,6 +234,8 @@ const DEFAULT_SETTINGS = {
   refNote: "",
   refPicks: {},
   varsEnabled: true,
+  objectsEnabled: true,
+  varsKeepFormula: false,
   pythonStyle: "sympy",
   pythonEnabled: true,
   askInputs: true,
@@ -279,14 +282,17 @@ class VarSuggest extends EditorSuggest {
     const left = el.createDiv({ cls: "mac-left mac-template-left" });
     const top = left.createDiv({ cls: "mac-template-top" });
     top.createEl("code", { text: "@" + v.name });
-    top.createSpan({ cls: "mac-tag", text: v.kind === "matrix" ? `${v.value.length}×${v.value[0].length} matrix` : v.kind });
+    const kind = v.kind === "matrix" ? `${v.value.length}×${v.value[0].length} matrix`
+      : v.kind === "vector" && v.tuple ? "point" : v.params ? "function" : v.kind;
+    top.createSpan({ cls: "mac-tag", text: v.formula ? `${kind} = ${v.formula}` : kind });
+    if (v.error) top.createSpan({ cls: "mac-tag mac-error", text: v.error });
     if (this.state.kind === "python") {
       left.createDiv({ cls: "mac-template-snippet", text: toPython(v, this.plugin.settings.pythonStyle) });
     }
     if (!this.plugin.settings.showPreview) return;
     const right = el.createDiv({ cls: "mac-preview" });
     try {
-      right.appendChild(renderMath(`${latexName(v.name)} = ${toLatex(v)}`, false));
+      right.appendChild(renderMath(`${displayName(v)} = ${toLatex(v)}`, false));
       finishRenderMath();
     } catch (_) {
       // Preview is decoration only.
@@ -535,7 +541,19 @@ class FillModal extends SuggestModal {
     this.plugin.settings.fillPicks[key] = (this.plugin.settings.fillPicks[key] || 0) + 1;
     this.plugin.saveSettings();
     if (fill.id === "blank") return;
+    if (fill.ask) {
+      // Sized fills (m×n, n×n identity, ...) ask for their sizes first.
+      new AskModal(this.plugin, `\\${this.name}: ${fill.label}`, fill.ask, (answers) => {
+        const b = fill.build(answers);
+        const firstSlot = b.value.match(/\\begin\{\w+\}(?:\{[^}]*\})? /);
+        this.replaceWith({ text: b.value, cursor: b.blank && firstSlot ? firstSlot[0].length : b.value.length });
+      }).open();
+      return;
+    }
+    this.replaceWith(fill);
+  }
 
+  replaceWith(fill) {
     const { editor, from } = this;
     const start = editor.offsetToPos(from);
     const indent = editor.getLine(start.line).match(/^\s*/)[0];
@@ -548,6 +566,117 @@ class FillModal extends SuggestModal {
     super.onClose();
     this.editor.focus();
   }
+}
+
+// Asks for a few values (sizes m and n, a point, a function, ...). onDone may
+// throw; the error is shown and the form stays open.
+class AskModal extends Modal {
+  constructor(plugin, title, questions, onDone) {
+    super(plugin.app);
+    this.title = title;
+    this.questions = questions;
+    this.onDone = onDone;
+    this.answers = Object.fromEntries(questions.map((q) => [q.key, q.value ?? ""]));
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("mac-inputs");
+    if (this.setTitle) this.setTitle(this.title);
+    else contentEl.createEl("h3", { text: this.title });
+    const fields = [];
+    for (const q of this.questions) {
+      new Setting(contentEl)
+        .setName(q.label)
+        .setDesc(q.hint ? `e.g. ${q.hint}` : "")
+        .addText((t) => {
+          t.setValue(q.value ?? "").setPlaceholder(q.hint || "");
+          t.inputEl.addClass("mac-inputs-field");
+          t.onChange((val) => { this.answers[q.key] = val; });
+          t.inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); this.submit(); }
+          });
+          fields.push(t);
+        });
+    }
+    this.errorEl = contentEl.createDiv({ cls: "mac-inputs-error" });
+    new Setting(contentEl).addButton((b) => b.setButtonText("Insert").setCta().onClick(() => this.submit()));
+    contentEl.createDiv({ cls: "mac-inputs-help", text: "LaTeX or plain: x^2 y + \\sin y, \\frac{1}{2}, (1, 2), [[1, 2], [3, 4]]. Enter inserts, Esc cancels." });
+    setTimeout(() => { fields[0]?.inputEl.focus(); fields[0]?.inputEl.select(); }, 0);
+  }
+
+  submit() {
+    try {
+      this.onDone(this.answers);
+      this.close();
+    } catch (e) {
+      this.errorEl.setText(e.message || String(e));
+      this.errorEl.addClass("mac-shake");
+      setTimeout(() => this.errorEl.removeClass("mac-shake"), 300);
+    }
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
+// Second step after \hessian, \inverse, \set, ...: what to build it from.
+// Options computed from the note's variables first.
+class ObjectModal extends SuggestModal {
+  constructor(plugin, obj, options, onPick) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.obj = obj;
+    this.options = options;
+    this.onPick = onPick;
+    this.setPlaceholder(`\\${obj.name}: ${obj.desc} (Esc keeps what you typed)`);
+  }
+
+  getSuggestions(query) {
+    const q = query.toLowerCase();
+    const picks = this.plugin.settings.fillPicks;
+    return this.options
+      .map((o, i) => ({ o, i, n: picks[`obj:${this.obj.name}:${o.id.replace(/:.*$/, "")}`] || 0 }))
+      .filter((x) => x.o.label.toLowerCase().includes(q))
+      .sort((a, b) => b.n - a.n || a.i - b.i)
+      .map((x) => x.o);
+  }
+
+  renderSuggestion(o, el) {
+    el.addClass("mac-item");
+    const left = el.createDiv({ cls: "mac-left mac-template-left" });
+    left.createDiv({ cls: "mac-template-top" }).createSpan({ text: o.label });
+    if (o.error) left.createDiv({ cls: "mac-template-snippet mac-error", text: o.error });
+    else if (o.formula && this.plugin.settings.varsKeepFormula) left.createDiv({ cls: "mac-template-snippet", text: o.formula });
+    if (!o.value || !this.plugin.settings.showPreview) return;
+    const right = el.createDiv({ cls: "mac-preview mac-fill-preview" });
+    try {
+      right.appendChild(renderMath(o.value, false));
+      finishRenderMath();
+    } catch (_) {
+      // Preview only.
+    }
+  }
+
+  onChooseSuggestion(o) {
+    if (o.error) { new Notice(`\\${this.obj.name}: ${o.error}`); return; }
+    const key = `obj:${this.obj.name}:${o.id.replace(/:.*$/, "")}`;
+    const picks = this.plugin.settings.fillPicks;
+    picks[key] = (picks[key] || 0) + 1;
+    this.plugin.saveSettings();
+    if (o.ask) {
+      new AskModal(this.plugin, `\\${this.obj.name}: ${o.label}`, o.ask, (answers) => this.onPick(o, o.build(answers))).open();
+      return;
+    }
+    this.onPick(o, o);
+  }
+}
+
+// A free name for a new vars line: H, then H_2, H_3, ...
+function freeName(base, vars) {
+  if (!vars.has(base)) return base;
+  for (let i = 2; ; i++) if (!vars.has(`${base}_${i}`)) return `${base}_${i}`;
 }
 
 class MathSuggest extends EditorSuggest {
@@ -563,12 +692,16 @@ class MathSuggest extends EditorSuggest {
     const m = before.match(/(^|[^\\])\\([a-zA-Z]+)$/);
     if (!m) return null;
     const docBefore = editor.getRange({ line: 0, ch: 0 }, cursor);
-    if (!isCursorInMath(docBefore)) return null;
+    // Math, or a ```vars block (values there are LaTeX too).
+    const inVars = this.plugin.settings.varsEnabled && fenceLanguage(docBefore) === "vars";
+    if (!inVars && !isCursorInMath(docBefore)) return null;
+    this.where = inVars ? "vars" : "math";
 
     // Fully typed and nothing longer to offer: stay out of the way so Enter
     // still makes a newline after e.g. \alpha.
-    const results = this.plugin.suggest(m[2], 2);
-    if (results.length === 1 && results[0].insert === "\\" + m[2]) return null;
+    const results = this.plugin.mathSuggestions(m[2], 2, this.where);
+    if (!results.length) return null;
+    if (results.length === 1 && results[0].kind !== "object" && results[0].insert === "\\" + m[2]) return null;
 
     return {
       start: { line: cursor.line, ch: cursor.ch - m[2].length - 1 },
@@ -578,11 +711,20 @@ class MathSuggest extends EditorSuggest {
   }
 
   getSuggestions(ctx) {
-    return this.plugin.suggest(ctx.query, this.plugin.settings.maxSuggestions);
+    return this.plugin.mathSuggestions(ctx.query, this.plugin.settings.maxSuggestions, this.where);
   }
 
   renderSuggestion(item, el) {
     el.addClass("mac-item");
+    if (item.kind === "object") {
+      el.addClass("mac-template");
+      const left = el.createDiv({ cls: "mac-left mac-template-left" });
+      const top = left.createDiv({ cls: "mac-template-top" });
+      top.createEl("code", { text: "\\" + item.obj.name });
+      top.createSpan({ cls: "mac-template-desc", text: item.obj.desc });
+      top.createSpan({ cls: "mac-tag", text: this.where === "vars" ? "new variable" : "build" });
+      return;
+    }
     const left = el.createDiv({ cls: "mac-left" });
     left.createEl("code", { text: item.insert.replace(/\n/g, " ") });
     if (item.uses > 0) left.createSpan({ cls: "mac-uses", text: `${item.uses}×` });
@@ -602,30 +744,41 @@ class MathSuggest extends EditorSuggest {
 
   selectSuggestion(item) {
     const { editor, start, end } = this.context;
+    const where = this.where;
+    if (item.kind === "object") {
+      this.plugin.pickObject(editor, start, end, item.obj, where);
+      return;
+    }
     const indent = editor.getLine(start.line).match(/^\s*/)[0];
+    const env = envOf(item.insert);
+    // In a vars block, a matrix/cases on an empty line gets a name: A = ...
+    const lineBefore = editor.getLine(start.line).slice(0, start.ch);
+    const prefix = where === "vars" && env && (isMatrixEnv(env) || env === "cases") && !lineBefore.trim()
+      ? `${freeName(env === "cases" ? "f" : "A", parseVars(editor.getValue()))} = ` : "";
     const { text, offset } = indentInsert(
       item.insert,
       item.kind === "atom" ? item.insert.length : cursorOffset(item.insert),
       indent,
     );
 
-    editor.replaceRange(text, start, end);
-    const from = editor.posToOffset(start);
+    editor.replaceRange(prefix + text, start, end);
+    const from = editor.posToOffset(start) + prefix.length;
     editor.setCursor(editor.offsetToPos(from + offset));
     this.plugin.recordPick(item.insert);
 
     if (item.kind !== "builtin" || !this.plugin.settings.askFill) return;
     let fills = fillsFor(item.name, item.insert, this.plugin.stats.atoms);
-    const env = envOf(item.insert);
     if (fills && env && isMatrixEnv(env)) {
       // The note's own matrices and vectors first: the exercise's values.
       const mine = [...parseVars(editor.getValue()).values()]
-        .filter((v) => v.kind !== "scalar")
+        .filter((v) => v.kind === "matrix" || v.kind === "vector")
         .map((v) => {
           const t = toLatex(v, env);
           return { id: "var:" + v.name, label: `${v.name} (this note's variable)`, text: t, cursor: t.length, preview: t };
         });
-      fills = [...mine, ...fills];
+      // Then any size: m×n blank / indexed / zeros, n×n identity, ... (asks m, n).
+      const sized = sizedMatrixOptions(env).map((o) => ({ ...o, preview: null }));
+      fills = [...mine, ...fills.slice(0, 2), ...sized, ...fills.slice(2)];
     }
     if (fills) new FillModal(this.plugin, editor, item.name, fills, from, text.length).open();
   }
@@ -656,11 +809,17 @@ export default class MathAutocompletePlugin extends Plugin {
       const box = el.createDiv({ cls: "mac-vars" });
       for (const v of vars) {
         const row = box.createDiv({ cls: "mac-vars-row" });
+        if (v.error) {
+          row.createEl("code", { text: `${v.name} = ${v.value}` });
+          row.createSpan({ cls: "mac-tag mac-error", text: v.error });
+          continue;
+        }
         try {
-          row.appendChild(renderMath(`${latexName(v.name)} = ${toLatex(v)}`, true));
+          row.appendChild(renderMath(`${displayName(v)} = ${toLatex(v)}`, true));
         } catch (_) {
           row.createEl("code", { text: `${v.name} = ${toLatex(v)}` });
         }
+        if (v.formula) row.createSpan({ cls: "mac-tag", text: v.formula });
       }
       finishRenderMath();
     });
@@ -671,6 +830,12 @@ export default class MathAutocompletePlugin extends Plugin {
       id: "open-templates-file",
       name: "Open (or create) the editable templates file",
       callback: () => this.openTemplatesFile(),
+    });
+
+    this.addCommand({
+      id: "vars-from-note",
+      name: "Create vars from this note's math ($f(x) = ...$, $A = ...$)",
+      editorCallback: (editor) => this.createVarsFromNote(editor),
     });
 
     this.addCommand({
@@ -802,6 +967,90 @@ export default class MathAutocompletePlugin extends Plugin {
     return rankSuggestions(query, this.stats, this.settings.boosts, limit);
   }
 
+  // The math popup: LaTeX commands plus buildable objects (\hessian, \inverse,
+  // \set, ...). In a vars block the objects come first.
+  mathSuggestions(query, limit, where = "math") {
+    const builtins = this.suggest(query, limit);
+    if (!this.settings.objectsEnabled) return builtins;
+    const objs = rankObjects(query, this.settings.fillPicks)
+      .filter((o) => where === "vars" || !o.varsOnly)
+      .map((o) => ({ kind: "object", obj: o, name: o.name, insert: "\\" + o.name, uses: 0 }));
+    if (!objs.length) return builtins;
+    if (where === "vars") return [...objs, ...builtins].slice(0, limit);
+    // In math, what you'd type by hand stays on top (\in before \inverse).
+    const head = builtins.filter((b) => b.name === query || b.name.length <= query.length + 1).slice(0, 3);
+    const rest = builtins.filter((b) => !head.includes(b));
+    return [...head, ...objs.slice(0, 6), ...rest].slice(0, Math.max(limit, head.length + Math.min(objs.length, 6)));
+  }
+
+  // \hessian, \inverse, ... was picked: choose what to build it from, then insert.
+  pickObject(editor, start, end, obj, where) {
+    const doc = editor.getValue();
+    const vars = parseVars(doc);
+    const ctx = objectContext(vars);
+    if (obj.name === "fromnote") ctx.found = findDefinitions(doc, vars);
+    const options = obj.options(ctx).filter((o) => where === "vars" || !o.varsOnly);
+    const from = editor.posToOffset(start);
+    const len = editor.posToOffset(end) - from;
+    const s = this.settings;
+    s.fillPicks["obj:" + obj.name] = (s.fillPicks["obj:" + obj.name] || 0) + 1;
+    this.saveSettings();
+    new ObjectModal(this, obj, options, (o, built) => this.insertObject(editor, from, len, obj, o, built, where, vars)).open();
+  }
+
+  insertObject(editor, from, len, obj, o, built, where, vars) {
+    const startPos = editor.offsetToPos(from);
+    const endPos = editor.offsetToPos(from + len);
+    const lineBefore = editor.getLine(startPos.line).slice(0, startPos.ch);
+    if (where !== "vars" || lineBefore.trim()) {
+      if (!built.value) throw new Error("this one only works inside a vars block");
+      editor.replaceRange(built.value, startPos, endPos);
+      editor.setCursor(editor.offsetToPos(from + built.value.length));
+      editor.focus();
+      return;
+    }
+    // A new vars line (or several): name = value.
+    const indent = lineBefore;
+    let lines = built.lines;
+    if (!lines) {
+      const name = freeName(built.name || o.name || obj.varName || "v", vars);
+      const lhs = built.params ? `${name}(${built.params})` : name;
+      const value = this.settings.varsKeepFormula && (built.formula || o.formula) ? (built.formula || o.formula) : built.value;
+      lines = [`${lhs} = ${value}`];
+    }
+    const text = lines.join("\n" + indent);
+    editor.replaceRange(text, startPos, endPos);
+    // On an empty "name = " line (KKT/LP skeletons), land after the first "= ".
+    const firstOpen = lines.findIndex((l) => /=\s*$/.test(l));
+    const cursor = firstOpen < 0
+      ? from + text.length
+      : from + lines.slice(0, firstOpen + 1).join("\n" + indent).length;
+    editor.setCursor(editor.offsetToPos(cursor));
+    editor.focus();
+  }
+
+  // Command: put the definitions written in the note's math into a vars block.
+  createVarsFromNote(editor) {
+    const doc = editor.getValue();
+    const vars = parseVars(doc);
+    const found = findDefinitions(doc, vars);
+    if (!found.length) { new Notice("Math Autocomplete: no definitions like $f(x) = ...$ or $A = \\begin{pmatrix}...$ found."); return; }
+    const lines = found.map((d) => d.line);
+    // Append to the last vars block, or start one at the cursor.
+    const re = /^[ \t]*(```|~~~)[ \t]*vars[ \t]*\n([\s\S]*?)^([ \t]*\1[ \t]*)$/gm;
+    let m;
+    let last = null;
+    while ((m = re.exec(doc))) last = m;
+    if (last) {
+      const closeAt = last.index + last[0].length - last[3].length;
+      editor.replaceRange(lines.join("\n") + "\n", editor.offsetToPos(closeAt));
+    } else {
+      const cur = editor.getCursor();
+      editor.replaceRange("```vars\n" + lines.join("\n") + "\n```\n", { line: cur.line, ch: 0 });
+    }
+    new Notice(`Math Autocomplete: added ${lines.length} variable${lines.length === 1 ? "" : "s"}: ${found.map((d) => d.name).join(", ")}.`);
+  }
+
   recordPick(insert) {
     this.settings.boosts[insert] = (this.settings.boosts[insert] || 0) + 1;
     this.saveSettings();
@@ -849,8 +1098,18 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Enable @variables")
-      .setDesc("Define values once in a ```vars block (A = [[1, 2], [3, 4]], n = 5, f = x^2 + 3x). Type @A to insert it: LaTeX in math, $A = ...$ in text, Python in python code blocks. Matrices also show up in the matrix fill list.")
+      .setDesc("Define values once in a ```vars block: A = [[1, 2], [3, 4]], f(x, y) = x^2 y, p = (1, 2), S = \\{1, 2\\}, I = [0, 1), g = x + y \\leq 4, cases, and computed ones like H = hessian(f), Ai = A^{-1}, x = A^{-1} b. Type @A to insert it: LaTeX in math, $A = ...$ in text, Python in python code blocks. The math popup works inside the vars block too.")
       .addToggle((t) => t.setValue(s.varsEnabled).onChange(async (v) => { s.varsEnabled = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Build objects from your variables")
+      .setDesc("\\hessian, \\gradient, \\jacobian, \\inverse, \\determinant, \\rref, \\eigenvalues, \\taylor, \\set, \\union, \\interval, \\matrix (any m×n), ... in math or in a vars block: pick what to build it from (your f, A, p, ...) or type sizes and inputs. Computed offline, no AI.")
+      .addToggle((t) => t.setValue(s.objectsEnabled).onChange(async (v) => { s.objectsEnabled = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Keep computed vars as formulas")
+      .setDesc("Off: \\hessian in a vars block writes the computed matrix (H = \\begin{pmatrix}...). On: it writes H = hessian(f), which recomputes whenever f changes.")
+      .addToggle((t) => t.setValue(s.varsKeepFormula).onChange(async (v) => { s.varsKeepFormula = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
       .setName("Python style")

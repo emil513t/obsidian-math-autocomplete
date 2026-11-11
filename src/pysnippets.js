@@ -98,7 +98,9 @@ function fits(v, kind) {
   if (kind === "any") return false; // only ever matched by name
   if (kind === "matrix") return v.kind === "matrix";
   if (kind === "vector") return v.kind === "vector" || (v.kind === "matrix" && (v.value.length === 1 || v.value.every((r) => r.length === 1)));
-  if (kind === "set" || kind === "list") return v.kind === "vector";
+  if (v.error) return false;
+  if (kind === "set") return v.kind === "vector" || (v.kind === "set" && !v.builder);
+  if (kind === "list") return v.kind === "vector";
   if (kind === "points") return v.kind === "vector" || (v.kind === "matrix" && v.value.every((r) => r.length === 2));
   if (kind === "number") return v.kind === "scalar" && /^-?[\d./\\{}frac\s]+$/.test(v.value);
   if (kind === "expr") return v.kind === "scalar" && /[A-Za-z]/.test(v.value.replace(/\\(frac|sqrt|pi)\b/g, ""));
@@ -438,8 +440,11 @@ function typedInput(inp, typed, style) {
 
 // The note-side text of a vars variable, to prefill the form.
 function sourceText(v) {
-  if (v.kind === "scalar") return v.value;
+  if (v.kind === "scalar" || v.kind === "relation") return v.value;
   if (v.kind === "vector") return `[${v.value.join(", ")}]`;
+  if (v.kind === "set") return v.builder ? v.value : `[${v.value.join(", ")}]`;
+  if (v.kind === "interval") return `${v.lopen ? "(" : "["}${v.value.join(", ")}${v.ropen ? ")" : "]"}`;
+  if (v.kind === "piecewise") return v.value.map((r) => r.join(" ")).join("; ");
   return `[${v.value.map((r) => `[${r.join(", ")}]`).join(", ")}]`;
 }
 

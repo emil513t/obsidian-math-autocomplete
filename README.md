@@ -8,6 +8,28 @@ Autocomplete for writing math in Obsidian: LaTeX commands inside math, and proof
 - Ranked by what **you** write most: the plugin scans your vault and also learns from what you pick. Your own expressions (`\mathbb{R}`, `\frac{d}{dx}`, ...) show up as suggestions too.
 - After inserting `\frac`, `\sum`, `\int`, `\lim`, a matrix, `cases`, `aligned` and more, it offers ready-made fills (e.g. a 2×2 matrix, the identity matrix, $\sum_{i=1}^{n}$).
 - Stays out of the way: after a complete symbol like `\alpha`, Enter still makes a new line. Works alongside [LaTeX Suite](https://github.com/artisticat1/obsidian-latex-suite).
+- Matrices of any size: after `\pmatrix` (or `bmatrix`, ...) pick "Zero m×n", "Identity n×n", "Indexed m×n", "Diagonal", ... and type m and n.
+- Build objects: `\hessian`, `\gradient`, `\jacobian`, `\partial`, `\laplacian`, `\taylor`, `\tangentplane`, `\newtonstep`, `\quadform`, `\lagrangian`, `\derivative`, `\inverse`, `\transpose`, `\determinant`, `\rref`, `\rank`, `\trace`, `\eigenvalues`, `\charpoly`, `\product`, `\matpower`, `\augmented`, `\dotproduct`, `\line`, `\interpolate`, `\polynomial`, `\set`, `\union`, `\intersection`, `\difference`, `\cartesian`, `\powerset`, `\interval`, `\function`, `\piecewise`, `\constraint`, `\proposition`, ... Each one offers what to build it from: your note's variables first (the Hessian of your `f`, at your point `p`; the inverse of your `A`), then general forms, then ones that ask for sizes or inputs. Computed exactly and offline (no AI, no internet).
+
+## Note variables (```` ```vars ````)
+
+```vars
+f(x, y) = x^2 y + y^3
+p = (1, 2)
+A = [[2, 1], [1, 3]]
+b = [1, 4]
+S = \{1, 2, 3\}
+I = [0, 1)
+c = x + 2y \leq 4
+H = hessian(f, p)
+x0 = A^{-1} b
+```
+
+- Values: numbers, expressions, functions `f(x, y) = ...`, matrices (`[[..]]`, `\begin{pmatrix}`), vectors, points `(1, 2)`, sets, intervals, (in)equalities, `cases`.
+- Computed: `hessian(f)`, `hessian(f, p)`, `grad(f)(p)`, `\nabla f`, `jacobian(F)`, `diff(f, x, 2)`, `taylor(f, 0, 3)`, `f(p)`, `A^{-1}`, `A^T`, `AB`, `A^{-1} b`, `det(A)`, `rref(augment(A, b))`, `eig(A)`, `rank`, `trace`, `dot`, `norm`, `cross`, `proj`, `newton(f, p)`, `tangent(f, p)`, `lagrangian(f, g)`, `interpolate(P)`. Numbers defined in the block (`a = 2`) are filled in.
+- `@name` inserts a variable: LaTeX in math, `$name = ...$` in text, Python in python blocks.
+- The math popup works inside the vars block: `\hessian` on an empty line writes `H = ...` for you, `\pmatrix` writes `A = ...`.
+- Command "Create vars from this note's math" (or `\fromnote` in the block) copies definitions like `$f(x) = ...$` and `$A = \begin{pmatrix}...$` from the note into the vars block.
 
 ## Templates in normal text
 
