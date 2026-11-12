@@ -1,7 +1,7 @@
 {
   "id": "math-autocomplete",
   "name": "Math Autocomplete",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "minAppVersion": "1.4.0",
   "description": "LaTeX autocomplete inside math ranked by your own notes, proof and question templates, note variables, and Hessians, inverses, Gauss elimination and induction proofs computed offline with full worked solutions.",
   "author": "Emil",

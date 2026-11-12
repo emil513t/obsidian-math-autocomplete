@@ -13,7 +13,13 @@ g(x,y) = x^2 + x y + y^2
 P(n) = \sum_{k=1}^{n} k^2 = \frac{n(n+1)(2n+1)}{6}
 n0 = 1` + "\n```\n";
 
+// null (test skipped) when there is no Python with sympy, e.g. on CI.
+const hasSympy = (() => {
+  const r = spawnSync("python", ["-I", "-c", "import sympy"], { encoding: "utf8", timeout: 60000 });
+  return !r.error && r.status === 0;
+})();
 const runPy = (code) => {
+  if (!hasSympy) return null;
   const res = spawnSync("python", ["-I", "-c", code], { encoding: "utf8", timeout: 120000 });
   return res.error ? null : res;
 };
