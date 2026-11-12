@@ -1,0 +1,1682 @@
+[
+ {
+  "kind": "section",
+  "num": "1.1",
+  "title": "Prompting and learning",
+  "page": 6,
+  "heading": null,
+  "text": "Generative AI has come a very long way since the introduction of ChatGPT on November 30, 2022, and it keeps evolving with explosive speed. Frontier large language models (LLM) do college level mathematics (and computer science) superbly. So much so, that the use of generative AI, in any form, is in no way allowed during the written exam in this course."
+ },
+ {
+  "kind": "section",
+  "num": "1.1.1",
+  "title": "AI atrophy",
+  "page": 8,
+  "heading": null,
+  "text": "AI atrophy is the gradual weakening of human thinking by outsourcing cognitive efforts to AI. A typical example of this phenomenon is given in the prompt below. Here every inch of the cognitive effort is outsourced. Once in a while we all crawl down this rabbit hole."
+ },
+ {
+  "kind": "section",
+  "num": "1.2",
+  "title": "Python as your mathematical laboratory",
+  "page": 8,
+  "heading": null,
+  "text": "Computers are exceptionally fun, but be careful! Nothing really beats a clear thinking human mind. To wit, I asked WolframAlpha to solve a certain optimization problem and it came up with the answer Prompt a chatbot with and explain why the output from WolframAlpha is weird."
+ },
+ {
+  "kind": "section",
+  "num": "1.3",
+  "title": "Propositional logic and predicates",
+  "page": 10,
+  "heading": null,
+  "text": "A proposition is a (mathematical) statement or sentence that is true (t) or false (f). This could be a boolean expression in a computer program, like 1 < 2 or an everyday outburst like I am tired. Both of these can be assigned true or false in a meaningful way."
+ },
+ {
+  "kind": "section",
+  "num": "1.3.1",
+  "title": "Propositional logic as a formal language",
+  "page": 12,
+  "heading": null,
+  "text": "The entities p and q above may have real world interpretations like it rains or it is cloudy, but we will view them as variables that can be assigned the values true or false. Independent of this assignment we define a proposition as follows."
+ },
+ {
+  "kind": "section",
+  "num": "1.3.2",
+  "title": "Truth tables and equivalent propositions",
+  "page": 12,
+  "heading": null,
+  "text": "Given a proposition, it makes sense to substitute values (t or f) for the variables and evaluate it using the rules in Definition 1.10, since the parentheses leave no ambiguity as to how the evaluation must take place. For a given proposition in the variables x1,...,xr, there are 2r ways of assignments to the set of variables."
+ },
+ {
+  "kind": "section",
+  "num": "1.3.3",
+  "title": "Computing truth tables in Python",
+  "page": 13,
+  "heading": null,
+  "text": "Python may be used to compute truth tables for propositions using the logic module in sympy. Below is an example. Be sure to check how to enter ∧,∨, =⇒and ¬. Construct by hand the truth table for the proposition (p∧q)∨(¬r)."
+ },
+ {
+  "kind": "section",
+  "num": "1.3.4",
+  "title": "Variables, predicates and quantification",
+  "page": 14,
+  "heading": null,
+  "text": "Variables are fundamental in computer programs. In the predicate x = 1, x appears as a variable. Depending on what you substitute for x, the resulting proposition could be true or false or even meaningless. As an example, the latter case appears if x is replaced by the character ’a’."
+ },
+ {
+  "kind": "section",
+  "num": "1.4",
+  "title": "Sets",
+  "page": 15,
+  "heading": null,
+  "text": "Propositions are important, but are confined by the binary values of true and false. We would like to work mathematically with objects like integers, floating point numbers, neural networks, computer programs and so on."
+ },
+ {
+  "kind": "section",
+  "num": "1.4.1",
+  "title": "Objects and equality",
+  "page": 15,
+  "heading": null,
+  "text": "One of the cornerstones of modern mathematics is deciding when two objects are the same i.e., given two objects A and B, deciding whether the proposition A = B is true or false. Oftentimes an algorithm for evaluating A = B is needed. You may laugh here, but this is not always that easy."
+ },
+ {
+  "kind": "section",
+  "num": "1.4.2",
+  "title": "The symbols ∈and /∈",
+  "page": 17,
+  "heading": null,
+  "text": "The symbol ∈is ubiquitous in set theory (and mathematics). If A is a set, then x ∈A (1.5) is a proposition. It is true if x is an element of or belongs to A. The notation x /∈A is defined by the proposition ¬(x ∈A). Also, as a bit of short hand notation, we will write a1,a2,...,an ∈A for the proposition (a1 ∈A)∧(a2 ∈A)∧···∧(an ∈A)."
+ },
+ {
+  "kind": "section",
+  "num": "1.4.3",
+  "title": "Subsets",
+  "page": 17,
+  "heading": null,
+  "text": "If A and B are sets, then A ⊆B2 means that every element of A is an element of B. So A ⊆B is a placeholder for the proposition ∀x ∈A : x ∈B In this case we say that A is a subset of B. We also use the notation A ⊊B to indicate that A ⊆B and A̸ = B."
+ },
+ {
+  "kind": "section",
+  "num": "1.4.4",
+  "title": "Set-builder notation",
+  "page": 18,
+  "heading": null,
+  "text": "If S is a set and p(x) a predicate for x ∈S, then we build the subset {x ∈S | p(x)} ⊆S (1.6) of x ∈S such that p(x) is true. Suppose that S = {−2,−1,2,3} and p(x) = x is positive. Then {x ∈S | p(x)} = {2,3} ⊆S."
+ },
+ {
+  "kind": "section",
+  "num": "1.4.5",
+  "title": "Intersections, unions and the symbols ∩, ∪and \\",
+  "page": 21,
+  "heading": null,
+  "text": "Suppose that we have two sets A and B. Then the intersection A∩B is the set consisting of the elements in both A and B i.e., A∩B = {x | (x ∈A)∧(x ∈B)}. This is illustrated in the socalled Venn diagram below. The union A∪B is the set consisting of the elements in A or B i.e., A∪B = {x | (x ∈A)∨(x ∈B)}."
+ },
+ {
+  "kind": "section",
+  "num": "1.4.6",
+  "title": "Pairs, triples and tuples",
+  "page": 23,
+  "heading": null,
+  "text": "Oftentimes we want to consider more than one variable as input to a predicate. It is convenient to group the variables into one object consisting of the variables. This is done using tuples. Given two sets A and B, we combine two elements a ∈A and b ∈B into a pair (a,b), which is an element of the Cartesian product A×B = {(a,b) | a ∈A,b ∈B}. of A and B."
+ },
+ {
+  "kind": "section",
+  "num": "1.5",
+  "title": "Numbers and their ordering",
+  "page": 25,
+  "heading": null,
+  "text": "Our fundamental mathematical objects in this course are numbers. With logic and sets in our toolbox, we can introduce them precisely."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.1",
+  "title": "The natural numbers N and the integers Z",
+  "page": 25,
+  "heading": null,
+  "text": "The set of natural numbers is N = {1,2,3,...}. (1.10) The set of integers is Z = {...,−3,−2,−1,0,1,2,3,...}. (1.11) These are infinite sets, since they contain infinitely many elements as indicated by the dots ... It makes sense to add and multiply two integers a and b."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.2",
+  "title": "The rational numbers Q",
+  "page": 25,
+  "heading": null,
+  "text": "The natural numbers N and the integers Z are well defined by their representations in (1.10) and (1.11). So there are many different ways of representing a rational number, such as 3 7 = 6 14 = 9 21. Here 7 = 9 21 since 3·21 = 7·9. In fact, a fraction stays the same when its numerator and denominator are multiplied by the same natural number."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.3",
+  "title": "The real numbers R",
+  "page": 26,
+  "heading": null,
+  "text": "Informally (1.15) represents the real number d0 + d1 10 + d2 100 +··· = d0 +d1 ·10−1 +d2 ·10−2 +··· given by an infinite set of digits as opposed to a rational number, which is given finitely by an integer (numerator) and a natural number (denominator)."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.4",
+  "title": "Arithmetic rules for numbers",
+  "page": 28,
+  "heading": null,
+  "text": "Argue precisely that −(x−y) = y−x for x,y ∈A using Proposition 1.59."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.5",
+  "title": "Ordering numbers",
+  "page": 29,
+  "heading": null,
+  "text": "In real life, finding the optimal solution to a problem often involves comparing numbers and finding the minimal or maximal one. To do this you need to be able to compare numbers in a precise way. Let us be a little rigorous and introduce the (usual) ordering on our numbers with addition and multiplication using almost full blown mathematical formalities."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.6",
+  "title": "Ordering Z",
+  "page": 30,
+  "heading": null,
+  "text": "As we saw in Remark 1.66, the natural order on Z is defined by Z+ = N, so that x < y if y−x ∈N for x,y ∈Z. This completely agrees with our preconception that ··· < −3 < −2 < −1 < 0 < 1 < 2 < ··· (1.16) To be precise, writing ··· < −3 < −2 < −1 < 0 < 1 < 2 < ··· is nonsense, since < is only defined for two integers."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.7",
+  "title": "Ordering Q",
+  "page": 31,
+  "heading": null,
+  "text": "We define the positive rational numbers as Q+ = nm n ∈Q m > 0 o = \u001a 1, 1 2, 1 3, 2 3, 1 4, 3 4,... \u001b . One can check that Q+ satisfies the conditions in Definition 1.65. So formally we get Proof. We must check when c d −a b = bc−ad bd ∈Q+. This happens precisely when the numerator bc−ad ∈N or bc−ad > 0."
+ },
+ {
+  "kind": "section",
+  "num": "1.5.8",
+  "title": "Ordering R",
+  "page": 33,
+  "heading": null,
+  "text": "For the real numbers we define the positive numbers as R+ = {x ∈R | x = d0.d1d2 ...,d0 ≥0,x̸ = 0}. Even though we have not precisely defined addition and multiplication of the real numbers, we claim that this definition of R+ satisfies the conditions of Definition 1.65."
+ },
+ {
+  "kind": "section",
+  "num": "1.6",
+  "title": "Mathematical proofs",
+  "page": 33,
+  "heading": null,
+  "text": "We now have the language (logic and sets) and the objects (numbers) in place. This section is about the rules of the game: what a mathematical proof is, and the standard techniques for constructing one."
+ },
+ {
+  "kind": "section",
+  "num": "1.6.1",
+  "title": "Proofs and inference rules",
+  "page": 34,
+  "heading": null,
+  "text": "A proof begins with an assumption P and proceeds with a sequence of logical steps called inference rules leading to a conclusion Q. You have been taught how to solve equations in steps leading to a solution. Each step turns out to be an inference rule and the conclusion is the solution."
+ },
+ {
+  "kind": "section",
+  "num": "1.6.2",
+  "title": "The use of implication ( =⇒) and bi-implication ( ⇐⇒)",
+  "page": 34,
+  "heading": null,
+  "text": "As you have seen, =⇒and ⇐⇒are applied to link propositions in a logical argument. For example, x+1 = 2 ⇐⇒x = 1 or ∀x ∈Z : x+1 = 2 ⇐⇒x = 1. However, for x2 = 1 =⇒x = 1 we cannot link the two propositions by ⇐⇒, simply because ∀x ∈Z : x2 = 1 =⇒x = 1 is false (for x = −1)."
+ },
+ {
+  "kind": "section",
+  "num": "1.6.3",
+  "title": "More on mathematical proofs",
+  "page": 35,
+  "heading": null,
+  "text": "Most professional mathematicians rarely think about the precise definition of a proof and would probably feel uncomfortable defining a proof precisely. During many years of training they have assimilated knowledge by experience. Therefore many proofs seem born out of witchcraft containing several magical devices."
+ },
+ {
+  "kind": "section",
+  "num": "1.6.4",
+  "title": "Proof by contradiction",
+  "page": 36,
+  "heading": null,
+  "text": "A proposition p is either true or false. This seemingly obvious statement goes by the name of the law of excluded middle and dates back to the writings of Aristotle. The law of excluded middle is key in the example below, where you are left with the feeling that you have been deprived of a fair and genuine proof."
+ },
+ {
+  "kind": "section",
+  "num": "1.6.5",
+  "title": "Proof by induction",
+  "page": 38,
+  "heading": null,
+  "text": "A precocious Gauss3 proved the formula 1+2+···+n = n(n+1) 2 (1.18) at the age of seven displaying remarkable ingenuity for his age. Lesser mortals usually use induction to prove this formula. Gauss was asked along with his classmates to compute the sum of all natural numbers 1,2,...,100."
+ },
+ {
+  "kind": "section",
+  "num": "1.7",
+  "title": "The concept of a function",
+  "page": 42,
+  "heading": null,
+  "text": "A function is a crucial concept in mathematics. In Python a simple function can be programmed like The code above seems to take a number and returns the number plus one. This (f) is in fact a function taking as input a number and returning as output the number plus one."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.1",
+  "title": "When are two functions the same?",
+  "page": 44,
+  "heading": null,
+  "text": "Suppose that f(x) = x + 1. This way of defining a function is a bit sloppy. The domain and codomain is not defined. The correct way of defining a function also includes defining its domain and codomain as in Definition 1.95. Two functions f,g are the same when they have the same domain S and codomain T and f(x) = g(x) for every x ∈S."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.2",
+  "title": "Notations for defining a function",
+  "page": 44,
+  "heading": null,
+  "text": "If f : S →T is a function and S is a finite set, then you can define f using a simple table. This is best illustrated using an example. Suppose that S = {1,2,3},T = R and f(1) = √ 2 f(2) = π f(3) = −1. Then f is expressed in table form as x 1 2 3 f(x) √ 2 π −1 This is a way of writing f = {(1, √ 2),(2,π),(3,−1)} ⊆{1,2,3}×R."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.3",
+  "title": "Composition of functions",
+  "page": 45,
+  "heading": null,
+  "text": "Given two functions f : S →T and g : U →V, where V ⊆S, we define a new function f ◦g : U →T by (f ◦g)(u) = f(g(u)). This notion calls for some reflection. We have a total of four sets in this definition: U,V,S and T and, not to forget, the condition that V ⊆S."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.4",
+  "title": "Functions from and into products",
+  "page": 46,
+  "heading": null,
+  "text": "Suppose that B = R×R = R2 and (x,y) ∈B. Then π1((1,2)) = 1 π2((1,2)) = 2. Now suppose that A = R3 and that f : A →R3 is given by f((x,y,z)) = (x2 +y,xy,z3). Then f1((1,2,3)) = 3 f2((1,2,3)) = 2 f3((1,2,3)) = 27."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.5",
+  "title": "Injective and surjective functions",
+  "page": 47,
+  "heading": null,
+  "text": "We now define three very important notions related to functions. Is a cryptographic hash-function as defined in Example 1.97 injective?"
+ },
+ {
+  "kind": "section",
+  "num": "1.7.6",
+  "title": "The inverse function",
+  "page": 48,
+  "heading": null,
+  "text": "If f : S →T is bijective, then we may define a function g : T →S, so that (f ◦g)(y) = y for every y ∈T and (g◦f)(x) = x for every x ∈S. This function is denoted f −1. How do we define f −1(y) for y ∈T? Well, since f is surjective, we may find x ∈S so that y = f(x)."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.7",
+  "title": "The preimage",
+  "page": 48,
+  "heading": null,
+  "text": "Definition 1.115 is short and sweet. Here is a first example of the preimage. Consider the function f : A →B, where A = {1,2,3,4,5} and B = {a,b,c,d} given by x 1 2 3 4 5 f(x) a b c a d For C = {a,c}, f −1(C) = {1,3,4} as illustrated below."
+ },
+ {
+  "kind": "section",
+  "num": "1.7.8",
+  "title": "Neural networks",
+  "page": 49,
+  "heading": null,
+  "text": "Having defined functions and composition of functions, we can deflate the term (deep) neural network, which is often shrouded in magic and mystery. A neural network is a special case of a function f : A →B, (1.24) where A ⊆Rd and B ⊆Rm. Neural networks are often compositions of many intermediate functions called (hidden) layers."
+ },
+ {
+  "kind": "section",
+  "num": "2.1",
+  "title": "One linear equation with one unknown",
+  "page": 56,
+  "heading": null,
+  "text": "Very simple rules apply when solving linear equations. Consider as an example the linear equation 2x −3 = 1 in the unknown x. Solving this equation amounts to reducing to an expression x = a number. This is called isolating x."
+ },
+ {
+  "kind": "section",
+  "num": "2.2",
+  "title": "Several linear equations with several unknowns",
+  "page": 57,
+  "heading": null,
+  "text": "The linear equation 2x −3 = 1 has only one unknown with the unique solution x = 2. If one linear equation has more than one unknown, then it has infinitely many solutions. Consider as an example the linear equation 2x−3y = 1 with the unknowns x and y."
+ },
+ {
+  "kind": "section",
+  "num": "2.3",
+  "title": "Gauss elimination",
+  "page": 59,
+  "heading": null,
+  "text": "When solving systems of several linear equations, it is natural to fix one of the equations, isolate an unknown and then insert in the other equations. Let us study this procedure focusing on an example with two equations and three unknowns: x+2y+z = 8 2x+y+z = 7 In the first equation we isolate x = 8−2y−z, which is then inserted into the second equation: 2(8−2y−z)+y+z = 7 ⇐⇒ −3y−z = −9."
+ },
+ {
+  "kind": "section",
+  "num": "2.4",
+  "title": "Polynomials",
+  "page": 63,
+  "heading": null,
+  "text": "Before going further into examples of linear equations we need to introduce (non-linear) functions called polynomials. A polynomial of degree n is a function f : R →R of the form f(x) = anxn +an−1xn−1 +···+a1x+a0, (2.8) where a0,...,an are real numbers and an̸ = 0."
+ },
+ {
+  "kind": "section",
+  "num": "2.4.1",
+  "title": "Polynomial division",
+  "page": 65,
+  "heading": null,
+  "text": "Division is sometimes referred to as long division when focusing on the method for division. Let us look at the situation for integers first. The remainder of 14 divided by 4 is 2, since 14 = 3·4+2. Here the remainder 2 is strictly less than the divisor 4."
+ },
+ {
+  "kind": "section",
+  "num": "2.4.2",
+  "title": "Roots of polynomials",
+  "page": 66,
+  "heading": null,
+  "text": "A real number α ∈R is called a root of the polynomial f(x) ∈R[x] if f(α) = 0. This is a very fundamental definition. It is mirrored beautifully in the following result. Proof. By Theorem 2.22, we may write f(x) = q(x)(x−α)+r(x), (2.11) where r(x) = 0 or r(x) is a non-zero polynomial of degree zero i.e., a non-zero constant."
+ },
+ {
+  "kind": "section",
+  "num": "2.5",
+  "title": "Polynomials through given points",
+  "page": 69,
+  "heading": null,
+  "text": "A line in the plane is given by its equation y = ax + b, where a is the slope and b is the intersection with the y-axis. Two lines in the plane are either parallel or intersect in a single point. The two lines y = x+1 and y = −x+2 have a single point of intersection."
+ },
+ {
+  "kind": "section",
+  "num": "2.5.1",
+  "title": "The magic of Lagrange polynomials",
+  "page": 72,
+  "heading": null,
+  "text": "Example 2.36 can be generalized: suppose we have n+1 distinct numbers x1,x2,...,xn+1. (2.18) Then these numbers give n+1 polynomials each of degree n: Li(x) = 1 Ci (x−x1)···(x−xi−1)(x−xi+1)···(x−xn+1), where Ci = (xi −x1)···(xi −xi−1)(xi −xi+1)···(xi −xn+1) for i = 1,...,n+1."
+ },
+ {
+  "kind": "section",
+  "num": "2.6",
+  "title": "Shamir secret sharing",
+  "page": 74,
+  "heading": null,
+  "text": "Lagrange interpolation is used in cryptography in Shamir’s secret sharing. Secret sharing is important in many practical situations. Here is an example quoted from Wikipedia: A company needs to secure their vault’s passcode. They could encrypt it, but what if the beholder of the secret key is unavailable or turns rogue?"
+ },
+ {
+  "kind": "section",
+  "num": "2.7",
+  "title": "Fitting data",
+  "page": 75,
+  "heading": null,
+  "text": "Given a data set D = {(x1,y1),(x2,y2),...,(xn,yn)} one would often like to find a model (i.e. some function) that describes the data well. With Lagrange interpolation we can find a polynomial f fitting the sample data D perfectly, i.e. satisfying f(xi) = yi for i = 1,2,...n."
+ },
+ {
+  "kind": "section",
+  "num": "3.1",
+  "title": "Matrices",
+  "page": 77,
+  "heading": null,
+  "text": "Contains: 3.1.1 Definitions."
+ },
+ {
+  "kind": "section",
+  "num": "3.1.1",
+  "title": "Definitions",
+  "page": 77,
+  "heading": null,
+  "text": "A rectangular array of numbers is called a matrix. A matrix with m rows and n columns is called an m×n (m by n) matrix. The notation for an m×n matrix A is A =         a11 ··· a1 j ··· a1n ... ... ... ... ... ai1 ··· ai j ··· ain ... ... ... ... ... am1 ··· am j ··· amn         , (3.3) where Ai j = ai j denotes the number or entry in the i-th row and j-th column."
+ },
+ {
+  "kind": "section",
+  "num": "3.2",
+  "title": "Linear maps",
+  "page": 79,
+  "heading": null,
+  "text": "In the first chapter we encountered a miniature version of a neural network. Neural networks are generally incredibly complicated functions from Rn to Rm. The function f : R2 →R2 given by f \u0012x y \u0013 = \u0012 x7y+cos(xy)ex2+y2−1 2xy2 −sin(x+y)(x3 +y3) \u0013 , even though it looks complicated, is simple in comparison."
+ },
+ {
+  "kind": "section",
+  "num": "3.3",
+  "title": "Matrix multiplication",
+  "page": 80,
+  "heading": null,
+  "text": "Suppose we are given two linear maps f : R2 →R2 and g : R2 →R2. Then it turns out that the composition f ◦g : R2 →R2 is also a linear map. A word of advice: the computations below look large and intimidating. They are not. It is important that you carry them out on your own."
+ },
+ {
+  "kind": "section",
+  "num": "3.3.1",
+  "title": "Matrix multiplication in numpy",
+  "page": 82,
+  "heading": null,
+  "text": "Matrix multiplication in numpy is written with the @ operator (the function np.dot computes the same thing; beware that * means entry-wise multiplication for arrays):"
+ },
+ {
+  "kind": "section",
+  "num": "3.3.2",
+  "title": "The identity matrix",
+  "page": 82,
+  "heading": null,
+  "text": "The identity matrix In of order n is the n×n diagonal matrix with 1 in the diagonal. Below is the identity matrix of order 5.       1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1       The identity matrix In has the crucial property that InA = AIn = A (3.6) for all n×n matrices A."
+ },
+ {
+  "kind": "section",
+  "num": "3.3.3",
+  "title": "Examples of matrix multiplication",
+  "page": 83,
+  "heading": null,
+  "text": "Matrix multiplication is omnipresent in mathematics. Below we give an example, which is a baby version of Google’s famous page rank algorithm. Suppose that 20% of the people living in the suburbs move to the big city and that 30% of the people living in the big city move to the suburbs per year."
+ },
+ {
+  "kind": "section",
+  "num": "3.4",
+  "title": "Matrix arithmetic",
+  "page": 86,
+  "heading": null,
+  "text": "Matrix multiplication is very different from ordinary multiplication of numbers: it is not commutative. Consider the matrices A = \u00120 1 0 0 \u0013 and B = \u00120 0 1 0 \u0013 . Then AB = \u00121 0 0 0 \u0013 and BA = \u00120 0 0 1 \u0013 i.e., AB̸ = BA. Addition of matrices is like ordinary addition, except that you add all the entries of the involved matrices."
+ },
+ {
+  "kind": "section",
+  "num": "3.4.1",
+  "title": "Matrix addition",
+  "page": 87,
+  "heading": null,
+  "text": "Addition of two matrices with the same number of rows and columns is defined below.    a11 ··· a1n ... ... ... am1 ··· amn   +    b11 ··· b1n ... ... ... bm1 ··· bmn   =    a11 +b11 ··· a1n +b1n ... ... ... am1 +bm1 ··· amn +bmn   ."
+ },
+ {
+  "kind": "section",
+  "num": "3.4.2",
+  "title": "Multiplication of a number and a matrix",
+  "page": 87,
+  "heading": null,
+  "text": "A matrix may be multiplied by a number λ by multiplying each entry by the number: λ    a11 ··· a1n ... ... ... am1 ··· amn   =    λa11 ··· λa1n ... ... ... λam1 ··· λamn   . Does there exist a number λ, such that λ \u00121 2 3 4 5 6 \u0013 + \u00120 0 0 0 0 2 \u0013 = \u00122 4 6 8 10 15 \u0013 ?"
+ },
+ {
+  "kind": "section",
+  "num": "3.4.3",
+  "title": "The distributive law",
+  "page": 88,
+  "heading": null,
+  "text": "Ordinary numbers a,b,c satisfy a(b+c) = ab+ac. This rule also holds for matrices and is called the distributive law (multiplication is distributed over plus) Let B and C be m×n matrices, A an r ×m matrix and D an n×s matrix. Then A(B+C) = AB+AC and (B+C)D = BD+CD."
+ },
+ {
+  "kind": "section",
+  "num": "3.4.4",
+  "title": "The miraculous associative law",
+  "page": 88,
+  "heading": null,
+  "text": "It does not make sense to multiply three matrices A,B and C. We have only defined matrix multiplication for two matrices. There are two natural ways of evaluating ABC: (AB)C and A(BC). We can begin by multiplying A by B and then multiply C from the right."
+ },
+ {
+  "kind": "section",
+  "num": "3.5",
+  "title": "The inverse matrix",
+  "page": 90,
+  "heading": null,
+  "text": "You are allowed to divide by a number provided it is̸ = 0. Does it make sense to divide by matrices? It does, but there are some matrices that correspond to the number 0 that we are not allowed to divide by. Let A,B and C be n×n matrices. Show that BA = In and AC = In implies that B = C."
+ },
+ {
+  "kind": "section",
+  "num": "3.5.1",
+  "title": "Well, how do I find the inverse of a matrix?",
+  "page": 93,
+  "heading": null,
+  "text": "Finding the inverse of a matrix or deciding that the matrix is not invertible is a matter of solving systems of linear equations. Given an n×n matrix A, we need to see if there exists an n×n matrix B, such that AB = I, (3.15) where I = In is the identity matrix of order n."
+ },
+ {
+  "kind": "section",
+  "num": "3.6",
+  "title": "The transposed matrix",
+  "page": 94,
+  "heading": null,
+  "text": "The transpose of an m×n matrix A is the n×m matrix A⊤given by A⊤ i j = A ji, where 1 ≤i ≤m and 1 ≤j ≤n. As an example, \u00120 2 4 −2 3 2 7 4 \u0013⊤ =     0 3 2 2 4 7 −2 4    . Notice also that (A⊤)⊤= A for an arbitrary matrix A. Let A be an m×r matrix and B an r ×n matrix."
+ },
+ {
+  "kind": "section",
+  "num": "3.7",
+  "title": "Symmetric matrices",
+  "page": 95,
+  "heading": null,
+  "text": "A (square) matrix A is called symmetric if A = A⊤. Visually, this means that A is symmetric around the diagonal like the 3×3 matrix   1 2 3 2 5 4 3 4 6  , but not like the 3×3 matrix   1 2 3 4 5 6 7 8 9  . Show that B⊤AB is a symmetric matrix, when A is a symmetric matrix and B is an arbitrary matrix."
+ },
+ {
+  "kind": "section",
+  "num": "3.7.1",
+  "title": "Positive definite matrices",
+  "page": 96,
+  "heading": null,
+  "text": "A symmetric matrix A is called positive definite if fA(v) > 0 for every v ∈Rd \\ {0}. Probably the first example of a positive definite 2 × 2-matrix one thinks of is A being the identity matrix. Here \u0000 x y \u0001\u00121 0 0 1 \u0013\u0012x y \u0013 = x2 +y2. Of course, here x2 +y2 = 0 if and only if x = y = 0 or \u0012x y \u0013 = 0."
+ },
+ {
+  "kind": "section",
+  "num": "3.7.2",
+  "title": "Positive semi-definite matrices",
+  "page": 96,
+  "heading": null,
+  "text": "A symmetric matrix A is called positive semi-definite if fA(v) ≥0 for every v ∈Rd. A positive definite matrix is positive semi-definite. Probably the first example of a non positive definite, but positive semi-definite 2×2-matrix one thinks of is A being the zero matrix."
+ },
+ {
+  "kind": "section",
+  "num": "3.7.3",
+  "title": "Symmetric reductions",
+  "page": 97,
+  "heading": null,
+  "text": "As you probably have noticed, it is rather straightforward to see when a diagonal matrix is positive (semi)definite. For a general symmetric matrix, one needs to reduce to the case of a diagonal matrix. This is done using the following result."
+ },
+ {
+  "kind": "section",
+  "num": "4.1",
+  "title": "What is an optimization problem?",
+  "page": 99,
+  "heading": null,
+  "text": "An optimization problem consists of maximizing or minimizing a function subject to constraints. Below are two classical examples related to minimizing (non-linear) functions subject to (non-linear) constraints. These are actually examples of convex optimization problems."
+ },
+ {
+  "kind": "section",
+  "num": "4.2",
+  "title": "General definition",
+  "page": 101,
+  "heading": null,
+  "text": "An optimization problem consists of a subset D ⊆Rd and a function f : D →R. We will consider optimization problems in the context of minimization. Optimize in this situation means minimize. Suppose that the maximization problem max v∈C f(v) (4.2) is formulated as the minimization problem min v∈C −f(v)."
+ },
+ {
+  "kind": "section",
+  "num": "4.3",
+  "title": "Convex optimization",
+  "page": 103,
+  "heading": null,
+  "text": "Particularly well behaved optimization problems are the convex ones. These are optimization problems, where C ⊆Rd is a convex subset and f : C →R a convex function in Definition 4.6. To define these concepts we first introduce the notion of a line in Rd."
+ },
+ {
+  "kind": "section",
+  "num": "4.4",
+  "title": "Linear optimization",
+  "page": 109,
+  "heading": null,
+  "text": "We will start this section with a concrete example. A company produces two products A and B. The product A is selling for 350 USD and B is selling for 300 USD. There are certain limited resources in the production of A and B. Two raw materials S1 and S2 are needed along with employee work time."
+ },
+ {
+  "kind": "section",
+  "num": "4.5",
+  "title": "Fourier-Motzkin elimination",
+  "page": 111,
+  "heading": null,
+  "text": "Fourier-Motzkin elimination is a classical method (dating back to 1826, and named after Joseph Fourier and Theodore Motzkin) for solving linear inequalities. It is also a key ingredient in an algorithm for solving linear optimization problems."
+ },
+ {
+  "kind": "section",
+  "num": "4.6",
+  "title": "Application in machine learning and data science",
+  "page": 114,
+  "heading": null,
+  "text": "To start with, consider a toy example of a machine learning problem: we wish to tell the gender of a person based on a data point consisting of the height and weight of the person. To do this we train our model by measuring the height and weight of a lot of people."
+ },
+ {
+  "kind": "section",
+  "num": "4.6.1",
+  "title": "Formulation as a linear optimization problem",
+  "page": 116,
+  "heading": null,
+  "text": "Suppose that the points labeled blue are x1,...,xm ∈Rd and the points labeled red are y1,...,yn ∈Rd. Then we wish to find a ∈Rd and b ∈R, such that a⊤xi > b for i = 1,...,m and a⊤yj < b for j = 1,...,n. One can show that these strict inequalities may be solved for a and b if and only if the inequalities a⊤xi ≥b+1 a⊤y j ≤b−1 are solvable for a and b, where i = 1,...,m and j = 1,...,n."
+ },
+ {
+  "kind": "section",
+  "num": "5.1",
+  "title": "Vectors in the plane",
+  "page": 117,
+  "heading": null,
+  "text": "The dot product (or inner product) between two vectors u,v ∈R2 is given by u·v = x1x2 +y1y2, (5.1) where u = \u0012x1 y1 \u0013 and v = \u0012x2 y2 \u0013 . (5.2) We may also interpret u and v as 2 × 1 matrices (or column vectors). Then the dot product in (5.1) may be realized as the matrix product: u·v = u⊤v."
+ },
+ {
+  "kind": "section",
+  "num": "5.2",
+  "title": "Higher dimensions",
+  "page": 118,
+  "heading": null,
+  "text": "We denote the set of column vectors with d rows by Rd and call it the euclidean vector space of dimension d. An element v ∈Rd is called a vector and it has the form (column vector with d entries) v =      x1 x2 ... xd     . A vector in Rd is a model for a data set in real life."
+ },
+ {
+  "kind": "section",
+  "num": "5.2.1",
+  "title": "Dot product, norm and cosine",
+  "page": 119,
+  "heading": null,
+  "text": "All of the definitions above are present in modern machine learning frameworks. Below we see their incarnations in the python library numpy."
+ },
+ {
+  "kind": "section",
+  "num": "5.3",
+  "title": "The unreasonable effectiveness of the dot product",
+  "page": 122,
+  "heading": null,
+  "text": "Contains: 5.3.1 The dist formula from high school; 5.3.2 The perceptron algorithm; 5.3.3 Why does the perceptron algorithm work?."
+ },
+ {
+  "kind": "section",
+  "num": "5.3.1",
+  "title": "The dist formula from high school",
+  "page": 122,
+  "heading": null,
+  "text": "The infamous dist formula from high school says that the distance from the point (x1,y1) to the line given by y = ax+b is |ax1 +b−y1| √ a2 +1 . (5.5) Where does this magical formula come from? Consider a general line L in parametrized form (see Definition 4.12) L = {u+tv | t ∈R} ⊆Rd."
+ },
+ {
+  "kind": "section",
+  "num": "5.3.2",
+  "title": "The perceptron algorithm",
+  "page": 123,
+  "heading": null,
+  "text": "Already at this point we have the necessary definitions for explaining the perceptron algorithm. This is one of the early algorithms of machine learning. It aims at finding a high dimensional line (hyperplane) that separates data organized in two clusters."
+ },
+ {
+  "kind": "section",
+  "num": "5.3.3",
+  "title": "Why does the perceptron algorithm work?",
+  "page": 126,
+  "heading": null,
+  "text": "We will assume that there exists α ∈Rd, such that α ·vi > 0 for every i = 1,...,m. Therefore µ = min(α ·v1,...,α ·vm) > 0 and if we put α∗= 1 µ α, (5.10) then α∗·vi ≥1 for every i = 1,...,m. The basic insight is the following Proof. The algorithm starts with α = 0."
+ },
+ {
+  "kind": "section",
+  "num": "5.4",
+  "title": "Pythagoras and the least squares method",
+  "page": 127,
+  "heading": null,
+  "text": "The result below is a generalization of the theorem of Pythagoras about right triangles to higher dimensions. Proof. This follows from (u+v)·(u+v) = u·u+u·v+v·u+v·v = u·u+v·v = |u|2 +|v|2 , since u·v = v·u = 0. □ The dot product and the norm have a vast number of applications."
+ },
+ {
+  "kind": "section",
+  "num": "5.5",
+  "title": "The Cauchy-Schwarz inequality",
+  "page": 131,
+  "heading": null,
+  "text": "Take another look at 5 in Definition 5.1. It is actually a small miracle that no matter which (non-zero) vectors u and v you use as input to the cosine function defined in Example 5.2, you always get a number between −1 and 1. The mathematics behind this is rather elegant."
+ },
+ {
+  "kind": "section",
+  "num": "5.5.1",
+  "title": "The triangle inequality",
+  "page": 132,
+  "heading": null,
+  "text": "Another nice consequence of the Cauchy-Schwarz inequality is the triangle inequality. For three vectors u,v,w ∈Rd, d(u,w) ≤d(u,v)+d(v,w). Proof. From the Cauchy-Schwarz inequality (Theorem 5.24) it follows that |v1 +v2|2 = (v1 +v2)·(v1 +v2) = |v1|2 +2v1 ·v2 +|v2|2 ≤|v1|2 +2|v1||v2|+|v2|2 for two vectors v1,v2 ∈Rd."
+ },
+ {
+  "kind": "section",
+  "num": "5.5.2",
+  "title": "Cosine similarity in machine learning",
+  "page": 133,
+  "heading": null,
+  "text": "When two vectors u,v ∈Rd are interpreted as data sets, the number in 5 of Definition 5.1 is known as the cosine similarity. It measures how well the two vectors u and v point in the same direction: 1 means perfectly aligned, 0 orthogonal, −1 opposite."
+ },
+ {
+  "kind": "section",
+  "num": "5.5.3",
+  "title": "Attention: the soft nearest neighbor",
+  "page": 135,
+  "heading": null,
+  "text": "Inside the chatbot itself, the dot product runs an even bigger show. The T in GPT stands for transformer, and the central mechanism of a transformer is called attention. Here is the problem it solves."
+ },
+ {
+  "kind": "section",
+  "num": "5.6",
+  "title": "Special subsets of euclidean spaces",
+  "page": 136,
+  "heading": null,
+  "text": "Recall that a circle (or an open disk) centered at (x0,y0) ∈R2 with radius r ∈R is defined as the subset \b (x,y) ∈R2 (x−x0)2 +(y−y0)2 < r2 = \u001a (x,y) ∈R2 q (x−x0)2 +(y−y0)2 < r \u001b = \b (x,y) ∈R2 d((x0,y0),(x,y)) < r ."
+ },
+ {
+  "kind": "section",
+  "num": "5.6.1",
+  "title": "Bounded subsets",
+  "page": 138,
+  "heading": null,
+  "text": "A subset of Rd is bounded if it does not stretch infinitely far away from the origin — it can be caught inside a large enough open ball centered at 0: Every finite subset is bounded (why?). For d = 1, Definition 5.33 simply says ∃R ∈R∀x ∈S : |x| ≤R This implies that an interval S = [a,b] is bounded by putting R = max(|a|,|b|) in Definition 5.33."
+ },
+ {
+  "kind": "section",
+  "num": "5.6.2",
+  "title": "Open, closed and compact subsets and boundaries and interiors of subsets",
+  "page": 140,
+  "heading": null,
+  "text": "Open subsets An open subset of Rd is a subset consisting of points, that are interior in the following sense: Think of an open subset as one where every point has wiggle room: you can move a little in any direction and still stay inside. Notice the quantifiers: this time it is ∀v∃ε — the wiggle room ε is allowed to depend on the point v (points close to the edge get less of it)."
+ },
+ {
+  "kind": "section",
+  "num": "5.7",
+  "title": "Continuous functions",
+  "page": 145,
+  "heading": null,
+  "text": "Informally, a function is continuous if small changes of the input produce small changes of the output: the graph has no sudden jumps and can be drawn without lifting the pencil. This matters for optimization. In the real world — and inside a computer — the input is almost never exact: measurements have errors and floating point numbers are rounded."
+ },
+ {
+  "kind": "section",
+  "num": "5.7.1",
+  "title": "An elegant way of characterizing a continuous function",
+  "page": 149,
+  "heading": null,
+  "text": "Recall the definition of the preimage from Definition 1.115 and the definition of an open subset from Definition 5.39. The following characterization of continuous functions came rather late in the history of mathematics. Proof. Let U ⊆Rd be an open subset."
+ },
+ {
+  "kind": "section",
+  "num": "5.7.2",
+  "title": "Working with continuous functions",
+  "page": 150,
+  "heading": null,
+  "text": "We give now three important results, which can be used in concrete situations to verify that a given function is continuous. They can be proved without too much hassle. The first result below basically follows from the definition of the norm of a vector (see (5.4))."
+ },
+ {
+  "kind": "section",
+  "num": "5.8",
+  "title": "Important and special results for continuous functions",
+  "page": 152,
+  "heading": null,
+  "text": "Below we quote a famous and very intuitive result from 1817 due to Bolzano. This result is also known as the intermediate value theorem. Polynomials are continuous functions. Bolzano’s result fits perfectly in the proof of the result below. This result is wrong for polynomials in Q[x] as witnessed by f(x) = x3 −2, which does not have a rational root."
+ },
+ {
+  "kind": "section",
+  "num": "6.1",
+  "title": "Strictly convex functions",
+  "page": 155,
+  "heading": null,
+  "text": "Below we strengthen Definition 4.26 of a convex function. The strict inequality in (6.1) collapses to an equality if u = v,t = 0 or t = 1. For example, if u = v, then the left hand side of (6.1) is f((1−t)u+tu) = f(u) and the right hand side is (1−t)f(u)+t f(u) = f(u)."
+ },
+ {
+  "kind": "section",
+  "num": "6.2",
+  "title": "Why are convex functions interesting?",
+  "page": 156,
+  "heading": null,
+  "text": "We begin this section by giving the following result without proof. Give an example showing that Theorem 6.7 is not true if the convex function is defined on a closed convex subset. Hint. Try to come up with an example like f : [0,1] →R. Look at the end point 0."
+ },
+ {
+  "kind": "section",
+  "num": "6.3",
+  "title": "Differentiable functions",
+  "page": 159,
+  "heading": null,
+  "text": "To appreciate the depth of the notion of differentiability, you should read the story (joke, actually) in the second paragraph of section 8-2 in volume I of the famous Feynman Lectures on Physics. Below is a photograph of the master explainer in action."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.1",
+  "title": "Definition",
+  "page": 159,
+  "heading": null,
+  "text": "Let f : (a,b) →R be a function defined on the open interval (a,b) ⊂R. What should it mean that f is differentiable at a point x0 ∈(a,b)? The whole idea fits in one sentence. Zoom in on the graph at the point (x0, f(x0)) and it eventually looks like a line."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.2",
+  "title": "Formulas",
+  "page": 163,
+  "heading": null,
+  "text": "In operating with differentiable functions you are supposed to draw on your previous knowledge. I have summarized some of this knowledge below (even though we will give hints below as how to prove some of the rules). 1. If f(x) = ag(x), where a ∈R, then f ′(x) = ag′(x). 2."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.3",
+  "title": "The derivative of a product",
+  "page": 164,
+  "heading": null,
+  "text": "From high school you know that the derivative of a product of two functions f and g is given by the formula (fg)′(x) = f ′(x)g(x)+ f(x)g′(x). (6.6) We can use the ε-definition (6.4) to derive the product rule in (6.6). The computation below is a bit cumbersome, but actually quite doable."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.4",
+  "title": "The one variable chain rule",
+  "page": 165,
+  "heading": null,
+  "text": "The formula for the derivative of a composite function is given by (f ◦g)′(x0) = f ′(g(x0))g′(x0), where g(x0) is in the domain of f. Let us see how (6.4) applies in showing this."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.5",
+  "title": "The Newton-Raphson method for finding roots",
+  "page": 166,
+  "heading": null,
+  "text": "We begin this section with a surprising example. Suppose that a > 0 and we wish to compute √a. To do this we may focus on the quadratic equation f(x) = x2 −a = 0 and attempt to compute an approximate value x0 ≥0, such that f(x0) is close to 0."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.6",
+  "title": "Critical points and extrema",
+  "page": 167,
+  "heading": null,
+  "text": "The crucial result here is the following. It seems to date back to Fermat (see Fermat’s theorem). Proof. Suppose that ξ is a local maximum and that f(ξ +h)−f(ξ) = f ′(ξ)h+ε(h)h according to (6.4). If f ′(ξ) > 0, then we can choose δ > 0 sufficiently small, such that |ε(h)| < f ′(ξ) if 0 ≤h < δ, since ε(0) = 0 and ε is continuous in 0."
+ },
+ {
+  "kind": "section",
+  "num": "6.3.7",
+  "title": "Increasing functions",
+  "page": 168,
+  "heading": null,
+  "text": "The definition below is much simpler than the definition of differentiability. Give an example of an increasing function. Give an example of an increasing function that is not strictly increasing."
+ },
+ {
+  "kind": "section",
+  "num": "6.4",
+  "title": "Taylor polynomials",
+  "page": 170,
+  "heading": null,
+  "text": "If x0 is a critical point for f we cannot conclude that x0 is a local extremum. We know that f ′(x0) = 0 and we can get more information out of f by exploring the signs of f ′′(x0), f ′′′(x0),... Suppose that f(x) = a0 +a1x+a2x2 +···+anxn is a polynomial, then f(x) = f(0)+ f ′(0)x+ f ′′(0) 2 x2 +···+ f (n)(0) n! xn."
+ },
+ {
+  "kind": "section",
+  "num": "6.5",
+  "title": "Differentiable convex functions",
+  "page": 172,
+  "heading": null,
+  "text": "The following theorem is proved using Lemma 6.15 and Theorem 6.40. It immediately implies Corollary 6.55, which is the result mostly used. Theorem 6.54 leads to the following all important result."
+ },
+ {
+  "kind": "section",
+  "num": "7.1",
+  "title": "Introduction",
+  "page": 174,
+  "heading": null,
+  "text": "Many years ago (1986-89), I had a job as a financial analyst in a bank (now a hotel!) working (often late at night) with a spectacular view of Copenhagen from the office circled below. This was long before a financial analyst became a quant and machine learning became a buzz word."
+ },
+ {
+  "kind": "section",
+  "num": "7.2",
+  "title": "Vector functions",
+  "page": 176,
+  "heading": null,
+  "text": "We will flesh out the general Definition 1.104 in a special case below. A function f : Rd →Rm takes a vector (x1,...,xd) ∈Rd as input and gives a vector (y1,...,ym) ∈Rm as output. This means that every coordinate y1,...,ym in the output must be a function of x1,...,xd i.e., yi = fi(x1,...,xd) for i = 1,...,m."
+ },
+ {
+  "kind": "section",
+  "num": "7.3",
+  "title": "Differentiability",
+  "page": 176,
+  "heading": null,
+  "text": "The definition of differentiability for a function f : Rd →Rm mimics (7.3), except that ε(h)h is replaced by ε(h)|h|. Also the open interval (a,b) is replaced by an open subset U and the (open) interval (−δ,δ) is replaced by an open subset O containing 0."
+ },
+ {
+  "kind": "section",
+  "num": "7.3.1",
+  "title": "Partial derivatives",
+  "page": 177,
+  "heading": null,
+  "text": "A function of one variable x has a derivative with respect to x. For a function of several variables x1,...,xd we have a well defined derivative with respect to each of these variables. These are called the partial derivatives (if they exist) and they are defined below."
+ },
+ {
+  "kind": "section",
+  "num": "7.4",
+  "title": "Newton-Raphson in several variables!",
+  "page": 180,
+  "heading": null,
+  "text": "There is a beautiful generalization of the Newton-Raphson method to several variable functions f : Rd →Rd. Consider first that you would like to solve the system y2 −x3 +x = 0 (7.7) y3 −x2 = 0 (7.8) of non-linear equations in the two variables x and y."
+ },
+ {
+  "kind": "section",
+  "num": "7.5",
+  "title": "Local extrema in several variables",
+  "page": 181,
+  "heading": null,
+  "text": "For a function f : U →R, where U ⊆Rd, the derivative f ′(v) at v ∈U is called the gradient for f at v. Classically, it is denoted ∇f(v) i.e., ∇f(v) = \u0012 ∂f ∂x1 (v)... ∂f ∂xd (v) \u0013 . The definition below is inspired by the one variable case (see Definition 6.36)."
+ },
+ {
+  "kind": "section",
+  "num": "7.5.1",
+  "title": "Gradient descent",
+  "page": 183,
+  "heading": null,
+  "text": "Lemma 7.17 turns into an algorithm the moment we choose the direction u = −∇f(v)⊤: then ∇f(v)u = −|∇f(v)|2 < 0, so the lemma applies at every non-critical point. The result is the single most important algorithm in machine learning. Gradient descent."
+ },
+ {
+  "kind": "section",
+  "num": "7.6",
+  "title": "How a nudge propagates",
+  "page": 185,
+  "heading": null,
+  "text": "Before we state the chain rule in several variables, let us understand it the physicist’s way. Forget graphs and slopes for a moment and reread the definition of the derivative in (7.3) as a statement about cause and effect: if you nudge the input of f by a tiny amount δ, the output moves by f ′(x0)δ — plus junk that is tiny compared to δ."
+ },
+ {
+  "kind": "section",
+  "num": "7.7",
+  "title": "The chain rule",
+  "page": 186,
+  "heading": null,
+  "text": "Suppose you want to compute the value of the function h(x) = sin(cos(2x)) for x = 0. Then you would start by evaluating the inner function 2x, then applying cos and finally sin. This computation can be illustrated in the (computational) graph where you plug x = 0 into the leftmost node and fill in each node taking input from its left neighbor Suppose we want to compute h′(x) for x = 0."
+ },
+ {
+  "kind": "section",
+  "num": "7.7.1",
+  "title": "Matrix multiplication graphically",
+  "page": 187,
+  "heading": null,
+  "text": "To really understand the chain rule, it pays to view the matrix multiplication in (7.15) in a new light (inspired by computer science and neural networks). An m×n matrix (aij) is a rectangular table with m rows and n columns containing mn numbers."
+ },
+ {
+  "kind": "section",
+  "num": "7.7.2",
+  "title": "Unpacking the chain rule",
+  "page": 190,
+  "heading": null,
+  "text": "The matrix multiplication in (7.15) looks deceivingly simple. Let us write it out. Assume for simplicity that g : Rl →Rn is a function in the variables x1,...,xl and that f : Rn →Rm is a function in the variables y1,...,yn: g(x1,...,xl) =    g1(x1,...,xl) ... gn(x1,...,xl)    and f(y1,...,yn) =    f1(y1,...,yn) ... fm(y1,...,yn)   ."
+ },
+ {
+  "kind": "section",
+  "num": "7.7.3",
+  "title": "Backpropagation from scratch",
+  "page": 192,
+  "heading": null,
+  "text": "There is no magic in how sympy — or pytorch — computes these derivatives. The complete mechanism is the recipe you just used by hand: label every edge of the computational graph with the derivative of its end node with respect to its beginning node, multiply the labels along each path from the output down to an input, and add up the products."
+ },
+ {
+  "kind": "section",
+  "num": "7.8",
+  "title": "Logistic regression",
+  "page": 193,
+  "heading": null,
+  "text": "The beauty of the sigmoid function is that it takes any value x ∈R and turns it into a probability 0 < σ(x) < 1 by σ(x) = 1 1+e−x , i.e., σ(−∞) = 0 and σ(∞) = 1. Graph of the sigmoid function. Prove that σ′(x) = σ(x)(1−σ(x)) and log σ(x) 1−σ(x) = x."
+ },
+ {
+  "kind": "section",
+  "num": "7.8.1",
+  "title": "Estimating the parameters",
+  "page": 194,
+  "heading": null,
+  "text": "Suppose also that we have a table of observations (data set) x11 ··· x1n E1 x21 ··· x2n E2 ... ... ... ... xm1 ··· xmn Em, (7.17) where each row has observations xi1,...,xin along with a binary variable Ei, which is 1 if E was observed to occur and 0 if not."
+ },
+ {
+  "kind": "section",
+  "num": "7.9",
+  "title": "Training neural networks",
+  "page": 197,
+  "heading": null,
+  "text": "Every ingredient is now on the table: partial derivatives, the gradient, the chain rule on computational graphs, gradient descent (Section 7.5.1) and the activation functions — sigmoid and ReLU — from the very first chapter."
+ },
+ {
+  "kind": "section",
+  "num": "7.9.1",
+  "title": "A single neuron",
+  "page": 198,
+  "heading": null,
+  "text": "The smallest neural network is a single neuron with one input: it takes a number x, forms b + wx and applies the sigmoid function, y = σ(b+wx) = 1 1+e−b−wx . The numbers w and b are called the weight and the bias. They are the parameters the network is allowed to change when it learns."
+ },
+ {
+  "kind": "section",
+  "num": "7.9.2",
+  "title": "Training a single neuron",
+  "page": 198,
+  "heading": null,
+  "text": "Training means: choose w and b so that the neuron reproduces known data as well as possible. Suppose eight students report how many hours xi they studied and whether they passed (Ei = 1) or failed (Ei = 0) an exam."
+ },
+ {
+  "kind": "section",
+  "num": "7.9.3",
+  "title": "A genuine network: solving XOR",
+  "page": 198,
+  "heading": null,
+  "text": "A single neuron has a hard limit. In Exercise 5.9 you showed that no line separates the four points (0,0),(1,1) (labeled blue) and (0,1),(1,0) (labeled red) — and a single neuron can only draw a line. This little data set, known as XOR, famously stalled neural network research for years."
+ },
+ {
+  "kind": "section",
+  "num": "7.9.4",
+  "title": "Reading handwritten digits",
+  "page": 200,
+  "heading": null,
+  "text": "We end with real data: images of handwritten digits. The sklearn library ships 1797 small 8 × 8 gray scale images. Before training anything, look at the data — the cell below shows the first image in the collection together with the 8×8 matrix of gray values behind it."
+ },
+ {
+  "kind": "section",
+  "num": "7.9.5",
+  "title": "A network that writes",
+  "page": 201,
+  "heading": null,
+  "text": "The networks above read: they take an image and answer a question about it. But the neural network you use every day — the chatbot from Section 1.1 — writes. That looks like a completely different ability. It is not."
+ },
+ {
+  "kind": "section",
+  "num": "7.10",
+  "title": "Lagrange multipliers",
+  "page": 204,
+  "heading": null,
+  "text": "The method of Lagrange multipliers is a super classical way of solving optimization problems with non-linear (equality) constraints. We will only consider the special case max/min g(x1,...,xd)=0 f(x1,...,xd), (7.20) where both f : Rd →R and g : Rd →R are differentiable functions."
+ },
+ {
+  "kind": "section",
+  "num": "7.11",
+  "title": "Optimization using the interior and boundary of a subset",
+  "page": 207,
+  "heading": null,
+  "text": "Suppose that C ⊆Rd is a closed subset and f : Rd →R is a continuous function. Recall (see Theorem 5.84) that the optimization problem max/min v∈C f(v) always has a solution if C in addition to being closed is also bounded."
+ },
+ {
+  "kind": "section",
+  "num": "8.1",
+  "title": "Introduction",
+  "page": 210,
+  "heading": null,
+  "text": "In Section 6.4 the Taylor expansion for a one variable differentiable function f : R →R centered at x0 with step size h = x−x0 was introduced as f(x0 +h) = f(x0)+ f ′(x0)h+ 1 2! f ′′(x0)h2 +··· (8.1) Recall that the second derivative f ′′(x0) contains a wealth of information about the function."
+ },
+ {
+  "kind": "section",
+  "num": "8.2",
+  "title": "Several variables",
+  "page": 210,
+  "heading": null,
+  "text": "Our main character is a differentiable function F : Rd →R in several variables. We already know that F(v0 +h) = F(v0)+∇F(v0)h+ε(h)|h|, where v0 and h are vectors in Rd (as opposed to the good old numbers in (8.1)). Take a look back at Definition 7.3 for the general definition of differentiability."
+ },
+ {
+  "kind": "section",
+  "num": "8.3",
+  "title": "Newton’s method for finding critical points",
+  "page": 212,
+  "heading": null,
+  "text": "We may use Newton’s method for computing critical points for a function F : Rd →R of several variables. Recall that a critical point is a point v0 ∈Rd with ∇F(v0) = 0. By (7.9) and (8.4) the computation in Newton’s method becomes v1 = v0 − \u0000 ∇2F(v0) \u0001−1 ∇F(v0)."
+ },
+ {
+  "kind": "section",
+  "num": "8.4",
+  "title": "The Hessian and critical points",
+  "page": 213,
+  "heading": null,
+  "text": "Now we are in a position to state at least the first terms in the Taylor expansion for a differentiable function F : Rd →R. The angle of the proof is to reduce to the one-dimensional case through the function g(t) defined in (8.2)."
+ },
+ {
+  "kind": "section",
+  "num": "8.5",
+  "title": "Differentiable convex functions of several variables",
+  "page": 217,
+  "heading": null,
+  "text": "Below is the generalization of Theorem 6.61 to several variables. You have already seen this in Exercise 6.62, right? Prove that a bounded convex differentiable function f : Rd →R is constant."
+ },
+ {
+  "kind": "section",
+  "num": "8.6",
+  "title": "How to decide the definiteness of a matrix",
+  "page": 220,
+  "heading": null,
+  "text": "In this section we will outline a straightforward method for deciding if a matrix is positive definite, positive semidefinite, negative definite or indefinite. Before proceeding it is a must that you do the following exercise."
+ },
+ {
+  "kind": "section",
+  "num": "8.7",
+  "title": "A schematic procedure for transforming symmetric matrices",
+  "page": 224,
+  "heading": null,
+  "text": "Suppose that A is a symmetric n×n matrix. We wish to find an invertible matrix B and a diagonal matrix D so that B⊤AB = D. Every step in the algorithm in the proof of Theorem 8.31 involve an operation on the columns of A followed by a similar operation on the rows."
+ },
+ {
+  "kind": "section",
+  "num": "9.1",
+  "title": "The optimal separating hyperplane",
+  "page": 228,
+  "heading": null,
+  "text": "In section 5.3.2 we were presented with labeled data (v1,y1),...,(vm,ym), (9.3) where vi ∈Rd and yi = ±1. The task at hand was to separate differently labeled data by a hyperplane α⊤v+β = 0, such that α⊤vi +β > 0 if yi = 1 (9.4) α⊤vi +β < 0 if yi = −1 (9.5) for i = 1,...,m."
+ },
+ {
+  "kind": "section",
+  "num": "9.2",
+  "title": "Support vector machines",
+  "page": 232,
+  "heading": null,
+  "text": "The optimization problem of Theorem 9.8, its dual (9.13) and the kernel functions introduced below make up one of the most celebrated algorithms of machine learning: the support vector machine (SVM) from the Cortes and Vapnik paper cited above."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.1",
+  "title": "Two clusters in the plane",
+  "page": 233,
+  "heading": null,
+  "text": "The cell below separates two clusters of points. It prints the optimal α and β, draws the optimal hyperplane (solid) with the two margin lines α⊤v+β = ±1 (dashed), and circles the support vectors. Look closely at the printed numbers: at the support vectors, α⊤vi + β equals ±1 exactly — these are the constraints of Theorem 9.8 holding with equality, computed numerically."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.2",
+  "title": "Reading handwritten digits",
+  "page": 233,
+  "heading": null,
+  "text": "Support vector machines are not a museum piece. Before the deep learning era they were the state of the art for tasks like text classification and protein classification, and for small data sets with many measurements per data point they remain a favorite — this is exactly the situation of Remark 9.11, where the dual problem has one variable per data point rather than one per dimension."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.3",
+  "title": "Separating sentences",
+  "page": 234,
+  "heading": null,
+  "text": "Digits were easy to feed to the machine: an image is born a vector. But most of what the world wants classified is text — support requests, product reviews, spam."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.4",
+  "title": "Separating by non-linear functions",
+  "page": 236,
+  "heading": null,
+  "text": "Sometimes no line can separate the data — we promised in Section 9.1 to deal with this. The remedy is not to bend the line. It is to move the points. If no hyperplane separates the data, map the data into a higher dimensional space, where a hyperplane can do the job."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.5",
+  "title": "Kernel functions",
+  "page": 237,
+  "heading": null,
+  "text": "A kernel function is a function k : Rd ×Rd →R, that is a hidden dot product in the following sense: there exists a function ϕ : Rd →RN, such that k(u,v) = ϕ(u)·ϕ(v). (9.17) Let k : R2 ×R2 →R be given by k(u,v) = (u⊤v+1)2. Then k((x1,y1),(x2,y2)) = (x1x2 +y1y2 +1)2 (9.18) = x2 1x2 2 +y2 1y2 2 +2x1x2y1y2 +2x1x2 +2y1y2 +1."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.6",
+  "title": "The Gaussian kernel and infinite dimension",
+  "page": 238,
+  "heading": null,
+  "text": "The most famous kernel of all is the Gaussian kernel k(u,v) = e−|u−v|2, known to sklearn as kernel=\"rbf\" (for radial basis function). Which map ϕ hides behind this one? Let us look in dimension one, where the answer is both elementary and dizzying."
+ },
+ {
+  "kind": "section",
+  "num": "9.2.7",
+  "title": "The kernel perceptron algorithm",
+  "page": 239,
+  "heading": null,
+  "text": "Recall the stunningly simple perceptron algorithm from section 5.3.2. This algorithm can be modified to handle non-linear separation too by using kernel functions. In fact, this modification was one of the inspirations for the development of the support vector machines described above."
+ },
+ {
+  "kind": "section",
+  "num": "9.3",
+  "title": "Interior point methods",
+  "page": 239,
+  "heading": null,
+  "text": "The support vector machines of the previous section simply called sklearn, which solved the optimization problem of Theorem 9.8 for us in milliseconds. But how?"
+ },
+ {
+  "kind": "section",
+  "num": "9.3.1",
+  "title": "Quadratic function with polyhedral constraints",
+  "page": 240,
+  "heading": null,
+  "text": "A much used setup in optimization is minimizing a quadratic functions subject to polyhedral constraints. This is the optimization problem min Av≤b v⊤Qv+c⊤v, (9.24) where Q is a d ×d matrix, A is an m×d matrix, c ∈Rd and b ∈Rm. Certainly the constraints Av ≤b define a convex subset of Rd, but the function v⊤Qv+c⊤v is not strictly convex unless Q is positive definite."
+ },
+ {
+  "kind": "section",
+  "num": "9.4",
+  "title": "A geometric optimality criterion",
+  "page": 242,
+  "heading": null,
+  "text": "Consider the general optimization problem min (x1,...,xd)∈C f(x1,...,xd), (9.25) where C is a subset of Rd. A nice application of Proposition 9.28 is where the constraints in C are linear. Then you can test if v0 is an optimal solution by solving the linear program min∇f(v0)v for v ∈C."
+ },
+ {
+  "kind": "section",
+  "num": "9.5",
+  "title": "The KKT conditions",
+  "page": 245,
+  "heading": null,
+  "text": "The KKT in the title of this section is short for Karush-Kuhn-Tucker. We will limit ourselves to a convex optimization problem of the form min (x1,...,xd)∈C f(x1,...,xd), (9.27) where C is defined by the differentiable convex functions gi : Rd →R for i = 1,...,m as C = {v ∈Rd | g1(v) ≤0,...,gm(v) ≤0} and f : Rd →R is a convex function."
+ },
+ {
+  "kind": "section",
+  "num": "9.5.1",
+  "title": "Strategy",
+  "page": 247,
+  "heading": null,
+  "text": "A general strategy for finding solutions to the KKT conditions in (9.28) is zooming in on (the Lagrange multipliers) λ1,...,λm testing each of them for the two cases λi = 0 and λi > 0. One important point, which you can read from (9.28), is that gi(v0) = 0 if λi > 0."
+ },
+ {
+  "kind": "section",
+  "num": "9.5.2",
+  "title": "Example",
+  "page": 248,
+  "heading": null,
+  "text": "Let C denote the set (see Figure 9.2) of points (x,y) ∈R2 with x2 +2y2 ≤1 x+y ≤1 y ≤x. We will illustrate the mechanics of solving the KKT conditions in finding an optimal solution for min (x,y)∈C x+3y."
+ },
+ {
+  "kind": "section",
+  "num": "9.5.3",
+  "title": "Solving the KKT conditions by computer",
+  "page": 249,
+  "heading": null,
+  "text": "Lengthy for a human — but look again at the strategy: 2m cases, and each case is nothing but a system of equations together with some sign checks. That is a job for a computer, and sympy can do it with exact arithmetic. The program below is the strategy of this section made executable."
+ },
+ {
+  "kind": "section",
+  "num": "9.5.4",
+  "title": "Closing the circle: KKT and the optimal hyperplane",
+  "page": 250,
+  "heading": null,
+  "text": "This chapter opened with the optimal separating hyperplane and ends with certificates of optimality — and the two meet. The dual problem (9.13) was presented without derivation, and its two most mysterious ingredients were the linear combination (9.12) and the constraint Λ⊤Y = 0."
+ },
+ {
+  "kind": "section",
+  "num": "9.6",
+  "title": "Optimization exercises",
+  "page": 251,
+  "heading": null,
+  "text": "Below are some exercises especially related to the KKT conditions. In some of the exercises the minimization problem min (x1,...,xd)∈C f(x1,...,xd), is denoted min{ f(x1,...,xd) | (x1,...,xd) ∈C}. This should cause no confusion. Consider the optimization problem min x2+y2 ≤1 (x+1)2+(y−1)2 ≤1 −x+y (9.44) (a) Show that (9.44) is a convex optimization problem."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.1",
+  "title": "cardinality",
+  "page": 15,
+  "heading": null,
+  "text": "The number of elements in a set S is called the cardinality of the set. We will denote it by |S|. Example: |{1,2,3}| = 3."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.1",
+  "title": "empty set",
+  "page": 15,
+  "heading": null,
+  "text": "There is a unique set containing no or zero elements. This set is called the empty set and is denoted ∅ i.e., ∅ = {} and |∅| = 0."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.2",
+  "title": "element of, belongs to (∈, ∉)",
+  "page": 17,
+  "heading": null,
+  "text": "If A is a set, then x ∈ A (1.5) is a proposition. It is true if x is an element of or belongs to A. The notation x ∉ A is defined by the proposition ¬(x ∈ A). Short hand: a1, a2, ..., an ∈ A means (a1 ∈ A) ∧ (a2 ∈ A) ∧ ··· ∧ (an ∈ A)."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.3",
+  "title": "subset (⊆)",
+  "page": 17,
+  "heading": null,
+  "text": "If A and B are sets, then A ⊆B2 means that every element of A is an element of B. So A ⊆B is a placeholder for the proposition ∀x ∈A : x ∈B In this case we say that A is a subset of B."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.4",
+  "title": "set-builder notation",
+  "page": 18,
+  "heading": null,
+  "text": "If S is a set and p(x) a predicate for x ∈ S, then we build the subset {x ∈ S | p(x)} ⊆ S (1.6) of x ∈ S such that p(x) is true. Example: S = {−2, −1, 2, 3} and p(x) = x is positive gives {x ∈ S | p(x)} = {2, 3}."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.5",
+  "title": "intersection (∩)",
+  "page": 21,
+  "heading": null,
+  "text": "For two sets A and B, the intersection A ∩ B is the set consisting of the elements in both A and B i.e., A ∩ B = {x | (x ∈ A) ∧ (x ∈ B)}."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.5",
+  "title": "union (∪)",
+  "page": 21,
+  "heading": null,
+  "text": "For two sets A and B, the union A ∪ B is the set consisting of the elements in A or B i.e., A ∪ B = {x | (x ∈ A) ∨ (x ∈ B)}."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.5",
+  "title": "set difference (A \\ B)",
+  "page": 21,
+  "heading": null,
+  "text": "The difference A \\ B (between A and B) consists of the elements in A not contained in B i.e., A \\ B = {x | (x ∈ A) ∧ (x ∉ B)}."
+ },
+ {
+  "kind": "term",
+  "num": "1.4.6",
+  "title": "Cartesian product, pairs, tuples",
+  "page": 23,
+  "heading": null,
+  "text": "Oftentimes we want to consider more than one variable as input to a predicate. It is convenient to group the variables into one object consisting of the variables. This is done using tuples."
+ },
+ {
+  "kind": "term",
+  "num": "1.5.3",
+  "title": "irrational number",
+  "page": 26,
+  "heading": null,
+  "text": "A real number that is not rational is called irrational. Famous ones are √2, π and e. √2 is a root of x² − 2 (an algebraic number); e and π are not even algebraic."
+ },
+ {
+  "kind": "term",
+  "num": "1.5.4",
+  "title": "associative laws",
+  "page": 28,
+  "heading": null,
+  "text": "The rules (iv) and (v) of Proposition 1.59 are called the associative laws for addition and multiplication: (x + y) + z = x + (y + z) and (xy)z = x(yz)."
+ },
+ {
+  "kind": "term",
+  "num": "1.5.4",
+  "title": "distributive law",
+  "page": 28,
+  "heading": null,
+  "text": "The rule (vi) of Proposition 1.59 is called the distributive law: x(y + z) = xy + xz. It connects multiplication with addition."
+ },
+ {
+  "kind": "term",
+  "num": "1.6.3",
+  "title": "even and odd integers",
+  "page": 35,
+  "heading": null,
+  "text": "An integer is called even if it is divisible by 2, so the even integers are {..., −4, −2, 0, 2, 4, ...}. An integer is called odd if it is not even: {..., −5, −3, −1, 1, 3, ...}."
+ },
+ {
+  "kind": "term",
+  "num": "1.6.5",
+  "title": "first element (well-ordering of N)",
+  "page": 38,
+  "heading": null,
+  "text": "If S is a subset of a set with an order ≤, then s ∈ S is called a first element if ∀x ∈ S : s ≤ x. A crucial rule (or axiom) is that every non-empty subset of N has a first element. This is false for Z."
+ },
+ {
+  "kind": "term",
+  "num": "1.7.3",
+  "title": "composition of functions (f ∘ g)",
+  "page": 45,
+  "heading": null,
+  "text": "Given two functions f : S →T and g : U →V, where V ⊆S, we define a new function f ◦g : U →T by (f ◦g)(u) = f(g(u)). This notion calls for some reflection. We have a total of four sets in this definition: U,V,S and T and, not to forget, the condition that V ⊆S."
+ },
+ {
+  "kind": "term",
+  "num": "1.7.6",
+  "title": "inverse function (f⁻¹)",
+  "page": 48,
+  "heading": null,
+  "text": "If f : S →T is bijective, then we may define a function g : T →S, so that (f ◦g)(y) = y for every y ∈T and (g◦f)(x) = x for every x ∈S. This function is denoted f −1. How do we define f −1(y) for y ∈T?"
+ },
+ {
+  "kind": "term",
+  "num": "1.7.8",
+  "title": "parameters and training of a neuron",
+  "page": 49,
+  "heading": null,
+  "text": "A perceptron p : R^d → R as in (1.26), p(x) = w1x1 + ··· + wdxd + b, is specified by d + 1 numbers: the weights w1, ..., wd and the bias b. These numbers are called the parameters of the neuron."
+ },
+ {
+  "kind": "term",
+  "num": "2.4",
+  "title": "degree of a polynomial",
+  "page": 63,
+  "heading": null,
+  "text": "A polynomial of degree n is a function f : R → R of the form f(x) = an xⁿ + a(n−1) xⁿ⁻¹ + ··· + a1 x + a0 (2.8), where a0, ..., an are real numbers (the coefficients) and an ≠ 0. The degree of f is denoted deg(f)."
+ },
+ {
+  "kind": "term",
+  "num": "2.4",
+  "title": "quadratic polynomial",
+  "page": 63,
+  "heading": null,
+  "text": "Polynomials of degree two are called quadratic polynomials. They look like f(x) = ax² + bx + c, where a, b and c are real numbers and a ≠ 0."
+ },
+ {
+  "kind": "term",
+  "num": "2.4.2",
+  "title": "root of a polynomial",
+  "page": 66,
+  "heading": null,
+  "text": "A real number α ∈ R is called a root of the polynomial f(x) ∈ R[x] if f(α) = 0."
+ },
+ {
+  "kind": "term",
+  "num": "2.5",
+  "title": "Lagrange interpolation",
+  "page": 69,
+  "heading": null,
+  "text": "There exists a unique polynomial of degree ≤ n passing through n + 1 points (x1, y1), ..., (x(n+1), y(n+1)) with distinct x-values: f(x) = y1 L1(x) + ··· + y(n+1) L(n+1)(x) with the Lagrange basis polynomials Li. This trick (2.17) is called Lagrange interpolation."
+ },
+ {
+  "kind": "term",
+  "num": "2.5.1",
+  "title": "Lagrange basis polynomial",
+  "page": 72,
+  "heading": null,
+  "text": "For n + 1 distinct numbers x1, ..., x(n+1): Li(x) = (x − x1)···(x − x(i−1))(x − x(i+1))···(x − x(n+1)) / Ci, where Ci = (xi − x1)···(xi − x(i−1))(xi − x(i+1))···(xi − x(n+1)). Li is called the i-th Lagrange basis polynomial: Li(xi) = 1 and Li(xj) = 0 for j ≠ i."
+ },
+ {
+  "kind": "term",
+  "num": "2.7",
+  "title": "overfitting",
+  "page": 75,
+  "heading": null,
+  "text": "A fit with a degree 10 polynomial can match the data D perfectly but be far from the target p, while a degree 2 fit is close to p. A complex model tends to fit noise. This phenomenon is called overfitting; a simple model is generally preferred."
+ },
+ {
+  "kind": "term",
+  "num": "3.1.1",
+  "title": "matrix, m×n matrix",
+  "page": 77,
+  "heading": null,
+  "text": "A rectangular array of numbers is called a matrix. A matrix with m rows and n columns is called an m×n (m by n) matrix, written A = (aij) with aij the entry in row i and column j."
+ },
+ {
+  "kind": "term",
+  "num": "3.3.2",
+  "title": "identity matrix",
+  "page": 82,
+  "heading": null,
+  "text": "The identity matrix In of order n is the n×n diagonal matrix with 1 in the diagonal (0 elsewhere). It has the crucial property InA = AIn = A (3.6) for all n×n matrices A."
+ },
+ {
+  "kind": "term",
+  "num": "3.3.3",
+  "title": "stochastic matrix",
+  "page": 83,
+  "heading": null,
+  "text": "A square matrix is called a stochastic matrix if its entries are ≥ 0 and the sum of the entries in each of its column vectors is 1. Example: P = [[0.7, 0.2], [0.3, 0.8]] (3.8)."
+ },
+ {
+  "kind": "term",
+  "num": "3.4.1",
+  "title": "matrix addition",
+  "page": 87,
+  "heading": null,
+  "text": "Addition of two matrices with the same number of rows and columns is defined below.    a11 ··· a1n ... ... ... am1 ··· amn   +    b11 ··· b1n ... ... ... bm1 ··· bmn   =    a11 +b11 ··· a1n +b1n ... ... ... am1 +bm1 ··· amn +bmn   ."
+ },
+ {
+  "kind": "term",
+  "num": "3.6",
+  "title": "transposed matrix (A⊤)",
+  "page": 94,
+  "heading": null,
+  "text": "The transpose of an m×n matrix A is the n×m matrix A⊤given by A⊤ i j = A ji, where 1 ≤i ≤m and 1 ≤j ≤n. As an example, \u00120 2 4 −2 3 2 7 4 \u0013⊤ =     0 3 2 2 4 7 −2 4    . Notice also that (A⊤)⊤= A for an arbitrary matrix A."
+ },
+ {
+  "kind": "term",
+  "num": "3.7",
+  "title": "symmetric matrix",
+  "page": 95,
+  "heading": null,
+  "text": "A (square) matrix A is called symmetric if A = A⊤, i.e. A is symmetric around the diagonal, like [[1, 2, 3], [2, 5, 4], [3, 4, 6]]."
+ },
+ {
+  "kind": "term",
+  "num": "3.7",
+  "title": "quadratic form f_A(v) = v⊤Av",
+  "page": 95,
+  "heading": null,
+  "text": "If A is a symmetric d×d matrix, we define the function fA : R^d → R given by fA(v) = v⊤Av. For d = 2, A = [[a, c], [c, b]] and v = (x, y): v⊤Av = ax² + by² + 2cxy."
+ },
+ {
+  "kind": "term",
+  "num": "3.7.1",
+  "title": "positive definite matrix",
+  "page": 96,
+  "heading": null,
+  "text": "A symmetric matrix A is called positive definite if fA(v) = v⊤Av > 0 for every v ∈ R^d \\ {0}. Example: the identity matrix, where v⊤Iv = x² + y² > 0 for v ≠ 0."
+ },
+ {
+  "kind": "term",
+  "num": "3.7.2",
+  "title": "positive semi-definite matrix",
+  "page": 96,
+  "heading": null,
+  "text": "A symmetric matrix A is called positive semi-definite if fA(v) = v⊤Av ≥ 0 for every v ∈ R^d. A positive definite matrix is positive semi-definite; the zero matrix is positive semi-definite but not positive definite."
+ },
+ {
+  "kind": "term",
+  "num": "3.7.3",
+  "title": "symmetric reduction",
+  "page": 97,
+  "heading": null,
+  "text": "As you probably have noticed, it is rather straightforward to see when a diagonal matrix is positive (semi)definite. For a general symmetric matrix, one needs to reduce to the case of a diagonal matrix."
+ },
+ {
+  "kind": "term",
+  "num": "4.4",
+  "title": "linear optimization (linear program)",
+  "page": 109,
+  "heading": null,
+  "text": "We will start this section with a concrete example. A company produces two products A and B. The product A is selling for 350 USD and B is selling for 300 USD. There are certain limited resources in the production of A and B."
+ },
+ {
+  "kind": "term",
+  "num": "4.5",
+  "title": "Fourier-Motzkin elimination",
+  "page": 111,
+  "heading": null,
+  "text": "Fourier-Motzkin elimination is a classical method (dating back to 1826, and named after Joseph Fourier and Theodore Motzkin) for solving linear inequalities. It is also a key ingredient in an algorithm for solving linear optimization problems."
+ },
+ {
+  "kind": "term",
+  "num": "5.2",
+  "title": "vector in R^d",
+  "page": 118,
+  "heading": null,
+  "text": "We denote the set of column vectors with d rows by R^d and call it the euclidean vector space of dimension d. An element v ∈ R^d is called a vector; it has the form v = (x1, x2, ..., xd)⊤ (a column vector with d entries)."
+ },
+ {
+  "kind": "term",
+  "num": "5.3.2",
+  "title": "separating line",
+  "page": 123,
+  "heading": null,
+  "text": "Given points v1 = (x1, y1), ..., vn = (xn, yn) with labels ℓ1, ..., ℓn = ±1, a line ax + by + c = 0 ((a, b) ≠ (0, 0)) with axi + byi + c > 0 if ℓi = 1 and axi + byi + c < 0 if ℓi = −1 is called a separating line for the labeled points."
+ },
+ {
+  "kind": "term",
+  "num": "5.3.2",
+  "title": "perceptron algorithm",
+  "page": 123,
+  "heading": null,
+  "text": "Given v1, ..., vm ∈ R^d \\ {0}, find α with α·vi > 0 for every i. (i) Begin by putting α = 0. (ii) If there exists vi with α·vi ≤ 0, replace α by α + vi and repeat this step. Otherwise α is the desired output. This is called the perceptron (learning) algorithm."
+ },
+ {
+  "kind": "term",
+  "num": "5.5.2",
+  "title": "cosine similarity",
+  "page": 133,
+  "heading": null,
+  "text": "When two vectors u,v ∈Rd are interpreted as data sets, the number in 5 of Definition 5.1 is known as the cosine similarity. It measures how well the two vectors u and v point in the same direction: 1 means perfectly aligned, 0 orthogonal, −1 opposite."
+ },
+ {
+  "kind": "term",
+  "num": "5.5.3",
+  "title": "softmax",
+  "page": 135,
+  "heading": null,
+  "text": "Given similarity scores s1, ..., sn (between a query q and vectors v1, ..., vn), turn them into weights by exponentiating and normalizing: wi = e^(β·si) / (e^(β·s1) + ··· + e^(β·sn)) (5.18). Every weight is positive and they sum to 1. The exponential recipe (5.18) is called softmax. β ≥ 0 is a dial: β = 0 gives all weights 1/n; as β grows the largest score takes all the weight."
+ },
+ {
+  "kind": "term",
+  "num": "5.5.3",
+  "title": "attention",
+  "page": 135,
+  "heading": null,
+  "text": "The central mechanism of a transformer is called attention: every word updates its vector q by a weighted average w1v1 + ··· + wnvn of the vectors around it, with weights wi from softmax (5.18) of the similarity scores (dot products / cosines) between q and vi. Attention is a soft nearest neighbor."
+ },
+ {
+  "kind": "term",
+  "num": "6.3.5",
+  "title": "Newton-Raphson method",
+  "page": 166,
+  "heading": null,
+  "text": "We begin this section with a surprising example. Suppose that a > 0 and we wish to compute √a. To do this we may focus on the quadratic equation f(x) = x2 −a = 0 and attempt to compute an approximate value x0 ≥0, such that f(x0) is close to 0."
+ },
+ {
+  "kind": "term",
+  "num": "6.4",
+  "title": "Taylor polynomial",
+  "page": 170,
+  "heading": null,
+  "text": "If x0 is a critical point for f we cannot conclude that x0 is a local extremum. We know that f ′(x0) = 0 and we can get more information out of f by exploring the signs of f ′′(x0), f ′′′(x0),..."
+ },
+ {
+  "kind": "term",
+  "num": "7.1",
+  "title": "gradient descent",
+  "page": 174,
+  "heading": null,
+  "text": "To minimize a differentiable f, start at x and repeat the step x ← x − λ∇f(x) (Lemma 7.17 with u = −∇f(x)), where λ > 0 is the learning rate. This iterative method is called gradient descent."
+ },
+ {
+  "kind": "term",
+  "num": "7.3.1",
+  "title": "partial derivatives",
+  "page": 177,
+  "heading": null,
+  "text": "For a function f(x1, ..., xd) of several variables we have a derivative with respect to each variable: ∂f/∂xi(v) = lim(h→0) (f(v + h·ei) − f(v)) / h, the one-variable derivative in xi with the other variables held fixed. These are called the partial derivatives (if they exist)."
+ },
+ {
+  "kind": "term",
+  "num": "7.5",
+  "title": "gradient (∇f)",
+  "page": 181,
+  "heading": null,
+  "text": "For a function f : U → R, where U ⊆ R^d, the derivative f′(v) at v ∈ U is called the gradient for f at v, denoted ∇f(v) = (∂f/∂x1(v), ..., ∂f/∂xd(v))."
+ },
+ {
+  "kind": "term",
+  "num": "7.5",
+  "title": "learning rate",
+  "page": 181,
+  "heading": null,
+  "text": "In one step x − λ∇f(x) of gradient descent (Lemma 7.17), the number λ > 0 is called the learning rate (in machine learning terms). For small enough λ the step decreases f when ∇f(x) ≠ 0."
+ },
+ {
+  "kind": "term",
+  "num": "7.8",
+  "title": "logistic regression",
+  "page": 193,
+  "heading": null,
+  "text": "The beauty of the sigmoid function is that it takes any value x ∈R and turns it into a probability 0 < σ(x) < 1 by σ(x) = 1 1+e−x , i.e., σ(−∞) = 0 and σ(∞) = 1. Graph of the sigmoid function."
+ },
+ {
+  "kind": "term",
+  "num": "7.8.1",
+  "title": "maximum likelihood estimation",
+  "page": 194,
+  "heading": null,
+  "text": "For observations (xi1, ..., xin, Ei), i = 1, ..., m, the probability of the data is L(w0, ..., wn) = ∏ p(xi1, ..., xin)^Ei (1 − p(xi1, ..., xin))^(1−Ei) (7.18). Choosing the parameters w0, ..., wn so that L is maximized is called maximum likelihood estimation; usually one maximizes log L, by gradient descent or solving ∇L = 0."
+ },
+ {
+  "kind": "term",
+  "num": "7.9.1",
+  "title": "weight and bias of a neuron",
+  "page": 198,
+  "heading": null,
+  "text": "A single neuron with one input x computes y = σ(b + wx) = 1 / (1 + e^(−b−wx)). The numbers w and b are called the weight and the bias: the parameters the network changes when it learns."
+ },
+ {
+  "kind": "term",
+  "num": "7.10",
+  "title": "Shannon entropy",
+  "page": 204,
+  "heading": null,
+  "text": "The sum H(p1, ..., pn) = −p1 log2(p1) − ··· − pn log2(pn) is called the (Shannon) entropy of the discrete probability distribution p1, ..., pn. By Jensen's inequality (−log2 is convex), H(p1, ..., pn) ≤ log2(n)."
+ },
+ {
+  "kind": "term",
+  "num": "9.1",
+  "title": "support vectors",
+  "page": 228,
+  "heading": null,
+  "text": "For an optimal separating hyperplane α⊤v + β = 0 (Theorem 9.8), the data points vi with α⊤vi + β = 1 or α⊤vi + β = −1 are called support vectors. An optimal solution always has support vectors."
+ },
+ {
+  "kind": "term",
+  "num": "9.2",
+  "title": "support vector machine",
+  "page": 232,
+  "heading": null,
+  "text": "The support vector machine (SVM): find the hyperplane α⊤v + β = 0 maximizing the margin, i.e. minimize |α|² subject to α⊤vi + β ≥ 1 if yi = 1 and α⊤vi + β ≤ −1 if yi = −1 (Theorem 9.8), or its dual (9.13), optionally with a kernel function. In python: sklearn.svm (kernel=\"linear\", large C)."
+ },
+ {
+  "kind": "term",
+  "num": "9.2.5",
+  "title": "kernel function",
+  "page": 237,
+  "heading": null,
+  "text": "A kernel function is a function k : R^d × R^d → R that is a hidden dot product: there exists ϕ : R^d → R^N such that k(u, v) = ϕ(u)·ϕ(v) (9.17). Example: k(u, v) = (u⊤v + 1)² with ϕ(a, b) = (a², b², √2ab, √2a, √2b, 1)."
+ },
+ {
+  "kind": "term",
+  "num": "9.2.6",
+  "title": "Gaussian kernel",
+  "page": 238,
+  "heading": null,
+  "text": "The most famous kernel of all is the Gaussian kernel k(u,v) = e−|u−v|2, known to sklearn as kernel=\"rbf\" (for radial basis function). Which map ϕ hides behind this one? Let us look in dimension one, where the answer is both elementary and dizzying."
+ },
+ {
+  "kind": "term",
+  "num": "9.2.7",
+  "title": "kernel perceptron",
+  "page": 239,
+  "heading": null,
+  "text": "Recall the stunningly simple perceptron algorithm from section 5.3.2. This algorithm can be modified to handle non-linear separation too by using kernel functions. In fact, this modification was one of the inspirations for the development of the support vector machines described above."
+ },
+ {
+  "kind": "term",
+  "num": "9.3",
+  "title": "interior point method (barrier)",
+  "page": 239,
+  "heading": null,
+  "text": "The support vector machines of the previous section simply called sklearn, which solved the optimization problem of Theorem 9.8 for us in milliseconds. But how?"
+ }
+]

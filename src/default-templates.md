@@ -78,7 +78,7 @@ using {{rules / Definition X.Y}}. $\blacksquare$
 
 **Base case** ($n = {{n0}}$): {{check the base case}}, so $P({{n0}})$ holds.
 
-**Induction step:** Assume $P(k)$ holds for some $k \ge {{n0}}$ (induction hypothesis). We show $P(k+1)$:
+**Induction step:** Assume $P(k)$ holds for some $k \ge {{n0}}$, that is ${{P(k)}}$ (induction hypothesis). We show $P(k+1)$, that is ${{P(k+1)}}$:
 {{step, using the hypothesis}}
 So $P(k) \Rightarrow P(k+1)$.
 

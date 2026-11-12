@@ -197,13 +197,13 @@ print("points (decimal):", [(sp.N(p, 6), sp.N(f.subs($SYM, p), 6)) for p in real
 @in B set
 print("A & B =", A & B, "  disjoint:", not (A & B))
 ### two lines in R^d: p + t*u and q + s*v
-@uses sympy
+@uses sympy solve
 @in p vector
 @in u vector
 @in q vector
 @in v vector
 t, s = sp.symbols('t s')
-sol = sp.solve(list(p + t*u - (q + s*v)), [t, s], dict=True)
+sol = solve_all(list(p + t*u - (q + s*v)), [t, s])
 print("solutions:", sol)
 for d in sol:
     print("intersection point:", list((p + t*u).subs(d)))
@@ -220,11 +220,11 @@ t = sp.symbols('t')
 sol = sp.solve(sp.Eq(n.dot(p + t*u), c), t)
 print("t =", sol, " points:", [list(p + tt*u) for tt in sol])
 ### system of equations
-@uses sympy
+@uses sympy solve
 @in f expr
 @in g expr
 @sym x y
-sol = sp.solve([sp.Eq(f, 0), sp.Eq(g, 0)], $SYMS, dict=True)
+sol = solve_all([sp.Eq(f, 0), sp.Eq(g, 0)], $SYMS)
 print("exact:", sol if len(str(sol)) < 300 else "long, see decimals")
 print("decimal:", [{k: sp.N(v, 6) for k, v in d.items()} for d in sol])
 
@@ -427,13 +427,13 @@ print("polynomial through the shares:", P)
 print("secret p(0) =", P.subs($SYM, 0))
 
 ## \markov — stochastic matrix: powers P^n and the stable distribution (Ex 3.10)
-@uses sympy
+@uses sympy solve
 @in P matrix
 print("columns sum to 1:", [sp.simplify(sum(P[:, j])) for j in range(P.cols)])
 for k_ in [1, 2, 5, 10, 50]:
     print(f"P^{k_} =", sp.N(P**k_, 4).tolist())
 v = sp.Matrix(sp.symbols(f'p1:{P.rows + 1}'))
-print("stable distribution (P v = v, entries sum to 1):", sp.solve(list(P*v - v) + [sum(v) - 1], list(v), dict=True))
+print("stable distribution (P v = v, entries sum to 1):", solve_all(list(P*v - v) + [sum(v) - 1], list(v)))
 
 ## \matmul — matrix arithmetic, and identities with general matrices (Ch3)
 ### products, transpose, powers
@@ -579,14 +579,14 @@ print("x^T A x =", Q)
 print("symmetric matrix of Q:", (sp.hessian(Q, list(xs))/2).tolist())
 
 ## \line — line through two points in R^d, is a point on it? (Def 4.12)
-@uses sympy
+@uses sympy solve
 @in p vector
 @in q vector
 @in r vector
 t = sp.symbols('t')
 L = p + t*(q - p)
 print("line: x(t) =", list(L))
-sol = sp.solve(list(L - r), t, dict=True)
+sol = solve_all(list(L - r), t)
 print("r on the line:", bool(sol), sol)
 
 ## \convexset — test convexity of {x | g_i(x) <= 0} on random pairs (Def 4.21)
@@ -824,7 +824,7 @@ print("limit h -> 0:", sp.limit(q, h, 0))
 s1, s2 = $SYMS
 print("dy/dx =", sp.simplify(sp.idiff(F, s2, s1)))
 
-## \newton — Newton–Raphson for f(x) = 0, and for systems F(x, y) = 0 (Sec 6.3.5)
+## \newton — Newton–Raphson for f(x) = 0 (Sec 6.3.5), and for systems F(x, y) = 0 (Sec 7.4)
 ### one equation f(x) = 0
 @uses sympy
 @in f expr
@@ -927,7 +927,7 @@ print(f"real interest rate: {float(rate)*100:.4f} %")
 fair = L_*r0/(1 - (1 + r0)**(-n_))
 print(f"payment at the claimed rate: {float(fair):.2f} per year;  saved over {n_} years: {float((P_ - fair)*n_):.2f}")
 
-## \taylor — Taylor polynomial of degree n at a (Thm 6.50)
+## \taylor — Taylor polynomial of degree n at a (Sec 6.4)
 @uses sympy
 @in f expr
 @sym x
@@ -1093,12 +1093,12 @@ print("direct      d/dt g(f(t))         =", sp.expand(direct))
 print("agree:", sp.simplify(chain - direct) == 0)
 
 ## \critxy — critical points + classification with the Hessian (Ch7/8)
-@uses sympy
+@uses sympy solve
 @in f expr
 @sym x y
 grad = [sp.diff(f, s) for s in $SYMS]
 H = sp.hessian(f, $SYMS)
-for p in sp.solve(grad, $SYMS, dict=True):
+for p in solve_all(grad, $SYMS):
     Hp = H.subs(p)
     if Hp.is_positive_definite: kind = "local min (H positive definite)"
     elif Hp.is_negative_definite: kind = "local max (H negative definite)"
@@ -1145,14 +1145,14 @@ print("f_xy =", sp.simplify(sp.diff(fx, Y_)), "   f_yx =", sp.simplify(sp.diff(f
 print("equal:", sp.simplify(sp.diff(fx, Y_) - sp.diff(fy, X_)) == 0)
 
 ## \lagrange — Lagrange multipliers: extremes of f subject to g = 0 (Thm 7.39)
-@uses sympy
+@uses sympy solve
 @in f expr
 @in g expr
 @sym x y
 lam = sp.symbols('lam')
 L = f - lam*g
 eqs = [sp.diff(L, s) for s in $SYMS] + [g]
-cands = [p for p in sp.solve(eqs, $SYMS + [lam], dict=True) if all(sp.N(v).is_real for v in p.values())]
+cands = [p for p in solve_all(eqs, $SYMS + [lam]) if all(sp.N(v).is_real for v in p.values())]
 for p in cands:
     print({k: sp.N(v, 6) for k, v in p.items()}, " f =", sp.N(f.subs(p), 6), "  exact:", p if len(str(p)) < 200 else "long")
 if cands:
@@ -1160,23 +1160,23 @@ if cands:
 
 ## \compactopt — max/min on a compact set: interior + boundary (Prop 7.46)
 ### boundary is a curve g = 0
-@uses sympy
+@uses sympy solve
 @in f expr
 @in g expr
 @sym x y
 lam = sp.symbols('lam')
 cands = []
-for p in sp.solve([sp.diff(f, s) for s in $SYMS], $SYMS, dict=True):
+for p in solve_all([sp.diff(f, s) for s in $SYMS], $SYMS):
     if all(v.is_real for v in p.values()) and g.subs(p) <= 0:
         cands.append(("interior", p))
-for p in sp.solve([sp.diff(f - lam*g, s) for s in $SYMS] + [g], $SYMS + [lam], dict=True):
+for p in solve_all([sp.diff(f - lam*g, s) for s in $SYMS] + [g], $SYMS + [lam]):
     if all(p[s].is_real for s in $SYMS):
         cands.append(("boundary", {s: p[s] for s in $SYMS}))
 vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
 for v in vals: print(*v)
 print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
 ### polygon / rectangle given by inequalities g_i <= 0 (Ex 7.48-7.50)
-@uses sympy itertools
+@uses sympy itertools solve
 @in f expr
 @in gs list
 @sym x y
@@ -1184,16 +1184,16 @@ lam = sp.symbols('lam')
 V = $SYMS
 inside = lambda p: all(sp.N(g_.subs(p)) <= 1e-9 for g_ in gs)
 cands = []
-for p in sp.solve([sp.diff(f, s) for s in V], V, dict=True):
+for p in solve_all([sp.diff(f, s) for s in V], V):
     if all(c.is_real for c in p.values()) and inside(p):
         cands.append(("interior", p))
 for g_ in gs:
-    for p in sp.solve([sp.diff(f - lam*g_, s) for s in V] + [g_], V + [lam], dict=True):
+    for p in solve_all([sp.diff(f - lam*g_, s) for s in V] + [g_], V + [lam]):
         q = {s: p[s] for s in V if s in p}
         if len(q) == len(V) and all(c.is_real for c in q.values()) and inside(q):
             cands.append((f"edge {g_} = 0", q))
 for g1, g2 in itertools.combinations(gs, 2):
-    for p in sp.solve([g1, g2], V, dict=True):
+    for p in solve_all([g1, g2], V):
         if len(p) == len(V) and inside(p):
             cands.append(("vertex", p))
 vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
@@ -1201,7 +1201,7 @@ for v in vals: print(*v)
 print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
 
 ## \kkt — KKT: minimize f subject to g_i <= 0, try every active set (Thm 9.37)
-@uses sympy itertools
+@uses sympy itertools solve
 @in f expr
 @in gs list
 @sym x y
@@ -1211,7 +1211,7 @@ for k in range(len(gs) + 1):
     for active in itertools.combinations(range(len(gs)), k):
         L = f + sum(mus[i]*gs[i] for i in active)
         eqs = [sp.diff(L, s) for s in $SYMS] + [gs[i] for i in active]
-        for p in sp.solve(eqs, $SYMS + [mus[i] for i in active], dict=True):
+        for p in solve_all(eqs, $SYMS + [mus[i] for i in active]):
             if any(not v.is_real for v in p.values()): continue
             feasible = all(sp.simplify(g_.subs(p)) <= 0 for g_ in gs)
             dual = all(p[mus[i]] >= 0 for i in active)
@@ -1231,7 +1231,7 @@ cons = [{"type": "ineq", "fun": (lambda h: lambda z: -h(z))(sp.lambdify([$SYMS],
 res = opt.minimize(F, np.array({{start point}}, float), constraints=cons)
 print(res.message, " x* =", res.x, " f(x*) =", res.fun)
 
-## \newtonopt — Newton's method for minimizing f (Sec 8)
+## \newtonopt — Newton's method for minimizing f (Sec 8.3)
 @uses sympy numpy
 @in f expr
 @sym x y

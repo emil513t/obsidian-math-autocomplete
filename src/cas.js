@@ -118,6 +118,11 @@ export function key(x) {
   return [...x.terms.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([k, t]) => `${qkey(t.c)}${k ? "*" + k : ""}`).join("+") || "0";
 }
 
+// The terms of a sum as separate expressions (for term-by-term work).
+export function termsOf(x) {
+  return [...x.terms.values()].map((t) => { const o = EMPTY(); addTerm(o, t.c, t.f); return o; });
+}
+
 export const isZero = (x) => x.terms.size === 0;
 export const equal = (a, b) => key(a) === key(b);
 

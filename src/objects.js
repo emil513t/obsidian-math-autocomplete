@@ -6,6 +6,7 @@
 // Pure, no Obsidian imports.
 import * as cas from "./cas.js";
 import { fnExpr, casOf, parseValue, toLatex, latexName, findRelation, derivedValue, pointError } from "./vars.js";
+import { gauss, parseSystem, parseIneqs, fmStep, ineqTex } from "./elim.js";
 
 const r = String.raw;
 
@@ -34,6 +35,7 @@ const int = (s, d, lo = 1, hi = 12) => {
 // Sorts the note's variables by what they can be used for.
 export function objectContext(vars) {
   const ctx = { vars, fns: [], mats: [], vecs: [], sets: [], rels: [], scalars: [] };
+  noteFns = ctx.fns;
   for (const v of vars.values()) {
     if (v.error) continue;
     try {
@@ -66,6 +68,30 @@ const multi = (ctx) => ctx.fns.filter((f) => f.vars.length >= 2);
 const square = (ctx) => ctx.mats.filter((m) => m.M.length === m.M[0].length);
 const at = (f, p) => Object.fromEntries(f.vars.map((v, i) => [v, p.xs[i]]));
 
+// For every note function: "<label> at a point you type" (the point field
+// also takes a variable name). compute(f, p) gets p as { v, xs }.
+function askPointFor(ctx, prefix, label, compute, more = []) {
+  return ctx.fns.map((f) => ({
+    id: `${prefix}:${f.v.name}`, label: `${label(f)} at a point you type`,
+    ask: [{ key: "p", label: `Point (${f.vars.join(", ")})`, hint: `(${f.vars.map(() => "1").join(", ")})` }, ...more(f)],
+    build: (a) => {
+      const m = parsePoint(a.p, f.vars);
+      return compute(f, { v: { name: "p" }, xs: f.vars.map((v) => m[v]) }, a);
+    },
+  }));
+}
+const noMore = () => [];
+
+// f(a) + ∇f(a)·h + ½ hᵀ ∇²f(a) h with h = x - a.
+export function taylor2(f, p) {
+  const m = at(f, p);
+  const h = f.vars.map((v, i) => cas.sub(cas.sym(v), p.xs[i]));
+  const g = cas.gradient(f.x, f.vars).map((e) => cas.subs(e, m));
+  const H = cas.hessian(f.x, f.vars).map((r) => r.map((e) => cas.subs(e, m)));
+  const quad = cas.add(...H.flatMap((r, i) => r.map((e, j) => cas.mul(e, h[i], h[j]))));
+  return cas.add(cas.subs(f.x, m), ...g.map((e, i) => cas.mul(e, h[i])), cas.mul(cas.num(1, 2), quad));
+}
+
 // Safe option: computing can fail (singular matrix, ...); then show why.
 function computed(id, label, fnc, extra = {}) {
   try {
@@ -76,14 +102,57 @@ function computed(id, label, fnc, extra = {}) {
 }
 
 // "Your own": ask for a function and compute from it.
+// Every "type it" field of every object: a variable's name (A, @f, f(x, y))
+// is replaced by that variable's value, in the format the field expects.
+// Letter/variable-name fields are left alone.
+export function resolveAnswers(ask = [], answers = {}, vars = new Map()) {
+  const out = { ...answers };
+  const one = (text, key) => {
+    const m = String(text || "").trim().match(/^@?([A-Za-z]\w*)\s*(\([^()]*\))?$/);
+    const v = m && vars.get(m[1]);
+    if (!v || v.error) return text;
+    try {
+      if (v.kind === "scalar") {
+        try { return cas.tex(fnExpr(v, vars).x); } catch (_) { return v.value; }
+      }
+      if (v.kind === "matrix") return `[${casOf(v).M.map((r) => `[${r.map((x) => cas.tex(x)).join(", ")}]`).join(", ")}]`;
+      if (v.kind === "vector") {
+        const xs = casOf(v).M.map((r) => cas.tex(r[0]));
+        return /^(p|x0|point)$/i.test(key) ? `(${xs.join(", ")})` : `[${xs.map((x) => `[${x}]`).join(", ")}]`;
+      }
+      if (v.kind === "set" && !v.builder) return `\\{${v.value.join(", ")}\\}`;
+      // Equations, inequalities and statements: lhs op rhs.
+      if (v.kind === "relation") return `${v.lhs} ${v.op} ${v.rhs}`;
+    } catch (_) { /* keep what was typed */ }
+    return text;
+  };
+  for (const q of ask) {
+    const s = out[q.key];
+    if (!s || /letter|^variables?\b|^start/i.test(q.label || "")) continue;
+    out[q.key] = q.key === "F" || q.key === "e" ? String(s).split(";").map((t) => one(t, q.key)).join("; ") : one(s, q.key);
+  }
+  return out;
+}
+
+// The note's functions from the last objectContext, so a typed name (A, f,
+// @g, f(x, y)) in a "function you type" field means that variable.
+let noteFns = [];
+export function typedFunction(text, fns = noteFns) {
+  const m = String(text || "").trim().match(/^@?([A-Za-z]\w*)\s*(\([^()]*\))?$/);
+  const hit = m && fns.find((f) => f.v.name === m[1]);
+  if (hit) return { x: hit.x, vars: hit.vars, name: hit.v.name, value: hit.v.value };
+  const x = cas.parse(text);
+  return { x, vars: cas.orderVars(cas.symbols(x)) };
+}
+
 function askFunction(id, label, build, more = []) {
   return {
     id, label,
-    ask: [{ key: "f", label: "Function", hint: "x^2y + y^3" }, { key: "vars", label: "Variables (empty: found in f)", hint: "x, y" }, ...more],
+    ask: [{ key: "f", label: "Function (or the name of one of your variables)", hint: "x^2y + y^3, or f" }, { key: "vars", label: "Variables (empty: found in f)", hint: "x, y" }, ...more],
     build: (a) => {
-      const x = cas.parse(a.f);
-      const vars = a.vars?.trim() ? a.vars.split(",").map((s) => s.trim()).filter(Boolean) : cas.orderVars(cas.symbols(x));
-      return build({ x, vars }, a);
+      const t = typedFunction(a.f);
+      const vars = a.vars?.trim() ? a.vars.split(",").map((s) => s.trim()).filter(Boolean) : t.vars;
+      return build({ x: t.x, vars }, a);
     },
   };
 }
@@ -128,12 +197,13 @@ export const OBJECTS = [
   {
     name: "hessian", words: "second derivatives hesse squarednabla", desc: "Hessian matrix ∇²f (Def 8.2)", varName: "H",
     options: (ctx) => [
-      ...multi(ctx).flatMap((f) => [
+      ...ctx.fns.flatMap((f) => [
         computed(`f:${f.v.name}`, `Hessian of ${fname(f)}`, () => ({ value: texM(cas.hessian(f.x, f.vars), f.vars), formula: `hessian(${f.v.name})` })),
         ...pointsFor(ctx, f.vars.length).map((p) => computed(`fp:${f.v.name}:${p.v.name}`, `Hessian of ${fname(f)} at ${p.v.name} = ${tuple(p.xs)}`, () => ({
           value: texM(cas.mat.map(cas.hessian(f.x, f.vars), (e) => cas.subs(e, at(f, p))), f.vars), formula: `hessian(${f.v.name}, ${p.v.name})`,
         }))),
       ]),
+      ...askPointFor(ctx, "ap", (f) => `Hessian of ${fname(f)}`, (f, p) => ({ value: texM(cas.mat.map(cas.hessian(f.x, f.vars), (e) => cas.subs(e, at(f, p))), f.vars) }), noMore),
       { id: "gen2", label: "General 2×2: f_xx, f_xy, ...", value: matTex([[partialTex("f", "x", "x"), partialTex("f", "x", "y")], [partialTex("f", "y", "x"), partialTex("f", "y", "y")]]) },
       { id: "gen3", label: "General 3×3", value: matTex(xi(3).map((a) => xi(3).map((b) => partialTex("f", a, b)))) },
       { id: "genn", label: "General n×n (asks n)", ask: nAsk(), build: (a) => ({ value: matTex(xi(int(a.n, 3)).map((p) => xi(int(a.n, 3)).map((q) => partialTex("f", p, q)))) }) },
@@ -145,15 +215,16 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "gradient", words: "grad nabla partial derivatives", desc: "gradient ∇f (Def 7.4)", varName: "g",
+    name: "gradient", words: "grad nabla partial derivatives", desc: "gradient ∇f (Sec 7.5)", varName: "g",
     options: (ctx) => [
-      ...multi(ctx).flatMap((f) => [
+      ...ctx.fns.flatMap((f) => [
         computed(`f:${f.v.name}`, `∇${fname(f)} as a column`, () => ({ value: texCol(cas.gradient(f.x, f.vars), f.vars), formula: `grad(${f.v.name})` })),
         computed(`fr:${f.v.name}`, `∇${fname(f)} as a row (… , …)`, () => ({ value: tuple(cas.gradient(f.x, f.vars), f.vars) })),
         ...pointsFor(ctx, f.vars.length).map((p) => computed(`fp:${f.v.name}:${p.v.name}`, `∇${fname(f)} at ${p.v.name} = ${tuple(p.xs)}`, () => ({
           value: texCol(cas.gradient(f.x, f.vars).map((e) => cas.subs(e, at(f, p)))), formula: `grad(${f.v.name}, ${p.v.name})`,
         }))),
       ]),
+      ...askPointFor(ctx, "ap", (f) => `∇${fname(f)}`, (f, p) => ({ value: texCol(cas.gradient(f.x, f.vars).map((e) => cas.subs(e, at(f, p)))) }), noMore),
       { id: "gen2", label: "General (f_x, f_y)", value: matTex(xi(2).map((a) => [partialTex("f", a)])) },
       { id: "genn", label: "General with n variables (asks n)", ask: nAsk(), build: (a) => ({ value: matTex(xi(int(a.n, 3)).map((p) => [partialTex("f", p)])) }) },
       askFunction("own", "Of a function you type", ({ x, vars }) => ({ value: texCol(cas.gradient(x, vars), vars) })),
@@ -171,6 +242,8 @@ export const OBJECTS = [
         const vars = cas.orderVars(new Set(fs.flatMap((f) => f.vars)));
         return { value: texM(cas.jacobian(fs.map((f) => f.x), vars), vars) };
       })] : []),
+      // One function: its Jacobian is the 1×n row of partial derivatives.
+      ...ctx.fns.map((f) => computed(`s:${f.v.name}`, `Jacobian of ${fname(f)} alone (1×${f.vars.length} row)`, () => ({ value: texM([cas.gradient(f.x, f.vars)], f.vars), formula: `jacobian(${f.v.name})` }))),
       { id: "genmn", label: "General m×n: ∂f_i/∂x_j (asks m, n)", ask: sizeAsk("2", "2"), build: (a) => ({ value: matTex(range(int(a.m, 2)).map((i) => xi(int(a.n, 2)).map((x) => partialTex(`f_{${i + 1}}`, x)))) }) },
       { id: "own", label: "Of functions you type", ask: [{ key: "F", label: "Functions, separated by ;", hint: "x^2 y; x + \\sin y" }], build: (a) => {
         const fs = a.F.split(";").map((s) => cas.parse(s));
@@ -182,7 +255,7 @@ export const OBJECTS = [
   {
     name: "partial", words: "partial derivative fx fxy mixed", desc: "partial derivatives ∂f/∂x, ∂²f/∂x∂y", varName: "fx",
     options: (ctx) => [
-      ...multi(ctx).flatMap((f) => [
+      ...ctx.fns.flatMap((f) => [
         ...f.vars.map((v) => computed(`f:${f.v.name}:${v}`, `∂${f.v.name}/∂${v}`, () => ({ value: cas.tex(cas.diff(f.x, v), f.vars), formula: `diff(${f.v.name}, ${v})` }), { name: `${f.v.name}_${v}` })),
         ...f.vars.flatMap((a, i) => f.vars.slice(i).map((b) => computed(`f2:${f.v.name}:${a}${b}`, (a === b ? `∂²${f.v.name}/∂${a}²` : `∂²${f.v.name}/∂${a}∂${b}`), () => ({ value: cas.tex(cas.diff(cas.diff(f.x, a), b), f.vars) }), { name: `${f.v.name}_${a}${b}` }))),
       ]),
@@ -193,7 +266,7 @@ export const OBJECTS = [
   {
     name: "laplacian", words: "laplace delta", desc: "Laplacian f_xx + f_yy + ...", varName: "Lf",
     options: (ctx) => [
-      ...multi(ctx).map((f) => computed(`f:${f.v.name}`, `Laplacian of ${fname(f)}`, () => ({ value: cas.tex(cas.add(...f.vars.map((v) => cas.diff(f.x, v, 2))), f.vars), formula: `laplacian(${f.v.name})` }))),
+      ...ctx.fns.map((f) => computed(`f:${f.v.name}`, `Laplacian of ${fname(f)}`, () => ({ value: cas.tex(cas.add(...f.vars.map((v) => cas.diff(f.x, v, 2))), f.vars), formula: `laplacian(${f.v.name})` }))),
       { id: "gen", label: "General Δf", value: r`\frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2}` },
     ],
   },
@@ -205,6 +278,11 @@ export const OBJECTS = [
         const x = cas.add(cas.subs(f.x, m), ...f.vars.map((v) => cas.mul(cas.subs(cas.diff(f.x, v), m), cas.sub(cas.sym(v), m[v]))));
         return { value: `${f.vars.length === 1 ? "y" : "z"} = ${cas.tex(x, f.vars)}`, formula: `tangent(${f.v.name}, ${p.v.name})` };
       }))),
+      ...askPointFor(ctx, "ap", (f) => `Tangent of ${fname(f)}`, (f, p) => {
+        const m = at(f, p);
+        const x = cas.add(cas.subs(f.x, m), ...f.vars.map((v) => cas.mul(cas.subs(cas.diff(f.x, v), m), cas.sub(cas.sym(v), m[v]))));
+        return { value: `${f.vars.length === 1 ? "y" : "z"} = ${cas.tex(x, f.vars)}` };
+      }, noMore),
       { id: "gen", label: "General formula, 2 variables", value: r`z = f(a, b) + f_x(a, b)(x - a) + f_y(a, b)(y - b)` },
       askFunction("own", "Of a function you type, at a point", ({ x, vars }, a) => {
         const m = parsePoint(a.p, vars);
@@ -218,7 +296,12 @@ export const OBJECTS = [
     options: (ctx) => ctx.fns.flatMap((f) => pointsFor(ctx, f.vars.length).flatMap((p) => constVecs(ctx).filter((d) => d !== p && d.xs.length === f.vars.length).map((d) => computed(`${f.v.name}:${p.v.name}:${d.v.name}`, `∇${f.v.name}(${p.v.name})·${d.v.name}`, () => {
       const g = cas.gradient(f.x, f.vars).map((e) => cas.subs(e, at(f, p)));
       return { value: cas.tex(cas.add(...g.map((e, i) => cas.mul(e, d.xs[i])))) };
-    })))).concat([{ id: "gen", label: "General ∇f(p)·v", value: r`\nabla f(p) \cdot v` }]),
+    })))).concat(askPointFor(ctx, "ap", (f) => `∇${f.v.name}·v`, (f, p, a) => {
+      const g = cas.gradient(f.x, f.vars).map((e) => cas.subs(e, at(f, p)));
+      const d = parsePoint(a.d, f.vars);
+      return { value: cas.tex(cas.add(...g.map((e, i) => cas.mul(e, d[f.vars[i]])))) };
+    }, (f) => [{ key: "d", label: `Direction v (${f.vars.length} numbers)`, hint: `(${f.vars.map(() => "1").join(", ")})` }]),
+    [{ id: "gen", label: "General ∇f(p)·v", value: r`\nabla f(p) \cdot v` }]),
   },
   {
     name: "critical", words: "critical point stationary gradient zero equations", desc: "the equations ∇f = 0 for critical points (Def 7.15)", varName: "eqs",
@@ -231,7 +314,7 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "newtonstep", words: "newton method step iteration minimize", desc: "one Newton step x - H⁻¹∇f (Def 8.2) / x - f/f'", varName: "x_1",
+    name: "newtonstep", words: "newton method step iteration minimize", desc: "one Newton step x - H⁻¹∇f (Sec 8.3) / x - f/f' (Sec 6.3.5)", varName: "x_1",
     options: (ctx) => [
       ...ctx.fns.flatMap((f) => pointsFor(ctx, f.vars.length).map((p) => computed(`fp:${f.v.name}:${p.v.name}`, `Newton step for min ${f.v.name} from ${p.v.name} = ${tuple(p.xs)}`, () => {
         const m = at(f, p);
@@ -245,13 +328,21 @@ export const OBJECTS = [
         const m = { [f.vars[0]]: x0 };
         return { value: cas.tex(cas.sub(x0, cas.div(cas.subs(f.x, m), cas.subs(cas.diff(f.x, f.vars[0]), m)))) };
       } })),
+      ...askPointFor({ ...ctx, fns: ctx.fns.filter((f) => f.vars.length > 1) }, "ap", (f) => `Newton step for min ${f.v.name}`, (f, p) => {
+        const m = at(f, p);
+        const H = cas.mat.map(cas.hessian(f.x, f.vars), (e) => cas.subs(e, m));
+        const g = cas.gradient(f.x, f.vars).map((e) => [cas.subs(e, m)]);
+        const step = cas.mat.mul(cas.mat.inverse(H), g);
+        return { value: texCol(f.vars.map((v, i) => cas.sub(m[v], step[i][0]))) };
+      }, noMore),
       { id: "gen", label: "General formula", value: r`v_{n+1} = v_n - \nabla^2 F(v_n)^{-1} \nabla F(v_n)^\top` },
     ],
   },
   {
     name: "quadform", words: "quadratic form symmetric matrix xTAx", desc: "quadratic form ⇄ symmetric matrix", varName: "A",
     options: (ctx) => [
-      ...multi(ctx).map((f) => computed(`f:${f.v.name}`, `Symmetric matrix of ${fname(f)} (½·Hessian)`, () => ({ value: texM(cas.mat.scale(cas.hessian(f.x, f.vars), cas.num(1, 2)), f.vars), formula: `quadform(${f.v.name})` }))),
+      ...ctx.fns.map((f) => computed(`f:${f.v.name}`, `Symmetric matrix of ${fname(f)} (½·Hessian)`, () => ({ value: texM(cas.mat.scale(cas.hessian(f.x, f.vars), cas.num(1, 2)), f.vars), formula: `quadform(${f.v.name})` }))),
+      ...notSquare(ctx, "the quadratic form xᵀAx"),
       ...square(ctx).map((m) => computed(`A:${m.v.name}`, `x^T ${m.v.name} x`, () => {
         const xs = xi(m.M.length).map((s) => cas.parse(s));
         return { value: cas.tex(cas.mat.mul([xs], cas.mat.mul(m.M, xs.map((x) => [x])))[0][0]), formula: `quadform(${m.v.name})`, name: "q" };
@@ -282,14 +373,23 @@ export const OBJECTS = [
         computed(`2:${f.v.name}`, `${f.v.name}''`, () => ({ value: cas.tex(cas.diff(f.x, f.vars[0], 2)), formula: `diff(${f.v.name}, ${f.vars[0]}, 2)` })),
         { id: `n:${f.v.name}`, label: `${f.v.name}^{(n)} (asks n)`, ask: nAsk("3", "Order n"), build: (a) => ({ value: cas.tex(cas.diff(f.x, f.vars[0], int(a.n, 3, 1, 20))) }) },
       ]),
-      askFunction("own", "Of a function you type", ({ x, vars }) => ({ value: cas.tex(cas.diff(x, vars[0] || "x")) })),
+      // Functions of several variables: their partial derivatives.
+      ...multi(ctx).flatMap((f) => [
+        ...f.vars.map((v) => computed(`p:${f.v.name}:${v}`, `∂${f.v.name}/∂${v} of ${fname(f)}`, () => ({ value: cas.tex(cas.diff(f.x, v), f.vars), formula: `diff(${f.v.name}, ${v})` }), { name: `${f.v.name}_${v}` })),
+        ...f.vars.flatMap((a, i) => f.vars.slice(i).map((b) => computed(`q:${f.v.name}:${a}${b}`, a === b ? `∂²${f.v.name}/∂${a}²` : `∂²${f.v.name}/∂${a}∂${b}`, () => ({ value: cas.tex(cas.diff(cas.diff(f.x, a), b), f.vars) }), { name: `${f.v.name}_${a}${b}` }))),
+      ]),
+      askFunction("own", "Of a function you type (or a variable name)", ({ x, vars }) => (vars.length > 1
+        ? { value: matTex(vars.map((v) => [cas.tex(cas.diff(x, v), vars)])) }
+        : { value: cas.tex(cas.diff(x, vars[0] || "x")) })),
       { id: "def", label: "Definition (limit)", value: r`f'(x) = \lim_{h \to 0} \frac{f(x + h) - f(x)}{h}` },
     ],
   },
   {
-    name: "taylor", words: "taylor polynomial maclaurin series expansion", desc: "Taylor polynomial of degree n at a (Thm 6.50)", varName: "P",
+    name: "taylor", words: "taylor polynomial maclaurin series expansion", desc: "Taylor polynomial of degree n at a (Sec 6.4)", varName: "P",
     options: (ctx) => [
       ...ctx.fns.filter((f) => f.vars.length === 1).map((f) => ({ id: `f:${f.v.name}`, label: `Of ${fname(f)} (asks a, n)`, ask: [{ key: "a", label: "Around a", value: "0" }, { key: "n", label: "Degree n", value: "3" }], build: (a) => ({ value: cas.taylorTex(f.x, f.vars[0], cas.parse(a.a || "0"), int(a.n, 3, 0, 15)), formula: `taylor(${f.v.name}, ${a.a || 0}, ${int(a.n, 3, 0, 15)})` }) })),
+      // Several variables: the second-order Taylor polynomial at a point.
+      ...askPointFor({ ...ctx, fns: ctx.fns.filter((f) => f.vars.length > 1) }, "t2", (f) => `2nd-order Taylor of ${fname(f)}`, (f, p) => ({ value: cas.tex(taylor2(f, p), f.vars) }), noMore),
       askFunction("own", "Of a function you type", ({ x, vars }, a) => ({ value: cas.taylorTex(x, vars[0] || "x", cas.parse(a.a || "0"), int(a.n, 3, 0, 15)) }), [{ key: "a", label: "Around a", value: "0" }, { key: "n", label: "Degree n", value: "3" }]),
       { id: "gen", label: "General formula", value: r`P_n(x) = \sum_{k=0}^{n} \frac{f^{(k)}(a)}{k!}(x - a)^k` },
     ],
@@ -332,9 +432,15 @@ export const OBJECTS = [
   {
     name: "eigenvalues", words: "eigen eig lambda spectrum", desc: "eigenvalues (exact when 2×2 or rational)", varName: "E",
     options: (ctx) => square(ctx).map((m) => computed(`A:${m.v.name}`, `Eigenvalues of ${m.v.name}`, () => {
-      const d = derivedFrom(ctx, `eig(${m.v.name})`);
-      return { value: d.value, formula: `eig(${m.v.name})` };
-    })).concat([{ id: "gen", label: "General det(A - λI) = 0", value: r`\det(A - \lambda I) = 0` }]),
+      try {
+        const d = derivedFrom(ctx, `eig(${m.v.name})`);
+        return { value: d.value, formula: `eig(${m.v.name})` };
+      } catch (_) {
+        // Not exact (irrational roots of a 3×3, ...): numeric values.
+        const rs = numericRoots(cas.charpoly(m.M), "lambda");
+        return { value: rs.map((z, i) => `\\lambda_{${i + 1}} \\approx ${fmtC(z)}`).join(",\\ ") };
+      }
+    })).concat(notSquare(ctx, "eigenvalues"), [{ id: "gen", label: "General det(A - λI) = 0", value: r`\det(A - \lambda I) = 0` }]),
   },
   {
     name: "product", words: "multiply matmul AB times", desc: "matrix product AB, Av", varName: "C",
@@ -364,7 +470,7 @@ export const OBJECTS = [
   },
   {
     name: "matpower", words: "power A^k A^n markov", desc: "matrix power Aᵏ", varName: "P",
-    options: (ctx) => square(ctx).map((m) => ({ id: `A:${m.v.name}`, label: `${m.v.name}^k (asks k)`, ask: [{ key: "k", label: "k", value: "2" }], build: (a) => ({ value: texM(cas.mat.power(m.M, int(a.k, 2, -10, 50))), formula: `${m.v.name}^{${int(a.k, 2, -10, 50)}}` }) })),
+    options: (ctx) => square(ctx).map((m) => ({ id: `A:${m.v.name}`, label: `${m.v.name}^k (asks k)`, ask: [{ key: "k", label: "k", value: "2" }], build: (a) => ({ value: texM(cas.mat.power(m.M, int(a.k, 2, -10, 50))), formula: `${m.v.name}^{${int(a.k, 2, -10, 50)}}` }) })).concat(notSquare(ctx, "a matrix power Aᵏ")),
   },
   {
     name: "augmented", words: "augmented [A|b] system gauss linear equations", desc: "augmented matrix [A | b] (Sec 2.3)", varName: "M",
@@ -390,6 +496,53 @@ export const OBJECTS = [
       { id: "gen", label: "General m×n system (asks m, n)", ask: sizeAsk("2", "2"), build: (a) => ({ value: `\\begin{cases} ${range(int(a.m, 2)).map((i) => `${xi(int(a.n, 2)).map((x, j) => `${sub("a", i + 1, j + 1)}${x}`).join(" + ")} = ${sub("b", i + 1)}`).join(" \\\\ ")} \\end{cases}` }) },
       { id: "own", label: "Equations you type", ask: [{ key: "e", label: "Equations, separated by ;", hint: "x + 2y = 3; 4x - y = 1" }], build: (a) => ({ value: `\\begin{cases} ${a.e.split(";").map((s) => s.trim()).join(" \\\\ ")} \\end{cases}` }) },
     ],
+  },
+  {
+    name: "gauss", words: "gauss elimination gaussian solve linear system equations back substitution eliminate", desc: "solve a linear system by Gauss elimination + back substitution (Sec 2.3)", varName: "sol",
+    options: (ctx) => [
+      ...gaussSources(ctx).map((s) => computed(`gs:${s.id}`, `Solve ${s.label}`, () => ({ value: gaussAnswer(s.rows, s.vars) }))),
+      { id: "own", label: "Equations you type (or variable names)", ask: [{ key: "e", label: "Equations, separated by ;", hint: "2x + y + z = 7; x + 2y + z = 8; x + y + 2z = 9" }], build: (a) => {
+        const { rows, vars } = parseSystem(a.e.split(";").map((s) => s.trim()).filter(Boolean));
+        return { value: gaussAnswer(rows, vars) };
+      } },
+    ],
+  },
+  {
+    name: "fouriermotzkin", words: "fourier motzkin elimination fm inequalities eliminate variable linear inequalities feasible", desc: "eliminate variables from linear inequalities (Sec 4.5)", varName: "S",
+    options: (ctx) => {
+      const sys = fmSystem(ctx);
+      const out = [];
+      if (sys) {
+        for (const x of sys.vars) out.push(computed(`fm1:${x}`, `Eliminate ${x} from ${sys.label}`, () => ({ value: fmAnswer(sys.ineqs, sys.vars, [x]) })));
+        if (sys.vars.length > 1) {
+          const last = sys.vars[sys.vars.length - 1];
+          out.push(computed(`fmall:${last}`, `Eliminate all but ${last} (bounds for ${last}) from ${sys.label}`, () => ({ value: fmAnswer(sys.ineqs, sys.vars, sys.vars.slice(0, -1)) })));
+        }
+      }
+      out.push({ id: "own", label: "Inequalities you type", ask: [{ key: "e", label: "Inequalities, separated by ;", hint: "2x + y \\le 6; x + 2y \\le 6; x \\ge 0; y \\ge 0" }, { key: "x", label: "Variables to eliminate, separated by ,", hint: "x" }], build: (a) => {
+        const ineqs = parseIneqs(a.e.split(";").map((s) => s.trim()).filter(Boolean));
+        const vars = cas.orderVars(new Set(ineqs.flatMap((q) => [...cas.symbols(q.e)])));
+        const elim = String(a.x || vars[0]).split(",").map((s) => s.trim()).filter(Boolean);
+        return { value: fmAnswer(ineqs, vars, elim) };
+      } });
+      return out;
+    },
+  },
+  {
+    name: "induction", words: "induction proof base case step sum formula principle", desc: "proof by induction of a statement P(n) (Thm 1.86)", varName: "P",
+    options: (ctx) => {
+      const stmts = [...ctx.vars.values()].filter((v) => v.kind === "relation" && v.params && v.params.length === 1);
+      const n0 = ctx.vars.get("n0") || ctx.vars.get("n_0");
+      const start = n0 && n0.kind === "scalar" ? String(n0.value) : "1";
+      return [
+        ...stmts.map((v) => ({ id: `ind:${v.name}`, label: `Prove ${v.name}(${v.params[0]}): ${v.lhs} ${v.op} ${v.rhs}`, value: `\\forall ${v.params[0]} \\ge ${start}:\\ ${v.lhs} ${v.op} ${v.rhs}`, start })),
+        { id: "own", label: "A statement you type", ask: [{ key: "s", label: "Statement P(n)", hint: "\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}" }, { key: "p", label: "Variable", value: "n" }, { key: "n0", label: "Start n_0", value: "1" }], build: (a) => {
+          const r = findRelation(a.s);
+          if (!r) throw new Error("type a statement with =, \\le or \\ge");
+          return { value: `\\forall ${a.p || "n"} \\ge ${a.n0 || 1}:\\ ${r.lhs} ${r.op} ${r.rhs}` };
+        } },
+      ];
+    },
   },
   {
     name: "dotproduct", words: "dot inner product norm length angle orthogonal", desc: "dot product, norm, angle (Ch5)", varName: "s",
@@ -438,6 +591,7 @@ export const OBJECTS = [
   {
     name: "interpolate", words: "interpolation polynomial through points lagrange shamir", desc: "polynomial through given points (Sec 2.5)", varName: "p",
     options: (ctx) => ctx.mats.filter((m) => m.M[0].length === 2).map((m) => computed(`P:${m.v.name}`, `Through the points (rows) of ${m.v.name}`, () => ({ value: derivedFrom(ctx, `interpolate(${m.v.name})`).value, formula: `interpolate(${m.v.name})` })))
+      .concat(ctx.mats.filter((m) => m.M[0].length !== 2).map((m) => ({ id: `nc:${m.v.name}`, label: `${m.v.name} (${size(m)}): not possible`, error: `${m.v.name} has ${m.M[0].length} columns; interpolation needs one point (x, y) per row, i.e. 2 columns.` })))
       .concat([{ id: "own", label: "Through points you type", ask: [{ key: "p", label: "Points", hint: "(0, 1), (1, 3), (2, 7)" }], build: (a) => {
         const pts = [...a.p.matchAll(/\(([^()]*)\)/g)].map((m) => m[1].split(",").map((s) => s.trim()));
         const v = parseValue("P", `[${pts.map((p) => `[${p.join(", ")}]`).join(", ")}]`);
@@ -549,19 +703,118 @@ export const OBJECTS = [
   },
 ];
 
+// The note's matrices that don't fit, listed with the reason instead of hidden.
+const size = (m) => `${m.M.length}×${m.M[0].length}`;
+function notSquare(ctx, what) {
+  return ctx.mats.filter((m) => m.M.length !== m.M[0].length).map((m) => ({
+    id: `ns:${m.v.name}`, label: `${m.v.name} (${size(m)}): not possible`,
+    error: `${m.v.name} is ${size(m)}, and ${what} only exists for square (n×n) matrices.`,
+  }));
+}
+
+// ---------- elimination helpers ----------
+
+// Linear systems in the note: the equations among the vars, [A | b] from a
+// matrix and a vector, and the rows of an augmented matrix.
+export function gaussSources(ctx) {
+  const out = [];
+  for (const s of systems(ctx)) out.push({ id: `eq:${s.name}`, label: `the equations ${s.name}`, rows: s.A.map((r, i) => [...r, s.b[i][0]]), vars: s.vars });
+  const xs = (n) => (n <= 3 ? ["x", "y", "z"].slice(0, n) : Array.from({ length: n }, (_, i) => `x_${i + 1}`));
+  for (const a of ctx.mats) for (const b of constVecs(ctx)) {
+    if (b.v.tuple || a.M.length !== b.M.length) continue;
+    out.push({ id: `Ab:${a.v.name}:${b.v.name}`, label: `${a.v.name}x = ${b.v.name}`, rows: a.M.map((r, i) => [...r, b.M[i][0]]), vars: xs(a.M[0].length) });
+  }
+  for (const a of ctx.mats) if (a.M[0].length >= 2 && a.M.every((r) => r.every((x) => cas.symbols(x).size === 0))) {
+    out.push({ id: `aug:${a.v.name}`, label: `${a.v.name} as an augmented matrix [A | b]`, rows: a.M.map((r) => [...r]), vars: xs(a.M[0].length - 1) });
+  }
+  return out;
+}
+export function gaussAnswer(rows, vars) {
+  const g = gauss(rows, vars);
+  if (g.kind === "none") return r`\text{no solution}`;
+  return vars.map((v, i) => `${v} = ${cas.tex(g.values[i])}`).join(",\\ ") + (g.kind === "infinite" ? `,\\ ${g.free.map((f) => `${cas.tex(g.params[f])} \\in \\mathbb{R}`).join(", ")}` : "");
+}
+// All linear inequalities among the vars (c1 = x + 2y \le 6, ...).
+export function fmSystem(ctx) {
+  // Equations join in (the book first uses them to substitute), but there
+  // must be at least one inequality.
+  const rels = [...ctx.vars.values()].filter((v) => v.kind === "relation" && !v.params);
+  if (!rels.some((v) => v.op !== "=")) return null;
+  try {
+    const ineqs = parseIneqs(rels);
+    const vars = cas.orderVars(new Set(ineqs.flatMap((q) => [...cas.symbols(q.e)])));
+    return { ineqs, vars, label: rels.map((v) => v.name).join(", ") };
+  } catch (_) { return null; }
+}
+export function fmAnswer(ineqs, vars, elim) {
+  let cur = ineqs;
+  for (const x of elim) {
+    const st = fmStep(cur, vars, x);
+    if (st.contradictions.length) return r`\text{no solution (the inequalities contradict each other)}`;
+    cur = st.next;
+  }
+  const left = vars.filter((v) => !elim.includes(v));
+  return cur.length ? `\\begin{cases} ${cur.map((q) => ineqTex(q, left)).join(" \\\\ ")} \\end{cases}` : r`\text{no conditions left: every value works}`;
+}
+
+// Roots of a polynomial in `v`, numerically (Durand-Kerner), as {re, im}.
+export function numericRoots(p, v) {
+  const coef = [];
+  let d = p;
+  for (let k = 0, fact = 1; k < 30; k++, fact *= k || 1) {
+    const c = cas.constValue(cas.subs(d, { [v]: cas.ZERO }));
+    coef.push(c ? c.n / c.d / fact : 0);
+    d = cas.diff(d, v);
+    if (cas.isZero(d)) break;
+  }
+  const n = coef.length - 1;
+  const lead = coef[n];
+  const a = coef.map((c) => c / lead); // monic, a[k] for x^k
+  const mul = (x, y) => ({ re: x.re * y.re - x.im * y.im, im: x.re * y.im + x.im * y.re });
+  const div = (x, y) => { const q = y.re * y.re + y.im * y.im; return { re: (x.re * y.re + x.im * y.im) / q, im: (x.im * y.re - x.re * y.im) / q }; };
+  const evalP = (z) => { let s = { re: 1, im: 0 }; for (let k = n - 1; k >= 0; k--) s = { re: mul(s, z).re + a[k], im: mul(s, z).im }; return s; };
+  let z = Array.from({ length: n }, (_, k) => { let w = { re: 1, im: 0 }; for (let i = 0; i < k; i++) w = mul(w, { re: 0.4, im: 0.9 }); return w; });
+  for (let it = 0; it < 500; it++) {
+    z = z.map((zi, i) => {
+      let den = { re: 1, im: 0 };
+      z.forEach((zj, j) => { if (j !== i) den = mul(den, { re: zi.re - zj.re, im: zi.im - zj.im }); });
+      const step = div(evalP(zi), den);
+      return { re: zi.re - step.re, im: zi.im - step.im };
+    });
+  }
+  return z.map((w) => ({ re: Math.abs(w.re) < 1e-10 ? 0 : w.re, im: Math.abs(w.im) < 1e-9 ? 0 : w.im })).sort((x, y) => x.re - y.re || x.im - y.im);
+}
+export const fmtC = (z) => {
+  const f = (x) => String(Number(x.toFixed(4)));
+  return z.im === 0 ? f(z.re) : `${f(z.re)} ${z.im < 0 ? "-" : "+"} ${f(Math.abs(z.im))}i`;
+};
+
+// A^+ for a non-square matrix: right inverse A^T (A A^T)^{-1} when it has more
+// columns than rows, left inverse (A^T A)^{-1} A^T when more rows.
+export function oneSidedInverse(A) {
+  const At = cas.mat.transpose(A);
+  return A.length < A[0].length ? cas.mat.mul(At, cas.mat.inverse(cas.mat.mul(A, At))) : cas.mat.mul(cas.mat.inverse(cas.mat.mul(At, A)), At);
+}
+
 function matOp(name, words, desc, varName, f, formula, { square: sq = false } = {}) {
+  const what = desc.split(" (")[0];
   return {
     name, words, desc, varName,
     options: (ctx) => (sq ? square(ctx) : ctx.mats).map((m) => computed(`A:${m.v.name}`, `${desc.split(" ")[0]} of ${m.v.name}`, () => ({ value: texM(f(m.M)), formula: `${formula}(${m.v.name})` })))
-      .concat([askMatrix("own", "Of a matrix you type", (M) => ({ value: texM(f(M)) }))]),
+      .concat(sq && name === "inverse"
+        ? ctx.mats.filter((m) => m.M.length !== m.M[0].length).map((m) => computed(`os:${m.v.name}`, `${m.v.name} is ${size(m)}: one-sided inverse (${m.M.length < m.M[0].length ? "right" : "left"} inverse)`, () => ({ value: texM(oneSidedInverse(m.M)), formula: `pinv(${m.v.name})` })))
+        : sq ? notSquare(ctx, `the ${what}`) : [])
+      .concat([askMatrix("own", "Of a matrix you type (or a variable name)", (M) => ({ value: texM(f(M)) }))]),
   };
 }
 
 function scalarOp(name, words, desc, varName, f, formula, { square: sq = false } = {}) {
+  const what = desc.split(" (")[0];
   return {
     name, words, desc, varName,
     options: (ctx) => (sq ? square(ctx) : ctx.mats).map((m) => computed(`A:${m.v.name}`, `${desc.split(" ")[0]} of ${m.v.name}`, () => ({ value: cas.tex(f(m.M)), formula: `${formula}(${m.v.name})` })))
-      .concat([askMatrix("own", "Of a matrix you type", (M) => ({ value: cas.tex(f(M)) }))]),
+      .concat(sq ? notSquare(ctx, `the ${what}`) : [])
+      .concat([askMatrix("own", "Of a matrix you type (or a variable name)", (M) => ({ value: cas.tex(f(M)) }))]),
   };
 }
 
@@ -670,34 +923,5 @@ export function rankObjects(query, picks = {}) {
   return scored.sort((a, b) => b.s - a.s || b.n - a.n).map((x) => x.o);
 }
 
-// ---------- vars from the note's own math ----------
-
-// Definitions written in the note's math: $f(x, y) = ...$, $A = \begin{pmatrix}..$,
-// $x_0 = (1, 2)$. Skips names the vars blocks already have.
-export function findDefinitions(doc, existing = new Map()) {
-  const text = doc.replace(/^[ \t]*(```|~~~)[\s\S]*?^[ \t]*\1[^\n]*$/gm, "");
-  const re = /\$\$([\s\S]+?)\$\$|(?<![\\$])\$(?![\s$])((?:\\.|[^$\n\\])+?)\$/g;
-  const out = [];
-  const seen = new Set(existing.keys());
-  let m;
-  while ((m = re.exec(text))) {
-    const math = (m[1] ?? m[2]).trim();
-    const parts = /\\begin\{/.test(math) ? math.split(/,\s*\\quad|\\quad|;\s/) : math.split(/\\\\|,\s*\\quad|\\quad|;\s/);
-    for (const part of parts) {
-      const d = part.trim().match(/^\\?([A-Za-z](?:_\{?\w+\}?)?|\\[a-zA-Z]+)\s*(\(\s*[a-z](?:_\{?\d\}?)?(?:\s*,\s*[a-z](?:_\{?\d\}?)?)*\s*\))?\s*:?=\s*([\s\S]+)$/);
-      if (!d) continue;
-      let name = d[1].replace(/^\\/, "").replace(/[{}]/g, "");
-      if (/^(text|mathrm|frac|sum|int|lim|nabla|partial)$/.test(name)) continue;
-      let value = d[3].trim().replace(/[.,]$/, "");
-      // Stop at a second "=" (a derivation chain): keep the first value only.
-      const rel = findRelation(value);
-      if (rel && rel.op === "=") value = rel.lhs;
-      if (!value || seen.has(name)) continue;
-      const v = parseValue(name, value);
-      if (!v) continue;
-      seen.add(name);
-      out.push({ name, line: `${name}${d[2] ? d[2].replace(/\s+/g, "").replace(/,/g, ", ") : ""} = ${value}` });
-    }
-  }
-  return out;
-}
+// Definitions written in the note's math live in vars.js (they are variables too).
+export { findDefinitions } from "./vars.js";

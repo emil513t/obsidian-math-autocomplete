@@ -20,11 +20,19 @@ import { parseTemplates, mergeTemplates, expandBody, rankTemplates, exerciseQuer
 import { tabstopExtension, startSession } from "./tabstops.js";
 import DEFAULT_TEMPLATES_MD from "./default-templates.md";
 import IMO26_TEMPLATES_MD from "./imo26-templates.md";
-import IMO26_REFS from "./refs/imo26.json";
-import { parseRefQuery, rankRefs, formatRef, kindLabel } from "./refs.js";
+import IMO26_NUMBERED from "./refs/imo26.json";
+import IMO26_EXTRA from "./refs/imo26-extra.json";
+// Numbered items (Definition 4.26, ...), plus sections and the definitions the
+// book makes in running text ("positive definite", Section 3.7.1).
+const IMO26_REFS = [...IMO26_NUMBERED, ...IMO26_EXTRA];
+import { parseRefQuery, rankRefs, formatRef, kindLabel, refKey, refExcerpt } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
 import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS } from "./vars.js";
-import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions } from "./objects.js";
+import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
+import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
+import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
+import { evidencePy } from "./evidence.js";
+import { workFor } from "./work.js";
 import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, rankPySnippets, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
 import PY_SNIPPETS_MD from "./py-snippets.md";
 
@@ -80,7 +88,8 @@ class PySnippetSuggest extends EditorSuggest {
     const picks = this.plugin.settings.templatePicks;
     picks["py:" + t.name] = (picks["py:" + t.name] || 0) + 1;
     this.plugin.saveSettings();
-    const put = (v, answers) => insertTemplate(editor, start, end, buildPySnippet(v, { ...state, answers }).text);
+    const explain = this.plugin.pyExplainer(t);
+    const put = (v, answers) => insertTemplate(editor, start, end, buildPySnippet(v, { ...state, answers, explain }).text);
     const insert = (v) => {
       const { questions } = snippetQuestions(v, state);
       if (!this.plugin.settings.askInputs || !questions.length) return put(v, {});
@@ -239,6 +248,9 @@ const DEFAULT_SETTINGS = {
   pythonStyle: "sympy",
   pythonEnabled: true,
   askInputs: true,
+  explainRefs: true,
+  textEvidence: true,
+  showWork: true,
 };
 
 // @name inserts a variable from the note's ```vars block: LaTeX in math,
@@ -285,6 +297,7 @@ class VarSuggest extends EditorSuggest {
     const kind = v.kind === "matrix" ? `${v.value.length}×${v.value[0].length} matrix`
       : v.kind === "vector" && v.tuple ? "point" : v.params ? "function" : v.kind;
     top.createSpan({ cls: "mac-tag", text: v.formula ? `${kind} = ${v.formula}` : kind });
+    if (v.source) top.createSpan({ cls: "mac-tag", text: v.source === "python" ? "from a python block" : "from the note's math" });
     if (v.error) top.createSpan({ cls: "mac-tag mac-error", text: v.error });
     if (this.state.kind === "python") {
       left.createDiv({ cls: "mac-template-snippet", text: toPython(v, this.plugin.settings.pythonStyle) });
@@ -316,14 +329,14 @@ class TemplateSuggest extends EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
-    this.limit = 40;
+    this.limit = 120; // \definition lists all 99 definitions
   }
 
   onTrigger(cursor, editor) {
     if (!this.plugin.settings.templatesEnabled) return null;
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
     // \word, \def4.26, or \ref followed by free search words.
-    const m = before.match(/(?:^|[\s(>*_[])\\((?:ref|ex)(?:\s[^\\$\n]{0,60})?|[a-zA-Z]+[\w.]*)$/);
+    const m = before.match(/(?:^|[\s(>*_[])\\((?:ref|ex|definition|theorem|proposition|lemma|corollary|remark|section)(?:\s[^\\$\n]{0,60})?|[a-zA-Z]+[\w.]*)$/);
     if (!m) return null;
     if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
     if (!this.plugin.textSuggestions(m[1]).length) return null;
@@ -346,8 +359,17 @@ class TemplateSuggest extends EditorSuggest {
       const r = item.ref;
       top.createEl("code", { text: `${kindLabel(r.kind)} ${r.num}` });
       top.createSpan({ cls: "mac-template-desc", text: r.title });
+      if (r.kind === "term") top.createSpan({ cls: "mac-tag", text: "definition in the text" });
       top.createSpan({ cls: "mac-uses", text: `p. ${r.page}` });
-      left.createDiv({ cls: "mac-template-snippet", text: r.text });
+      // A hit inside the statement: show that part, with the word marked.
+      const ex = refExcerpt(r, item.q);
+      if (ex) {
+        const div = left.createDiv({ cls: "mac-template-snippet" });
+        const at = ex.text.toLowerCase().indexOf(ex.word);
+        div.appendText(ex.before + ex.text.slice(0, at));
+        div.createEl("mark", { text: ex.text.slice(at, at + ex.word.length) });
+        div.appendText(ex.text.slice(at + ex.word.length) + ex.after);
+      } else left.createDiv({ cls: "mac-template-snippet", text: r.text });
       return;
     }
     const t = item.t;
@@ -369,7 +391,7 @@ class TemplateSuggest extends EditorSuggest {
       const text = formatRef(r, this.plugin.refLinkTarget(), s.refWithTitle);
       editor.replaceRange(text, start, end);
       editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + text.length));
-      s.refPicks[`${r.kind}:${r.num}`] = (s.refPicks[`${r.kind}:${r.num}`] || 0) + 1;
+      s.refPicks[refKey(r)] = (s.refPicks[refKey(r)] || 0) + 1;
       this.plugin.saveSettings();
       return;
     }
@@ -379,10 +401,10 @@ class TemplateSuggest extends EditorSuggest {
     this.plugin.saveSettings();
     if (t.variants.length > 1) {
       // Like the matrix fills: second step picks the solution route.
-      new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v)).open();
+      new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v, t.desc)).open();
       return;
     }
-    this.plugin.insertTextTemplate(editor, start, end, t.name, { label: "", body: t.body });
+    this.plugin.insertTextTemplate(editor, start, end, t.name, { label: "", body: t.body }, t.desc);
   }
 }
 
@@ -400,13 +422,32 @@ function insertTemplate(editor, start, end, body) {
 // The math inputs of a text template (A, f, x0, ...), prefilled from the
 // note's ```vars block. Blank answers stay as Tab stops.
 class TextInputsModal extends Modal {
-  constructor(plugin, name, route, questions, onDone) {
+  // pickers: { fns, points, ask(ctx) } to choose which of the note's
+  // functions and points the computed fields come from.
+  constructor(plugin, name, route, questions, onDone, pickers = null) {
     super(plugin.app);
     this.name = name;
     this.route = route;
     this.questions = questions;
     this.onDone = onDone;
+    this.pickers = pickers;
+    this.ctx = {};
     this.answers = Object.fromEntries(questions.map((q) => [q.key, q.value]));
+  }
+
+  // Refill the fields computed from the picked function / point.
+  repick(change, fields, descs) {
+    Object.assign(this.ctx, change);
+    const fresh = new Map(this.pickers.ask(this.ctx).map((q) => [q.key, q]));
+    this.questions.forEach((q, i) => {
+      const n = fresh.get(q.key);
+      if (!n || !n.desc) return; // a plain variable or a blank: keep what was typed
+      q.value = n.value;
+      q.desc = n.desc;
+      this.answers[q.key] = n.value;
+      fields[i].setValue(n.value);
+      descs[i].setText(n.desc);
+    });
   }
 
   onOpen() {
@@ -416,10 +457,28 @@ class TextInputsModal extends Modal {
     if (this.setTitle) this.setTitle(title);
     else contentEl.createEl("h3", { text: title });
     const fields = [];
+    const descs = [];
+    const p = this.pickers;
+    const computed = this.questions.some((q) => q.desc);
+    if (p && computed && p.fns.length > 1) {
+      new Setting(contentEl).setName("Function").setDesc("The fields below are computed from this function.")
+        .addDropdown((d) => {
+          for (const n of p.fns) d.addOption(n, n);
+          d.setValue(p.fns.includes("f") ? "f" : p.fns[0]);
+          d.onChange((n) => this.repick({ fn: n }, fields, descs));
+        });
+    }
+    if (p && computed && p.points.length > 1) {
+      new Setting(contentEl).setName("Point").setDesc("Used for v0 and for values at a point.")
+        .addDropdown((d) => {
+          for (const n of p.points) d.addOption(n, n);
+          d.onChange((n) => this.repick({ point: n }, fields, descs));
+        });
+    }
     for (const q of this.questions) {
-      new Setting(contentEl)
+      const s = new Setting(contentEl)
         .setName(q.label)
-        .setDesc(q.from ? `from @${q.from} in your vars block` : "")
+        .setDesc(q.desc || (q.from ? `from @${q.from} in your vars block` : ""))
         .addText((t) => {
           t.setValue(q.value);
           t.inputEl.addClass("mac-inputs-field");
@@ -429,17 +488,18 @@ class TextInputsModal extends Modal {
           });
           fields.push(t);
         });
+      descs.push(s.descEl);
     }
     new Setting(contentEl)
       .addButton((b) => b.setButtonText("Leave all as Tab stops").onClick(() => this.submit(true)))
       .addButton((b) => b.setButtonText("Insert").setCta().onClick(() => this.submit()));
-    contentEl.createDiv({ cls: "mac-inputs-help", text: "LaTeX, e.g. x^2 + 1, \\mathbb{R}, (1, 2). Empty fields stay as Tab stops. Enter inserts, Esc cancels." });
+    contentEl.createDiv({ cls: "mac-inputs-help", text: "LaTeX, e.g. x^2 + 1, \\mathbb{R}, (1, 2), or the name of one of your variables (g, @A) to use its value. Empty fields stay as Tab stops. Enter inserts, Esc cancels." });
     setTimeout(() => { fields[0].inputEl.focus(); fields[0].inputEl.select(); }, 0);
   }
 
   submit(keepBlanks = false) {
     this.close();
-    this.onDone(keepBlanks ? {} : this.answers);
+    this.onDone(keepBlanks ? {} : this.answers, this.questions, this.ctx);
   }
 
   onClose() {
@@ -624,12 +684,13 @@ class AskModal extends Modal {
 // Second step after \hessian, \inverse, \set, ...: what to build it from.
 // Options computed from the note's variables first.
 class ObjectModal extends SuggestModal {
-  constructor(plugin, obj, options, onPick) {
+  constructor(plugin, obj, options, onPick, vars = new Map()) {
     super(plugin.app);
     this.plugin = plugin;
     this.obj = obj;
     this.options = options;
     this.onPick = onPick;
+    this.vars = vars;
     this.setPlaceholder(`\\${obj.name}: ${obj.desc} (Esc keeps what you typed)`);
   }
 
@@ -666,7 +727,17 @@ class ObjectModal extends SuggestModal {
     picks[key] = (picks[key] || 0) + 1;
     this.plugin.saveSettings();
     if (o.ask) {
-      new AskModal(this.plugin, `\\${this.obj.name}: ${o.label}`, o.ask, (answers) => this.onPick(o, o.build(answers))).open();
+      new AskModal(this.plugin, `\\${this.obj.name}: ${o.label}`, o.ask, (answers) => {
+        // A variable's name typed in any field means that variable.
+        const res = resolveAnswers(o.ask, answers, this.vars);
+        let built;
+        try { built = o.build(res); } catch (e) {
+          const empty = o.ask.filter((q) => !String(res[q.key] ?? "").trim()).map((q) => q.label);
+          new Notice(`\\${this.obj.name}: ${empty.length ? `fill in: ${empty.join(", ")}` : e.message}`);
+          return;
+        }
+        this.onPick(o, { ...built, answers: res });
+      }).open();
       return;
     }
     this.onPick(o, o);
@@ -699,7 +770,10 @@ class MathSuggest extends EditorSuggest {
 
     // Fully typed and nothing longer to offer: stay out of the way so Enter
     // still makes a newline after e.g. \alpha.
-    const results = this.plugin.mathSuggestions(m[2], 2, this.where);
+    // The note's variables too: \H inserts H's value (LaTeX Suite turns
+    // @a, @b, @D, ... into Greek letters in math, so @ alone is not enough).
+    this.vars = this.plugin.settings.varsEnabled ? parseVars(editor.getValue()) : new Map();
+    const results = [...this.varItems(m[2]), ...this.plugin.mathSuggestions(m[2], 2, this.where)];
     if (!results.length) return null;
     if (results.length === 1 && results[0].kind !== "object" && results[0].insert === "\\" + m[2]) return null;
 
@@ -711,11 +785,32 @@ class MathSuggest extends EditorSuggest {
   }
 
   getSuggestions(ctx) {
-    return this.plugin.mathSuggestions(ctx.query, this.plugin.settings.maxSuggestions, this.where);
+    return [...this.varItems(ctx.query), ...this.plugin.mathSuggestions(ctx.query, this.plugin.settings.maxSuggestions, this.where)];
+  }
+
+  varItems(query) {
+    if (!this.vars || !this.vars.size) return [];
+    // In a vars block, other vars are used by name (H = hessian(f)).
+    return matchVars(this.vars, query).filter((v) => v.name.startsWith(query)).slice(0, 4)
+      .map((v) => ({ kind: "var", v, insert: this.where === "vars" || v.error ? v.name : toLatex(v) }));
   }
 
   renderSuggestion(item, el) {
     el.addClass("mac-item");
+    if (item.kind === "var") {
+      const v = item.v;
+      el.addClass("mac-template");
+      const left = el.createDiv({ cls: "mac-left mac-template-left" });
+      const top = left.createDiv({ cls: "mac-template-top" });
+      top.createEl("code", { text: "\\" + v.name });
+      top.createSpan({ cls: "mac-tag", text: "your variable" + (v.formula ? ` = ${v.formula}` : "") });
+      if (v.error) top.createSpan({ cls: "mac-tag mac-error", text: v.error });
+      if (this.plugin.settings.showPreview && !v.error) {
+        const right = el.createDiv({ cls: "mac-preview" });
+        try { right.appendChild(renderMath(`${displayName(v)} = ${item.insert}`, false)); finishRenderMath(); } catch (_) { /* decoration */ }
+      }
+      return;
+    }
     if (item.kind === "object") {
       el.addClass("mac-template");
       const left = el.createDiv({ cls: "mac-left mac-template-left" });
@@ -747,6 +842,11 @@ class MathSuggest extends EditorSuggest {
     const where = this.where;
     if (item.kind === "object") {
       this.plugin.pickObject(editor, start, end, item.obj, where);
+      return;
+    }
+    if (item.kind === "var") {
+      editor.replaceRange(item.insert, start, end);
+      editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + item.insert.length));
       return;
     }
     const indent = editor.getLine(start.line).match(/^\s*/)[0];
@@ -906,12 +1006,63 @@ export default class MathAutocompletePlugin extends Plugin {
   }
 
   // Asks for the template's math inputs (prefilled from ```vars), then inserts.
-  insertTextTemplate(editor, start, end, name, route) {
+  insertTextTemplate(editor, start, end, name, route, desc = "") {
     const vars = this.settings.varsEnabled ? parseVars(editor.getValue()) : [];
-    const questions = this.settings.askInputs ? textQuestions(route.body, vars, (v) => toLatex(v)) : [];
-    if (!questions.length) return insertTemplate(editor, start, end, route.body);
-    new TextInputsModal(this, name, route, questions, (answers) =>
-      insertTemplate(editor, start, end, fillTextAnswers(route.body, answers))).open();
+    const isMap = vars instanceof Map;
+    // ctx: the function and point picked in the form (default: f, the first point).
+    const ask = (ctx = {}) => textQuestions(route.body, vars, (v) => toLatex(v), isMap ? (label) => resolveLabel(label, vars, ctx) : null);
+    const questions = this.settings.askInputs ? ask() : [];
+    const pickers = isMap ? { fns: noteFunctions(vars).map((v) => v.name), points: notePoints(vars).map((v) => v.name), ask } : null;
+    // Typing a variable's name (g, @A) in a field inserts its value, or what
+    // the field computes from it: "g" in the Hessian field gives g's Hessian.
+    const byName = (q, answer, ctx) => {
+      const m = isMap && answer !== q.value ? answer.trim().match(/^@?([A-Za-z][\w']*)$/) : null;
+      const v = m && vars.get(m[1]);
+      if (!v || v.error) return answer;
+      const isFn = noteFunctions(vars).includes(v);
+      const isPt = notePoints(vars).includes(v);
+      const r = isFn || isPt ? resolveLabel(q.label, vars, { ...ctx, ...(isFn ? { fn: v.name } : { point: v.name }) }) : null;
+      return r && r.value !== q.label ? r.value : toLatex(v);
+    };
+    // A folded callout with the definitions and theorems the template cites
+    // (general templates like \induction get the book's matching ones).
+    const extra = this.settings.imo26 ? TEMPLATE_REFS[name] || "" : "";
+    const notes = this.settings.explainRefs ? textExplain(explainItems([desc, route.label, route.body, extra], this.settings.imo26 ? IMO26_REFS : [])) : "";
+    if (!questions.length) return insertTemplate(editor, start, end, route.body + notes);
+    new TextInputsModal(this, name, route, questions, (answers, qs, ctx) => {
+      // A function or point typed into a computed field switches the whole
+      // form to it, so "g" in the Hessian field also makes the text say g.
+      const typed = (q) => answers[q.key] && answers[q.key] !== q.value && answers[q.key].trim().replace(/^@/, "");
+      const fnPick = qs.map((q) => q.desc && typed(q)).find((n) => n && noteFunctions(vars).some((v) => v.name === n));
+      const ptPick = qs.map((q) => q.desc && typed(q)).find((n) => n && notePoints(vars).some((v) => v.name === n));
+      if (fnPick || ptPick) {
+        ctx = { ...ctx, ...(fnPick ? { fn: fnPick } : {}), ...(ptPick ? { point: ptPick } : {}) };
+        const fresh = new Map(ask(ctx).map((q) => [q.key, q]));
+        answers = { ...answers };
+        for (const q of qs) {
+          const n = fresh.get(q.key);
+          if (q.desc && n && n.desc && (answers[q.key] === q.value || typed(q) === fnPick || typed(q) === ptPick)) answers[q.key] = n.value;
+        }
+      }
+      const done = Object.fromEntries(qs.map((q) => [q.key, answers[q.key] ? byName(q, answers[q.key], ctx) : answers[q.key]]));
+      // Python evidence for the blanks that kept their computed value.
+      const computed = qs.filter((q) => q.desc && done[q.key] && resolveLabel(q.label, vars, ctx)?.value === done[q.key]).map((q) => q.label);
+      const code = this.settings.textEvidence && computed.length ? evidencePy(computed, vars, ctx) : "";
+      const evidence = code ? `\n\n\`\`\`python\n${code}\n\`\`\`\n` : "";
+      insertTemplate(editor, start, end, fillTextAnswers(route.body, done, qs) + evidence + notes);
+    }, pickers).open();
+  }
+
+  // Python: print what is computed, the values used and the cited references.
+  pyExplainer(t) {
+    if (!this.settings.explainRefs) return null;
+    const refs = this.settings.imo26 ? IMO26_REFS : [];
+    return (used, route) => pyExplainLines({
+      title: t.desc,
+      label: route.label,
+      items: explainItems([t.desc, route.label, pyRefs(t.name, route.label)], refs),
+      inputs: used.map((u) => u.input),
+    });
   }
 
   async openTemplatesFile() {
@@ -947,7 +1098,13 @@ export default class MathAutocompletePlugin extends Plugin {
     if (word) for (const t of this.rankTemplates(word)) if (keep(t)) out.push({ type: "template", t });
     const eq = this.settings.imo26 ? exerciseQuery(raw) : null;
     if (eq) for (const t of rankExercises(eq, this.exercises, this.settings.templatePicks)) out.push({ type: "template", t });
-    if (rq) for (const ref of rankRefs(IMO26_REFS, rq, this.settings.refPicks)) out.push({ type: "ref", ref });
+    if (rq) for (const ref of rankRefs(IMO26_REFS, rq, this.settings.refPicks)) out.push({ type: "ref", ref, q: rq.q });
+    // A plain word (\convex, \softmax, \lipschitz) also offers the book's
+    // definitions, results and sections with that word in their title or
+    // anywhere in their statement (title hits first).
+    if (!rq && !eq && word && word.length >= 4 && this.settings.imo26) {
+      for (const ref of rankRefs(IMO26_REFS, { kind: null, q: word, wordStart: true }, this.settings.refPicks).slice(0, 12)) out.push({ type: "ref", ref, q: word });
+    }
     return out;
   }
 
@@ -988,14 +1145,30 @@ export default class MathAutocompletePlugin extends Plugin {
     const doc = editor.getValue();
     const vars = parseVars(doc);
     const ctx = objectContext(vars);
-    if (obj.name === "fromnote") ctx.found = findDefinitions(doc, vars);
+    if (obj.name === "fromnote") ctx.found = findDefinitions(doc, parseVars(doc, { implicit: false }));
     const options = obj.options(ctx).filter((o) => where === "vars" || !o.varsOnly);
     const from = editor.posToOffset(start);
     const len = editor.posToOffset(end) - from;
     const s = this.settings;
     s.fillPicks["obj:" + obj.name] = (s.fillPicks["obj:" + obj.name] || 0) + 1;
     this.saveSettings();
-    new ObjectModal(this, obj, options, (o, built) => this.insertObject(editor, from, len, obj, o, built, where, vars)).open();
+    new ObjectModal(this, obj, options, (o, built) => this.insertObject(editor, from, len, obj, o, built, where, vars), vars).open();
+  }
+
+  // Puts markdown on the lines after the math the offset is in: after the
+  // closing $$ of a display block, or after the line of an inline $..$.
+  insertAfterMath(editor, offset, md) {
+    const doc = editor.getValue();
+    const before = doc.slice(0, offset);
+    const display = ((before.match(/\$\$/g) || []).length % 2) === 1;
+    let end = offset;
+    if (display) {
+      const close = doc.indexOf("$$", offset);
+      end = close < 0 ? doc.length : close + 2;
+    }
+    const nl = doc.indexOf("\n", end);
+    const at = nl < 0 ? doc.length : nl;
+    editor.replaceRange(`\n\n${md}`, editor.offsetToPos(at));
   }
 
   insertObject(editor, from, len, obj, o, built, where, vars) {
@@ -1005,6 +1178,11 @@ export default class MathAutocompletePlugin extends Plugin {
     if (where !== "vars" || lineBefore.trim()) {
       if (!built.value) throw new Error("this one only works inside a vars block");
       editor.replaceRange(built.value, startPos, endPos);
+      // The worked solution (every step + why) goes under the math block.
+      if (where === "math" && this.settings.showWork) {
+        const md = workFor(obj.name, o.id, objectContext(vars), built.answers);
+        if (md) this.insertAfterMath(editor, from + built.value.length, md);
+      }
       editor.setCursor(editor.offsetToPos(from + built.value.length));
       editor.focus();
       return;
@@ -1032,12 +1210,11 @@ export default class MathAutocompletePlugin extends Plugin {
   // Command: put the definitions written in the note's math into a vars block.
   createVarsFromNote(editor) {
     const doc = editor.getValue();
-    const vars = parseVars(doc);
-    const found = findDefinitions(doc, vars);
+    const found = findDefinitions(doc, parseVars(doc, { implicit: false }));
     if (!found.length) { new Notice("Math Autocomplete: no definitions like $f(x) = ...$ or $A = \\begin{pmatrix}...$ found."); return; }
     const lines = found.map((d) => d.line);
     // Append to the last vars block, or start one at the cursor.
-    const re = /^[ \t]*(```|~~~)[ \t]*vars[ \t]*\n([\s\S]*?)^([ \t]*\1[ \t]*)$/gm;
+    const re = /^[ \t]*(```|~~~)[ \t]*vars[ \t]*\n([\s\S]*?)^([ \t]*\1[ \t]*)$/gim;
     let m;
     let last = null;
     while ((m = re.exec(doc))) last = m;
@@ -1132,6 +1309,21 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Ask for inputs first")
       .setDesc("After picking a snippet (\\gradient, \\hessian, ...), a form asks for everything it needs (function, point, direction, ...), prefilled from your vars block, and inserts finished code. Text templates (\\proof, \\ex1.19, ...) ask for their math inputs the same way. Off: insert with Tab stops instead.")
       .addToggle((t) => t.setValue(s.askInputs).onChange(async (v) => { s.askInputs = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Explain what is used")
+      .setDesc("Python snippets first print what they compute, your values (f = ..., A = ...) and the definitions and theorems they use, with the book's statement. Text templates (\\proof, \\hessian, \\ex1.19, ...) get a folded \"Definitions and results used\" callout.")
+      .addToggle((t) => t.setValue(s.explainRefs).onChange(async (v) => { s.explainRefs = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Worked solutions in math")
+      .setDesc("When you build something in math mode (\\hessian, \\gradient, \\inverse, \\determinant, \\eigenvalues, \\taylor, ...), the answer goes where you typed and the full worked solution, every intermediate step with a sentence explaining it and the book reference, goes under the math block.")
+      .addToggle((t) => t.setValue(s.showWork).onChange(async (v) => { s.showWork = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Python evidence for computed text")
+      .setDesc("When a text template fills in values computed from your variables (Hessian, gradient, D, definiteness, f(1, 2), base case, ...), a python block that recomputes them with sympy is inserted under the text.")
+      .addToggle((t) => t.setValue(s.textEvidence).onChange(async (v) => { s.textEvidence = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
 

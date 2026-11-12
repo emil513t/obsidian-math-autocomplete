@@ -24,6 +24,31 @@ const IMPORTS = {
   itertools: "import itertools",
   torch: "import torch",
   hashlib: "import hashlib",
+  // Exact solutions when sympy can find them, else numeric ones (nsolve from a
+  // grid of starting points): 2x + sin x = 0 has no closed form.
+  solve: [
+    "def solve_all(eqs, syms):",
+    "    eqs = list(eqs) if isinstance(eqs, (list, tuple)) else [eqs]",
+    "    eqs = [e.lhs - e.rhs if isinstance(e, sp.Equality) else e for e in eqs]",
+    "    syms = list(syms) if isinstance(syms, (list, tuple)) else [syms]",
+    "    try:",
+    "        return sp.solve(eqs, syms, dict=True)",
+    "    except NotImplementedError:",
+    "        pass",
+    "    print(\"(no exact solution from sympy: solving numerically, values rounded to 10 digits)\")",
+    "    import itertools",
+    "    grid = [-10, -3, -1, -0.5, 0, 0.5, 1, 3, 10] if len(syms) <= 2 else [-3, -1, 0, 1, 3]",
+    "    found = []",
+    "    for start in itertools.product(grid, repeat=len(syms)):",
+    "        try:",
+    "            r = sp.nsolve(eqs, list(syms), list(start))",
+    "        except Exception:",
+    "            continue",
+    "        s = {v: sp.Float(round(float(r[i]), 10)) + 0 for i, v in enumerate(syms)}",
+    "        if all(abs(float(e.subs(s))) < 1e-8 for e in eqs) and s not in found:",
+    "            found.append(s)",
+    "    return found",
+  ].join("\n"),
 };
 
 const KIND_HINT = {
@@ -129,7 +154,9 @@ function replaceName(body, from, to) {
 // s: one route from parsePySnippets (s.all[i]), or the snippet itself.
 // answers: { name or placeholder label: typed text } from the inputs form;
 // an empty or missing answer falls back to the note's vars / a Tab placeholder.
-export function buildPySnippet(s, { vars = new Map(), before = "", answers = {} } = {}) {
+// explain(used) -> python lines printed before the computation (what it
+// computes, the values used, the book references).
+export function buildPySnippet(s, { vars = new Map(), before = "", answers = {}, explain = null } = {}) {
   let body = s.body;
   const defined = definedNames(before);
   const style = s.uses.includes("sympy") ? "sympy" : s.uses.includes("numpy") ? "numpy" : "plain";
@@ -200,7 +227,8 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {} 
     const typed = (answers[label] ?? "").trim();
     return typed ? answerToPy(typed, style, label) : m;
   });
-  const text = [...header, ...defs, ...(header.length || defs.length ? [""] : []), body].join("\n").replace(/\n{3,}/g, "\n\n");
+  const ex = explain ? explain(used, s) : [];
+  const text = [...header, ...defs, ...(header.length || defs.length ? [""] : []), ...ex, body].join("\n").replace(/\n{3,}/g, "\n\n");
   return { text, used, syms };
 }
 

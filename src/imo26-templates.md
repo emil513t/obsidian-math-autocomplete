@@ -543,7 +543,7 @@ If $f$ were differentiable at ${{x0}}$ with $f'({{x0}}) = c$, then $\frac{f({{x0
 ### higher derivatives: find the pattern
 $f' = {{f'}}$, $f'' = {{f''}}$, $f''' = {{f'''}}$, $f^{(4)} = {{f''''}}$, so the pattern repeats with period ${{period}}$ and $f^{({{n}})} = {{answer}}$.
 
-## \newton — Ch6/8: Newton-Raphson method (Sec 6.3.5)
+## \newton — Ch6/8: Newton-Raphson method (Sec 6.3.5, Sec 7.4)
 ### one variable: iterate x - f/f'
 **Newton-Raphson** for $f(x) = {{f}}$, $f'(x) = {{f'}}$: $x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)} = {{simplified iteration}}$.
 
@@ -585,7 +585,7 @@ $f$ is continuous on the compact $[{{a}}, {{b}}]$, so max and min exist (Theorem
 ### a critical point that is NOT an extremum (Ex 6.38)
 $f(x) = {{f}}$ has $f'({{x0}}) = 0$ but takes values both above and below $f({{x0}})$ near ${{x0}}$, so the converse of Lemma 6.37 fails.
 
-## \taylor — Ch6: Taylor polynomials (Thm 6.50)
+## \taylor — Ch6: Taylor polynomials (Sec 6.4)
 ### compute the Taylor polynomial
 Taylor polynomial of $f(x) = {{f}}$ at $x_0 = {{x0}}$ up to degree ${{n}}$: $f({{x0}}) = {{_}}$, $f'({{x0}}) = {{_}}$, $f''({{x0}}) = {{_}}$, ...
 $$P_{ {{n}} }(x) = \sum_{k=0}^{ {{n}} } \frac{f^{(k)}({{x0}})}{k!}(x - {{x0}})^k = {{polynomial}}$$
@@ -645,7 +645,7 @@ $f(x, y) = {{f}}$. Critical points (Definition 7.15): $\nabla f = 0$:
 $$\frac{\partial f}{\partial x} = {{f_x}} = 0, \quad \frac{\partial f}{\partial y} = {{f_y}} = 0$$
 Solving gives ${{critical points}}$. Hessian (Definition 8.2):
 $$\nabla^2 f(x, y) = {{Hessian}}$$
-- At ${{point}}$: $\nabla^2 f = {{value}}$ is {{positive definite / negative definite / indefinite}} $\Rightarrow$ {{local min / local max / saddle point}} (Theorem 8.12).
+- At ${{point}}$: $\nabla^2 f = {{Hessian at the point}}$ is {{positive definite / negative definite / indefinite}} $\Rightarrow$ {{local min / local max / saddle point}} (Theorem 8.12).
 ### saddle point: two directions (Def 8.8)
 At ${{v0}}$: along $u = {{u}}$, $t \mapsto f(v_0 + tu) = {{one-variable function}}$ has a local min at $t = 0$; along $v = {{v}}$, $t \mapsto f(v_0 + tv) = {{one-variable function}}$ has a local max. So ${{v0}}$ is a saddle point (Definition 8.8).
 ### Hessian test inconclusive: look at f directly (Thm 8.12)
@@ -655,10 +655,10 @@ $f$ is convex ({{\convexfn}}), so by Theorem 8.23 $f(v) \ge f(v_0) + \nabla f(v_
 
 ## \hessian — Ch8: Hessian matrix (Def 8.2)
 ### compute the Hessian (Def 8.2)
-$$\nabla^2 F({{x, y}}) = \begin{pmatrix} F_{xx} & F_{xy} \\ F_{yx} & F_{yy} \end{pmatrix} = {{Hessian}}$$
+$$\nabla^2 {{function name}}({{x, y}}) = {{Hessian entries}} = {{Hessian}}$$
 (symmetric by Theorem 7.11).
 ### classify one critical point (Thm 8.12, Prop 8.11)
-At the critical point $v_0 = {{v0}}$: $\nabla^2 F(v_0) = {{Hessian}}$. Symmetric reduction gives $D = {{diagonal}}$, so it is {{positive definite / negative definite / indefinite}} (Proposition 8.11).
+At the critical point $v_0 = {{v0}}$: $\nabla^2 {{function name}}(v_0) = {{Hessian at v0}}$. Symmetric reduction gives $D = {{diagonal}}$, so it is {{positive definite / negative definite / indefinite}} (Proposition 8.11).
 By Theorem 8.12, $v_0$ is a {{local minimum / local maximum / saddle point}}.
 ### depends on a parameter a (Prop 8.11)
 $\nabla^2 f = {{Hessian with a}}$. Symmetric reduction gives $D = {{diagonal with a}}$, which is positive definite iff ${{condition on a}}$ (Proposition 8.11).

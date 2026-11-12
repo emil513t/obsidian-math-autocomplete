@@ -5,7 +5,7 @@
   "title": "The LLM landscape, updated August, 2026",
   "page": 6,
   "heading": null,
-  "text": "The past year has seen generative AI once more developing at breakneck speed. Agents started entering the workflow in November 2025 and were matured in Claude Code, Codex, OpenClaw and the like in the beginning of 2026. Frontier models like Mythos was held back because of cybersecurity risks. Over the summer incredibly powerful models like Fable and GPT 5.6 helped solve hard open research problems…"
+  "text": "The past year has seen generative AI once more developing at breakneck speed. Agents started entering the workflow in November 2025 and were matured in Claude Code, Codex, OpenClaw and the like in the beginning of 2026. Frontier models like Mythos was held back because of cybersecurity risks. Over the summer incredibly powerful models like Fable and GPT 5.6 helped solve hard open research problems in mathematics. In fact, Fable helped solve one of the most difficult math problems during the FIFA World Cup final. This was casually announced on X by Levent Alpöge in the tweet below Make no mistake, this was a genuine really hard mathematical problem dating back to 1939, that captured the attention of very capable mathematicians. When I write helped solve, it means that there was a human in the loop guiding the LLM. Oftentimes the LLM does a lot of the heavy lifting and also contributes central ideas. The natural interface to LLMs is the chatbot in the browser. Through your AU university account you have access to Microsoft Copilot. You communicate with chatbots through natural language. This process is called prompting. The more precise 5 your prompt is, the better the response. When learning new material, you can work from prompts instructing the chatbot not to give away the answers but emphasize guidance. The exercise below is a good example of this."
  },
  {
   "kind": "remark",
@@ -21,7 +21,7 @@
   "title": "Truth tables (∧, ∨, ⇒, ¬)",
   "page": 11,
   "heading": "Definition 1.10 — Truth tables (∧, ∨, ⇒, ¬)",
-  "text": "p q p∧q t t t t f f f t f f f f p q p∨q t t t t f t f t t f f f p q p =⇒q t t t t f f f t t f f t p ¬p t f f t The tables for the compound propositions p ∧q, p ∨q and also ¬p are not too hard to grasp. The table for p =⇒q raises a few more questions. Why is f =⇒t true? I will not go into this at this point (see Example 1.23), but just point out that there are many explanations available online and…"
+  "text": "The truth tables: p ∧ q is true only when both p and q are true; p ∨ q is false only when both p and q are false; p =⇒ q is false only when p is true and q is false; ¬p is true exactly when p is false."
  },
  {
   "kind": "definition",
@@ -45,7 +45,7 @@
   "title": "Predicate",
   "page": 14,
   "heading": "Definition 1.21 — Predicate",
-  "text": "A predicate is a proposition depending on one or more variables. Variables are fundamental in computer programs. In the predicate x = 1, x appears as a variable. Depending on what you substitute for x, the resulting proposition could be true or false or even meaningless. As an example, the latter case appears if x is replaced by the character ’a’. This is what computer scientists call a type error…"
+  "text": "A predicate is a proposition depending on one or more variables."
  },
  {
   "kind": "definition",
@@ -53,7 +53,7 @@
   "title": "Set equality",
   "page": 16,
   "heading": "Definition 1.27 — Set equality",
-  "text": "Two sets A and B are equal i.e., A = B if they contain the same elements. An example of a set could be the set {1,2,3} of natural numbers between 0 and 4. Notice again that we use the symbol \"{\" to start the listing of elements in a set and the symbol \"}\" to denote the end of the listing. Notice also that (by our definition of equality between sets), the order of the elements in the listing does n…"
+  "text": "Two sets A and B are equal i.e., A = B if they contain the same elements."
  },
  {
   "kind": "definition",
@@ -77,7 +77,7 @@
   "title": "Real number",
   "page": 26,
   "heading": "Definition 1.57 — Real number",
-  "text": "A real number is defined by d0.d1d2 ..., (1.15) where d0 ∈Z and d1,d2,... is an infinite sequence of integers (digits) in {0,1,2,3,4,5,6,7,8,9}. Informally (1.15) represents the real number d0 + d1 10 + d2 100 +··· = d0 +d1 ·10−1 +d2 ·10−2 +··· given by an infinite set of digits as opposed to a rational number, which is given finitely by an integer (numer- ator) and a natural number (denominator).…"
+  "text": "A real number is defined by d0.d1d2 ..., (1.15) where d0 ∈Z and d1,d2,... is an infinite sequence of integers (digits) in {0,1,2,3,4,5,6,7,8,9}."
  },
  {
   "kind": "proposition",
@@ -85,7 +85,7 @@
   "title": "The 9 arithmetic rules",
   "page": 28,
   "heading": "Proposition 1.59 — The 9 arithmetic rules",
-  "text": "Suppose that A is one of the sets N,Z,Q or R. Then for numbers x,y,z all in A we have (i) 1·x = x (ii) xy = yx (iii) x+y = y+x (iv) (x+y)+z = x+(y+z) (v) (xy)z = x(yz) (vi) x(y+z) = xy+xz If A is one of Z,Q or R, then 0 ∈A and for every x ∈A, 7. x+0 = x 8. x+y = 0 for some number y ∈A. Finally if A is Q or R and x ∈A is not 0,then 9. xz = 1 for some number z ∈A. The number z above is called the in…"
+  "text": "Suppose that A is one of the sets N,Z,Q or R. Then for numbers x,y,z all in A we have (i) 1·x = x (ii) xy = yx (iii) x+y = y+x (iv) (x+y)+z = x+(y+z) (v) (xy)z = x(yz) (vi) x(y+z) = xy+xz If A is one of Z,Q or R, then 0 ∈A and for every x ∈A, 7. x+0 = x 8. x+y = 0 for some number y ∈A. Finally if A is Q or R and x ∈A is not 0,then 9. xz = 1 for some number z ∈A. The number z above is called the inverse of x and is usually denoted x−1. The number y above is called the negative of x and is usually denoted −x. We will also use the symbol −(minus) defined as an operation on two numbers x,y ∈A as x−y := x+(−y)."
  },
  {
   "kind": "definition",
@@ -101,7 +101,7 @@
   "title": "Orders come from arithmetic; Z+ = N",
   "page": 29,
   "heading": null,
-  "text": "Notice that we only use arithmetic operations to define orders on numbers in Definition 1.65. This is also how computers compare numbers algorithmically. Also if A = Z, putting A+ = N makes all of the conditions in Definition 1.65 hold. If you are given an integer, it is 0, positive or negative. This is the content of (i) in Definition 1.65. Also given two natural numbers, their product and sum ar…"
+  "text": "Notice that we only use arithmetic operations to define orders on numbers in Definition 1.65. This is also how computers compare numbers algorithmically. Also if A = Z, putting A+ = N makes all of the conditions in Definition 1.65 hold. If you are given an integer, it is 0, positive or negative. This is the content of (i) in Definition 1.65. Also given two natural numbers, their product and sum are also natural numbers. This is the content of (ii) in Definition 1.65."
  },
  {
   "kind": "proposition",
@@ -117,7 +117,7 @@
   "title": "The Natural Number Game",
   "page": 35,
   "heading": null,
-  "text": "Check out The Natural Number Game at https://www.ma.imperial.ac.uk/~buzzard/xena/natural_number_game/index2.html Here you can see Lean in action with every step of a proof spelled out! Informally a proof of a proposition q, consists in arguing that an implication p =⇒q is true by first assuming p. Usually this is done not only through one implication p =⇒q, but through a series of intermediate imp…"
+  "text": "Check out The Natural Number Game at https://www.ma.imperial.ac.uk/~buzzard/xena/natural_number_game/index2.html Here you can see Lean in action with every step of a proof spelled out! Informally a proof of a proposition q, consists in arguing that an implication p =⇒q is true by first assuming p. Usually this is done not only through one implication p =⇒q, but through a series of intermediate implications p =⇒q1 =⇒q2 =⇒q3 =⇒··· =⇒qN, where the last proposition qN is q. If p is true, this will constitute a proof that qN = q is true. Just like in (1.16), there is an imprecision here. Can you tell what it is?"
  },
  {
   "kind": "theorem",
@@ -141,7 +141,7 @@
   "title": "A function is a very general concept",
   "page": 43,
   "heading": null,
-  "text": "Please notice that a function is a very, very general concept. It is not just something that you draw as a graph on a piece of paper. Of course, you can draw a function f : R →R like f(x) = x2: Generally, a function f : S →T is given by a machine, formula or algorithm that computes f(x) ∈T for every x ∈S. Nothing more, nothing less. It really has nothing to do with a graph (even though graphs can …"
+  "text": "Please notice that a function is a very, very general concept. It is not just something that you draw as a graph on a piece of paper. Of course, you can draw a function f : R →R like f(x) = x2: Generally, a function f : S →T is given by a machine, formula or algorithm that computes f(x) ∈T for every x ∈S. Nothing more, nothing less. It really has nothing to do with a graph (even though graphs can sometimes be useful for visualizing certain functions like f(x) = x2)."
  },
  {
   "kind": "remark",
@@ -149,7 +149,7 @@
   "title": "Functions and functional programming",
   "page": 45,
   "heading": null,
-  "text": "The concept of a function is powerful and underlies functional programming in computer science: every com- putation can be realized as applying a composition of functions to an argument. This is exemplified in the computer language Haskell."
+  "text": "The concept of a function is powerful and underlies functional programming in computer science: every computation can be realized as applying a composition of functions to an argument. This is exemplified in the computer language Haskell."
  },
  {
   "kind": "definition",
@@ -173,7 +173,7 @@
   "title": "Preimage",
   "page": 48,
   "heading": "Definition 1.115 — Preimage",
-  "text": "Consider a function f : A →B, where A and B are sets. If C ⊆B, then the preimage of C under f is defined by f −1(C) = {x ∈A | f(x) ∈C}. Definition 1.115 is short and sweet. Here is a first example of the preimage."
+  "text": "Consider a function f : A →B, where A and B are sets. If C ⊆B, then the preimage of C under f is defined by f −1(C) = {x ∈A | f(x) ∈C}."
  },
  {
   "kind": "remark",
@@ -181,7 +181,7 @@
   "title": "Coordinate functions of a vector function",
   "page": 50,
   "heading": null,
-  "text": "Recall from Definition 1.104 that a function such as (1.24) can be written f(x1,...,xd) = (f1(x1,...,xd),..., fm(x1,...,xd)), (1.25) where f1,..., fm are functions A →R. Check out Example 1.105. In a neural network the functions f1, f2,..., fm are viewed as neurons6. Depending on their input they either fire or do not fire a signal. Classically this is modelled by the perceptron, which is a functi…"
+  "text": "Recall from Definition 1.104 that a function such as (1.24) can be written f(x1,...,xd) = (f1(x1,...,xd),..., fm(x1,...,xd)), (1.25) where f1,..., fm are functions A →R. Check out Example 1.105."
  },
  {
   "kind": "remark",
@@ -197,7 +197,7 @@
   "title": "A bit of history",
   "page": 52,
   "heading": null,
-  "text": "The perceptron was introduced by Frank Rosenblatt in 1958 and set off enormous enthusiasm — The New York Times reported it as \"the embryo of an electronic computer that will be able to walk, talk, see, write, reproduce itself and be conscious of its existence\". In 1969 Marvin Minsky and Seymour Papert published a famous analysis of what perceptrons cannot do, and their key example is exactly Exerc…"
+  "text": "The perceptron was introduced by Frank Rosenblatt in 1958 and set off enormous enthusiasm — The New York Times reported it as \"the embryo of an electronic computer that will be able to walk, talk, see, write, reproduce itself and be conscious of its existence\". In 1969 Marvin Minsky and Seymour Papert published a famous analysis of what perceptrons cannot do, and their key example is exactly Exercise 1.123: a single perceptron cannot compute XOR. Enthusiasm and funding evaporated in what became known as an AI winter. The remedy — hidden layers, as in the exercise, combined with an efficient method for computing weights and biases from data (Section 7.9) — eventually brought neural networks back and led to the deep networks behind modern machine learning. So a single perceptron cannot compute XOR — and history shows how costly that observation was. The rescue is composition, the very idea this chapter has been building. Here it is in slow motion."
  },
  {
   "kind": "remark",
@@ -205,7 +205,7 @@
   "title": "LLMs are built the same way",
   "page": 54,
   "heading": null,
-  "text": "Modern large language models are built in essentially the same way. When you read that a language model has 175 billion parameters, you now know exactly what is being counted: the weights and biases of its neurons. The diagrams just get (much) bigger. Mathematically there is no reason to insist on the step function in (1.26). The general recipe behind a neuron is: form the weighted sum w1x1 + ··· …"
+  "text": "Modern large language models are built in essentially the same way. When you read that a language model has 175 billion parameters, you now know exactly what is being counted: the weights and biases of its neurons. The diagrams just get (much) bigger. Mathematically there is no reason to insist on the step function in (1.26). The general recipe behind a neuron is: form the weighted sum w1x1 + ··· + wdxd + b and feed the result into a fixed function R →R called the activation function. The perceptron uses the step function, which returns 1 for positive input and 0 otherwise. A smooth alternative is the sigmoid function, giving neurons of the form σ(x1,...,xd) = 1 1+e−(w1x1+···+wdxd+b) . Here e ≈2.718 is the base of the exponential function, which you may recognize from high school — we will study it properly later in the book; for now the plot below tells you everything you need. Instead of jumping from 0 to 1, a sigmoid neuron glides smoothly between the two values. This matters: training a network (see below) relies on small changes of the weights and biases producing small changes of the output, and the sudden jump of the step function ruins exactly that. The sigmoid function plays the starring role in logistic regression (Section 7.8). Around 2011 it was discovered that an even simpler activation function, the rectified linear unit (ReLU) given by ReLU(x) = max(0,x), often works better in deep networks, and it is the default choice in most modern networks, including large language models."
  },
  {
   "kind": "remark",
@@ -213,7 +213,7 @@
   "title": "A chatbot is a function",
   "page": 55,
   "heading": null,
-  "text": "What does any of this have to do with the chatbot from Section 1.1? Everything. Strip away the chat window and a large language model is a function f : A →B, where the input is the conversation so far, encoded as a vector, and the output is a list of numbers: one probability for each symbol the model could write next. The chatbot writes by composing f with itself: compute the probabilities, pick a…"
+  "text": "What does any of this have to do with the chatbot from Section 1.1? Everything. Strip away the chat window and a large language model is a function f : A →B, where the input is the conversation so far, encoded as a vector, and the output is a list of numbers: one probability for each symbol the model could write next. The chatbot writes by composing f with itself: compute the probabilities, pick a next symbol accordingly, append it to the conversation and feed the longer text back into f — again and again, one symbol at a time, until the reply is finished. There is no module for \"knowing things\" and no module for \"writing\" — just a function, applied repeatedly, whose billions of weights and biases were computed by training. In Section 7.9.5 you will train a miniature version of f yourself and watch it invent Danish first names."
  },
  {
   "kind": "remark",
@@ -221,7 +221,7 @@
   "title": "Solving linear equations in predicate logic",
   "page": 58,
   "heading": null,
-  "text": "To be completely precise about these steps, let us use predicate logic. A solution to the system of equations above is a pair of numbers (x,y) ∈R2 satisfying the predicate (x+y = 3)∧(2x−3y = 1). Now use the rules in Proposition 1.59 and substitution to rewrite systematically: (x+y = 3)∧(2x−3y = 1) ⇐⇒ (x = 3−y)∧(2x−3y = 1) ⇐⇒ (x = 3−y)∧(2(3−y)−3y = 1) ⇐⇒ (x = 3−y)∧(6−5y = 1) ⇐⇒ (x = 3−y)∧(y = 1) ⇐⇒…"
+  "text": "To be completely precise about these steps, let us use predicate logic. A solution to the system of equations above is a pair of numbers (x,y) ∈R2 satisfying the predicate (x+y = 3)∧(2x−3y = 1). Now use the rules in Proposition 1.59 and substitution to rewrite systematically: (x+y = 3)∧(2x−3y = 1) ⇐⇒ (x = 3−y)∧(2x−3y = 1) ⇐⇒ (x = 3−y)∧(2(3−y)−3y = 1) ⇐⇒ (x = 3−y)∧(6−5y = 1) ⇐⇒ (x = 3−y)∧(y = 1) ⇐⇒ (x = 2)∧(y = 1). Tracing back we have actually proved that (x+y = 3)∧(2x−3y = 1) ⇐⇒(x = 2)∧(y = 1)."
  },
  {
   "kind": "theorem",
@@ -269,7 +269,7 @@
   "title": "Odd-degree polynomials always have a root",
   "page": 68,
   "heading": "Theorem 2.28 — Odd-degree polynomials always have a root",
-  "text": "A polynomial of odd degree always has a root. The proof of this result is beyond our scope now and will have to wait for tools from analysis (Chapter 5)."
+  "text": "A polynomial of odd degree always has a root."
  },
  {
   "kind": "remark",
@@ -285,7 +285,7 @@
   "title": "Shamir secret sharing uses modular arithmetic",
   "page": 75,
   "heading": null,
-  "text": "Real implementations of Shamir secret sharing do not use real numbers, but arithmetic modulo a large prime number. Among other things, this prevents a group of fewer than m+1 people from learning partial information about the secret."
+  "text": "Real implementations of Shamir secret sharing do not use real numbers, but arithmetic modulo a large prime number. Among other things, this prevents a group of fewer than m+1 people from learning partial information about the secret. 2.7 Fitting data Given a data set D = {(x1,y1),(x2,y2),...,(xn,yn)} one would often like to find a model (i.e. some function) that describes the data well. With Lagrange interpolation we can find a polynomial f fitting the sample data D perfectly, i.e. satisfying f(xi) = yi for i = 1,2,...n. Is f an optimal model? For the given data set it seems so, but we have been a bit imprecise in formulating the goal of a model. Actually, we are not very interested in modeling the data at hand with extreme precision. What we want is a model that fits new data well. Let us look at a concrete example. Consider the data set D = {(0,0.06),(0.5,0.33),(1,0.56),(1.5,1.35),(2,1.48),(2.5,1.15), (3,1.45),(3.5,1.12),(4,0.68),(4.5,0.22),(5,−0.10)} The data points (xi,yi), i = 1,2,...,11, were generated as (xi, p(xi)+εi) where p(x) = −0.2x2 +x is a quadratic polynomial and εi ∈[−0.4,0.4] is a random number to simulate noise. The polynomial p is the best possible model for unknown data as there will always be noise that cannot be modeled. In real life p is what needs to be modeled based on the available data. In the figure below is a fit with a degree 2 and degree 10 polynomial respectively. As we see, the degree 2 polynomial is pretty close to the target p compared to the degree 10 polynomial that nevertheless fits the data D perfectly. Generally a simple model is preferred over a complex, as the latter will have a tendency to fit noise. This phenomenon is called overfitting and is an extremely important topic. An interactive version of this illustration with a little more bells and whistles can be found here, and you can reproduce the figure — and experiment with other degrees — in the cell below."
  },
  {
   "kind": "remark",
@@ -293,7 +293,7 @@
   "title": "Rows of Av are neuron sums",
   "page": 79,
   "heading": null,
-  "text": "The rows of Av are weighted sums ai1x1 + ··· + ainxn — exactly the sums computed by the neurons of (1.26) in the first chapter. In fact, a layer of a neural network with n inputs and m neurons is the map v 7→σ(Av + b), where A is the m × n matrix holding the weights of the m neurons, b is a vector of their biases and the activation function σ is applied to each entry. Linear maps are the computati…"
+  "text": "The rows of Av are weighted sums ai1x1 + ··· + ainxn — exactly the sums computed by the neurons of (1.26) in the first chapter. In fact, a layer of a neural network with n inputs and m neurons is the map v 7→σ(Av + b), where A is the m × n matrix holding the weights of the m neurons, b is a vector of their biases and the activation function σ is applied to each entry. Linear maps are the computational backbone of neural networks."
  },
  {
   "kind": "definition",
@@ -325,7 +325,7 @@
   "title": "Order of multiplication and cost",
   "page": 89,
   "heading": null,
-  "text": "The associative law (AB)C = A(BC) is true, but in computing ABC there can be a (big) difference in the number of multiplications in the two computations A(BC) and (AB)C i.e., efficiency is not associative for matrix multiplication. In the notation of Theorem 3.19, computing (AB)C requires mnr +mrs = mr(n+s) multiplications, whereas computing A(BC) requires nrs+mns = ns(m+r) multiplications. If for…"
+  "text": "The associative law (AB)C = A(BC) is true, but in computing ABC there can be a (big) difference in the number of multiplications in the two computations A(BC) and (AB)C i.e., efficiency is not associative for matrix multiplication. In the notation of Theorem 3.19, computing (AB)C requires mnr +mrs = mr(n+s) multiplications, whereas computing A(BC) requires nrs+mns = ns(m+r) multiplications. If for example m = 10000,n = 10,r = 10000 and s = 10, then computing (AB)C requires 2·109 multiplications, whereas computing A(BC) requires 2·106 multiplications!"
  },
  {
   "kind": "definition",
@@ -333,7 +333,7 @@
   "title": "Invertible matrix",
   "page": 90,
   "heading": "Definition 3.24 — Invertible matrix",
-  "text": "An n×n matrix A is called invertible, if there exists an n×n matrix B, such that AB = BA = In. In this case, B is called the inverse matrix of A and denoted A−1. As a reality check, you should convince yourself that the 2×2 matrix \u00121 \u0013 is not invertible. In fact, here the associative law from Theorem 3.19 is incredibly useful: if A is an invertible matrix with inverse matrix B and AC = 0, then C =…"
+  "text": "An n×n matrix A is called invertible, if there exists an n×n matrix B, such that AB = BA = In. In this case, B is called the inverse matrix of A and denoted A−1."
  },
  {
   "kind": "proposition",
@@ -365,7 +365,7 @@
   "title": "Optimization problem (general form)",
   "page": 101,
   "heading": "Definition 4.6 — Optimization problem (general form)",
-  "text": "In our most general setting an optimization problem looks like min v∈C f(v), where C and D are subsets of Rd with C ⊆D and f : D →R is a function. The notation is read: minimize the value f(v) subject to the constraint that the vector v belongs to C. The constraint is always written under the min; several constraints may be stacked there. A solution to the optimization problem is a vector v0 ∈C, s…"
+  "text": "In our most general setting an optimization problem looks like min v∈C f(v), where C and D are subsets of Rd with C ⊆D and f : D →R is a function. The notation is read: minimize the value f(v) subject to the constraint that the vector v belongs to C. The constraint is always written under the min; several constraints may be stacked there. A solution to the optimization problem is a vector v0 ∈C, such that f(v0) ≤f(v) for every v ∈C. Here v0 is called an optimum and f(v0) is called the optimal value."
  },
  {
   "kind": "remark",
@@ -373,7 +373,7 @@
   "title": "Complexity of an optimization problem",
   "page": 101,
   "heading": null,
-  "text": "The complexity of the problem depends very much on the nature of C and f. Also, we cannot even be certain that an optimization problem has a solution. Consider the problem min x∈C x, where C = {x ∈R | x ≤0}. Here x can be made arbitrarily small subject to the constraint x ∈C and the problem has no optimal solution. 4. WHAT IS OPTIMIZATION?"
+  "text": "The complexity of the problem depends very much on the nature of C and f. Also, we cannot even be certain that an optimization problem has a solution. Consider the problem min x∈C x, where C = {x ∈R | x ≤0}. Here x can be made arbitrarily small subject to the constraint x ∈C and the problem has no optimal solution."
  },
  {
   "kind": "remark",
@@ -381,7 +381,7 @@
   "title": "Maximization as minimization of -f",
   "page": 102,
   "heading": null,
-  "text": "We have deliberately not included maximization problems in Definition 4.6. This is because a maximiza- tion problem, such as max v∈C f(v) (4.1) can be formulated as the minimization problem min v∈C −f(v). A solution to (4.1) is a vector v0 ∈C, such that f(v0) ≥f(v) for every v ∈C. Again, v0 is called an optimum and f(v0) the optimal value."
+  "text": "We have deliberately not included maximization problems in Definition 4.6. This is because a maximization problem, such as max v∈C f(v) (4.1) can be formulated as the minimization problem min v∈C −f(v). A solution to (4.1) is a vector v0 ∈C, such that f(v0) ≥f(v) for every v ∈C. Again, v0 is called an optimum and f(v0) the optimal value."
  },
  {
   "kind": "definition",
@@ -421,7 +421,7 @@
   "title": "Local vs. optimal solutions",
   "page": 108,
   "heading": null,
-  "text": "In hunting for optimal solutions to an optimization problem one is often stuck with a point v0 ∈Rd, which is optimal locally. This means that f(v0) ≤f(v) for every v that is sufficiently close to v0 (we will explain what this means in the next chapter). The remarkable thing that happens in a convex optimization problem is that if v0 is optimal locally, then it is a global optimum! It satisfies f(v…"
+  "text": "In hunting for optimal solutions to an optimization problem one is often stuck with a point v0 ∈Rd, which is optimal locally. This means that f(v0) ≤f(v) for every v that is sufficiently close to v0 (we will explain what this means in the next chapter). The remarkable thing that happens in a convex optimization problem is that if v0 is optimal locally, then it is a global optimum! It satisfies f(v0) ≤f(v) not only for v close to v0, but for every v ∈C."
  },
  {
   "kind": "definition",
@@ -437,7 +437,7 @@
   "title": "Dot product, norm, cosine",
   "page": 119,
   "heading": "Definition 5.1 — Dot product, norm, cosine",
-  "text": "Suppose that u =      x1 x2 ... xd      and v =      y1 y2 ... yd      are vectors in Rd. 1. The dot product between u and v is defined by u·v = u⊤v = x1y1 +x2y2 +···+xdyd. (5.3) 2. Two vectors u,v ∈Rd are called orthogonal if u·v = 0. We write this as u ⊥v. 3. The norm of u ∈Rd is defined by |u| = √u·u = q x2 1 +x2 2 +···+x2 d. (5.4) 4. The distance between the two vectors u a…"
+  "text": "Suppose that u =      x1 x2 ... xd      and v =      y1 y2 ... yd      are vectors in Rd. 1. The dot product between u and v is defined by u·v = u⊤v = x1y1 +x2y2 +···+xdyd. (5.3) 2. Two vectors u,v ∈Rd are called orthogonal if u·v = 0. We write this as u ⊥v. 3. The norm of u ∈Rd is defined by |u| = √u·u = q x2 1 +x2 2 +···+x2 d. (5.4) 4. The distance between the two vectors u and v is defined by d(u,v) = |u−v| = q (x1 −y1)2 +···+(xd −yd)2. 5. The cosine of the angle between u and v is defined by u·v |u||v| provided that they both are non-zero."
  },
  {
   "kind": "proposition",
@@ -485,7 +485,7 @@
   "title": "Open ball",
   "page": 137,
   "heading": "Definition 5.32 — Open ball",
-  "text": "The open ball centered at u ∈Rd with radius r ∈R is defined as B(u,r) = {v ∈Rd | d(u,v) < r}. Why do we need special classes of subsets? The pay-off comes at the end of this chapter: the extreme value theorem (Theorem 5.84) guarantees that an optimization problem has a solution when the function is continuous and the constraint set is compact. This section builds the vocabulary needed to state — a…"
+  "text": "The open ball centered at u ∈Rd with radius r ∈R is defined as B(u,r) = {v ∈Rd | d(u,v) < r}."
  },
  {
   "kind": "definition",
@@ -501,7 +501,7 @@
   "title": "The logic of boundedness",
   "page": 139,
   "heading": null,
-  "text": "Spelled out with quantifiers, Definition 5.33 says ∃R ∈R∀v ∈S : |v| < R. Read it aloud: there is one radius R that works for every point of S at the same time. This is where many stumble, because swapping the two quantifiers gives the statement ∀v ∈S∃R ∈R : |v| < R, which is true for every subset S whatsoever: given v, choose R = |v| + 1. The swapped statement says nothing — choosing R after seein…"
+  "text": "Spelled out with quantifiers, Definition 5.33 says ∃R ∈R∀v ∈S : |v| < R. Read it aloud: there is one radius R that works for every point of S at the same time. This is where many stumble, because swapping the two quantifiers gives the statement ∀v ∈S∃R ∈R : |v| < R, which is true for every subset S whatsoever: given v, choose R = |v| + 1. The swapped statement says nothing — choosing R after seeing v is cheating. In the definition R must be chosen first, and then survive all v ∈S. The order of ∃and ∀is everything. For the same reason, showing that a subset S is not bounded amounts to proving the negation ∀R ∈R∃v ∈S : |v| ≥R i.e., no matter which radius is proposed, some point of S escapes the ball."
  },
  {
   "kind": "remark",
@@ -509,7 +509,7 @@
   "title": "|v| < R or |v| <= R makes no difference",
   "page": 139,
   "heading": null,
-  "text": "It does not matter whether we demand |v| < R or |v| ≤R above: if |v| ≤R for every v ∈S, then also |v| < R + 1 for every v ∈S, and R + 1 is just another radius. With this in mind, boundedness of S is equivalent to each of the following two conditions. (i) There exists R, such that x2 1 +···+x2 d ≤R for every (x1,...,xd) ∈S. This says |v|2 ≤R, which is the same as |v| ≤ √ R. (ii) There exists R, suc…"
+  "text": "It does not matter whether we demand |v| < R or |v| ≤R above: if |v| ≤R for every v ∈S, then also |v| < R + 1 for every v ∈S, and R + 1 is just another radius. With this in mind, boundedness of S is equivalent to each of the following two conditions. (i) There exists R, such that x2 1 +···+x2 d ≤R for every (x1,...,xd) ∈S. This says |v|2 ≤R, which is the same as |v| ≤ √ R. (ii) There exists R, such that |xi| ≤R for i = 1,...,d and every (x1,...,xd) ∈S i.e., no single coordinate can run off to infinity. Here |xi| ≤|v| gives one direction and |v| ≤ √ d ·max(|x1|,...,|xd|) the other."
  },
  {
   "kind": "definition",
@@ -517,7 +517,7 @@
   "title": "Open subset",
   "page": 140,
   "heading": "Definition 5.39 — Open subset",
-  "text": "A subset U ⊆Rd is called open if for every v ∈U, there exists ε > 0, such that B(v,ε) ⊆U. Think of an open subset as one where every point has wiggle room: you can move a little in any direction and still stay inside. Notice the quantifiers: this time it is ∀v∃ε — the wiggle room ε is allowed to depend on the point v (points close to the edge get less of it). Compare with boundedness, where the si…"
+  "text": "A subset U ⊆Rd is called open if for every v ∈U, there exists ε > 0, such that B(v,ε) ⊆U."
  },
  {
   "kind": "remark",
@@ -549,7 +549,7 @@
   "title": "Closed is not the opposite of open",
   "page": 142,
   "heading": null,
-  "text": "Closed is not the opposite of open — subsets are not doors. A subset can be both open and closed (/0 and Rd), and it can be neither: [0,1) is not open (no wiggle room at 0) and not closed (its complement (−∞,0)∪[1,∞) has no wiggle room at 1). In analogy with Proposition 5.45 we have the result below."
+  "text": "Closed is not the opposite of open — subsets are not doors. A subset can be both open and closed (/0 and Rd), and it can be neither: [0,1) is not open (no wiggle room at 0) and not closed (its complement (−∞,0)∪[1,∞) has no wiggle room at 1)."
  },
  {
   "kind": "proposition",
@@ -581,7 +581,7 @@
   "title": "Compact subset",
   "page": 144,
   "heading": "Definition 5.53 — Compact subset",
-  "text": "A subset C ⊆Rd is called compact if it is bounded and closed. Compact subsets are the heroes of optimization: a continuous function attains a minimum and a maximum on a compact subset (the extreme value theorem at the end of this chapter). Both halves of the definition are needed, as the following example shows."
+  "text": "A subset C ⊆Rd is called compact if it is bounded and closed."
  },
  {
   "kind": "definition",
@@ -605,7 +605,7 @@
   "title": "The ε–δ game",
   "page": 146,
   "heading": null,
-  "text": "Fix a function f : S →T, a point v and a candidate limit w. A skeptic challenges you: Skeptic: I demand that the output stays within ε of w. You: Then keep the input within δ of v. I promise that suffices. You win the round if your δ delivers: every input u ∈S within distance δ of v must have f(u) within distance ε of w. The limit of f at v is w if you can win every round, no matter how small an ε…"
+  "text": "Fix a function f : S →T, a point v and a candidate limit w. A skeptic challenges you: Skeptic: I demand that the output stays within ε of w. You: Then keep the input within δ of v. I promise that suffices. You win the round if your δ delivers: every input u ∈S within distance δ of v must have f(u) within distance ε of w. The limit of f at v is w if you can win every round, no matter how small an ε the skeptic demands. The smaller the skeptic’s ε, the smaller you will typically have to choose your δ."
  },
  {
   "kind": "definition",
@@ -613,7 +613,7 @@
   "title": "Limit — the ε-δ definition",
   "page": 146,
   "heading": "Definition 5.62 — Limit — the ε-δ definition",
-  "text": "Let f : S →T be a function, where S ⊆Rm and T ⊆Rd, let v ∈Rm and let w ∈Rd. We write lim u→v f(u) = w and say that f(u) has limit w as u approaches v, if ∀ε > 0∃δ > 0∀u ∈S : d(u,v) < δ =⇒d(f(u),w) < ε. (5.20) Match the quantifiers in (5.20) with the game: ∀ε — whatever the skeptic demands; ∃δ — you have an answer; ∀u — and your answer works for every input within δ. Note who moves first: the skept…"
+  "text": "Let f : S →T be a function, where S ⊆Rm and T ⊆Rd, let v ∈Rm and let w ∈Rd. We write lim u→v f(u) = w and say that f(u) has limit w as u approaches v, if ∀ε > 0∃δ > 0∀u ∈S : d(u,v) < δ =⇒d(f(u),w) < ε. (5.20)"
  },
  {
   "kind": "definition",
@@ -621,7 +621,7 @@
   "title": "Continuous function",
   "page": 147,
   "heading": "Definition 5.65 — Continuous function",
-  "text": "A function f : S →T, where S ⊆Rm and T ⊆Rd, is called continuous at v ∈S if lim u→v f(u) = f(v). The function f is called continuous if it is continuous at every v ∈S. Unfolded via Definition 5.62, continuity of f at v says ∀ε > 0∃δ > 0∀u ∈S : d(u,v) < δ =⇒d(f(u), f(v)) < ε (5.21) i.e., you can win the ε–δ game with w = f(v). LLM prompt — not displayed in the pdf version. The definitions are short…"
+  "text": "A function f : S →T, where S ⊆Rm and T ⊆Rd, is called continuous at v ∈S if lim u→v f(u) = f(v). The function f is called continuous if it is continuous at every v ∈S. Unfolded via Definition 5.62, continuity of f at v says ∀ε > 0∃δ > 0∀u ∈S : d(u,v) < δ =⇒d(f(u), f(v)) < ε (5.21) i.e., you can win the ε–δ game with w = f(v)."
  },
  {
   "kind": "proposition",
@@ -653,7 +653,7 @@
   "title": "Composition of continuous functions is continuous",
   "page": 150,
   "heading": "Proposition 5.74 — Composition of continuous functions is continuous",
-  "text": "Suppose that g : S →T and f : T →R are continuous functions, where S ⊆Rd,T ⊆Re and R ⊆R f . Then the composition (f ◦g) : S →R is continuous. To get continuous functions from functions already known to be continuous using arithmetic operations, the result below is useful."
+  "text": "Suppose that g : S →T and f : T →R are continuous functions, where S ⊆Rd,T ⊆Re and R ⊆R f . Then the composition (f ◦g) : S →R is continuous."
  },
  {
   "kind": "proposition",
@@ -685,7 +685,7 @@
   "title": "Bolzano's theorem (Intermediate value theorem)",
   "page": 152,
   "heading": "Theorem 5.81 — Bolzano's theorem (Intermediate value theorem)",
-  "text": "Let f : [a,b] →R be a continuous function, where a < b. If f(a) < 0 and f(b) > 0, then there exists x0 with a < x0 < b, such that f(x0) = 0. Python: Bolzano’s theorem as an algorithm. The idea behind Bolzano’s theorem is not just theory — it is the bisection algorithm for solving equations: cut the interval in half, keep the half where the sign changes, repeat. Below it hunts down a root of f(x) =…"
+  "text": "Let f : [a,b] →R be a continuous function, where a < b. If f(a) < 0 and f(b) > 0, then there exists x0 with a < x0 < b, such that f(x0) = 0. Python: Bolzano’s theorem as an algorithm. The idea behind Bolzano’s theorem is not just theory — it is the bisection algorithm for solving equations: cut the interval in half, keep the half where the sign changes, repeat. Below it hunts down a root of f(x) = x3 −2, i.e., the cube root of 2. Fifty halvings of [0,2] trap the root in an interval of length 2−49."
  },
  {
   "kind": "proposition",
@@ -701,7 +701,7 @@
   "title": "Extreme value theorem",
   "page": 153,
   "heading": "Theorem 5.84 — Extreme value theorem",
-  "text": "Let C be a compact subset of Rd and f : C →R a continuous function. Then there exists vmin,vmax ∈C, such that f(vmin) ≤f(v) and f(v) ≤f(vmax) for every v ∈C. This is a rather stunning result! You are guaranteed solutions to optimization problems of the type min v∈C f(v), where C is a compact subset and f : C →R a continuous function. Finding the optimal solutions in this setting is another story. …"
+  "text": "Let C be a compact subset of Rd and f : C →R a continuous function. Then there exists vmin,vmax ∈C, such that f(vmin) ≤f(v) and f(v) ≤f(vmax) for every v ∈C."
  },
  {
   "kind": "definition",
@@ -733,7 +733,7 @@
   "title": "Local vs. global minimum",
   "page": 157,
   "heading": "Definition 6.9 — Local vs. global minimum",
-  "text": "Let f : S →R be a function, where S ⊆Rd is an arbitrary subset (not necessarily convex, open or closed). Then x0 ∈S is called a local minimum for f if f(x0) ≤f(x) for every x ∈S, which is sufficiently close to x0. Being sufficiently close to means that x ∈S satisfies |x−x0| < ε for some fixed ε > 0. In a much stronger notion, x0 ∈S is called a global minimum if f(x0) ≤f(x) for every x ∈S (not just…"
+  "text": "Let f : S →R be a function, where S ⊆Rd is an arbitrary subset (not necessarily convex, open or closed). Then x0 ∈S is called a local minimum for f if f(x0) ≤f(x) for every x ∈S, which is sufficiently close to x0. Being sufficiently close to means that x ∈S satisfies |x−x0| < ε for some fixed ε > 0. In a much stronger notion, x0 ∈S is called a global minimum if f(x0) ≤f(x) for every x ∈S (not just locally)."
  },
  {
   "kind": "theorem",
@@ -757,7 +757,7 @@
   "title": "Differentiability — the formal \"zoom\" definition",
   "page": 161,
   "heading": "Definition 6.17 — Differentiability — the formal \"zoom\" definition",
-  "text": "The function f : (a,b) →R is differentiable at x0 ∈(a,b) if there exists (i) c ∈R (ii) δ > 0 with x0 −δ,x0 +δ ∈(a,b) i.e., a+δ < x0 and x0 < b−δ. (iii) A function ε : (−δ,δ) →R continuous at 0 with ε(0) = 0, such that f(x0 +h)−f(x0) = ch+ε(h)h (6.4) for every h ∈(−δ,δ). The number c is denoted f ′(x0) and called the derivative of f at x0; f is called differentiable if it is differentiable at every…"
+  "text": "The function f : (a,b) →R is differentiable at x0 ∈(a,b) if there exists (i) c ∈R (ii) δ > 0 with x0 −δ,x0 +δ ∈(a,b) i.e., a+δ < x0 and x0 < b−δ. (iii) A function ε : (−δ,δ) →R continuous at 0 with ε(0) = 0, such that f(x0 +h)−f(x0) = ch+ε(h)h (6.4) for every h ∈(−δ,δ). The number c is denoted f ′(x0) and called the derivative of f at x0; f is called differentiable if it is differentiable at every x0 ∈(a,b)."
  },
  {
   "kind": "remark",
@@ -765,7 +765,7 @@
   "title": "Zoom intuition for the derivative",
   "page": 161,
   "heading": null,
-  "text": "Two fine points about the zoom intuition. First, the window must be a square: plotting software often stretches the two axes independently, and with enough one-sided stretching almost any graph can be made to look flat. Honest zooming treats both axes equally. Second, \"looks like a line\" must mean a line with a slope c ∈R: zooming in on f(x) = 3√x at x0 = 0 produces something that looks more and m…"
+  "text": "Two fine points about the zoom intuition. First, the window must be a square: plotting software often stretches the two axes independently, and with enough one-sided stretching almost any graph can be made to look flat. Honest zooming treats both axes equally. Second, \"looks like a line\" must mean a line with a slope c ∈R: zooming in on f(x) = 3√x at x0 = 0 produces something that looks more and more like a vertical line — no real number describes that slope, and the function is not differentiable at 0, even though the zoomed picture straightens. Try f = lambda x: np.cbrt(x) with x0 = 0 in the cells above and watch the graph escape through the top and bottom of the window."
  },
  {
   "kind": "remark",
@@ -789,7 +789,7 @@
   "title": "Critical point",
   "page": 167,
   "heading": "Definition 6.36 — Critical point",
-  "text": "A critical point for a differentiable function f : (a,b) →R is a point x0 ∈(a,b) with f ′(x0) = 0. The crucial result here is the following. It seems to date back to Fermat (see Fermat’s theorem)."
+  "text": "A critical point for a differentiable function f : (a,b) →R is a point x0 ∈(a,b) with f ′(x0) = 0."
  },
  {
   "kind": "lemma",
@@ -813,7 +813,7 @@
   "title": "Increasing / strictly increasing function",
   "page": 168,
   "heading": "Definition 6.41 — Increasing / strictly increasing function",
-  "text": "A function f : S →R with S ⊆R is called increasing if x ≤y ⇒f(x) ≤f(y) and strictly increasing if x < y ⇒f(x) < f(y) for x,y ∈S. LLM prompt — not displayed in the pdf version."
+  "text": "A function f : S →R with S ⊆R is called increasing if x ≤y ⇒f(x) ≤f(y) and strictly increasing if x < y ⇒f(x) < f(y) for x,y ∈S."
  },
  {
   "kind": "proposition",
@@ -837,7 +837,7 @@
   "title": "Convexity ⟺ increasing derivative",
   "page": 172,
   "heading": "Theorem 6.54 — Convexity ⟺ increasing derivative",
-  "text": "Let f : (a,b) →R be a differentiable function. Then f is convex if and only if f ′ is increasing. If f ′ is strictly increasing, then f is strictly convex. Theorem 6.54 leads to the following all important result."
+  "text": "Let f : (a,b) →R be a differentiable function. Then f is convex if and only if f ′ is increasing. If f ′ is strictly increasing, then f is strictly convex."
  },
  {
   "kind": "corollary",
@@ -861,7 +861,7 @@
   "title": "Convexity ⟺ graph lies above every tangent line",
   "page": 173,
   "heading": "Theorem 6.61 — Convexity ⟺ graph lies above every tangent line",
-  "text": "Let f : (a,b) →R be a differentiable function. Then f is convex if and only if f(y) ≥f(x)+ f ′(x)(y−x) for every x,y ∈(a,b). Python: the graph sits above its tangents. Theorem 6.61 says that a differentiable function is convex exactly when its graph lies above every one of its tangent lines. The cell below draws a function with four of its tangents. For a convex function no tangent ever crosses th…"
+  "text": "Let f : (a,b) →R be a differentiable function. Then f is convex if and only if f(y) ≥f(x)+ f ′(x)(y−x) for every x,y ∈(a,b). Python: the graph sits above its tangents. Theorem 6.61 says that a differentiable function is convex exactly when its graph lies above every one of its tangent lines. The cell below draws a function with four of its tangents. For a convex function no tangent ever crosses the graph. Try f = lambda x: x**3 and watch a tangent cut through."
  },
  {
   "kind": "definition",
@@ -869,7 +869,7 @@
   "title": "Differentiability (several variables)",
   "page": 177,
   "heading": "Definition 7.3 — Differentiability (several variables)",
-  "text": "Let f : U →Rm be a function with U ⊆Rd an open subset. Then f is differentiable at v0 ∈U if there exists (i) an m×d matrix C, (ii) an open subset O ⊆Rd with 0 ∈O, such that v0 +h ∈U for every h ∈O, (iii) a function ε : O →Rm continuous at 0 with ε(0) = 0, such that f(v0 +h)−f(v0) = Ch+ε(h) |h|, In this case, the m×d matrix C is called the (matrix) derivative of f at v0 and denoted by f ′(v0). The …"
+  "text": "Let f : U →Rm be a function with U ⊆Rd an open subset. Then f is differentiable at v0 ∈U if there exists (i) an m×d matrix C, (ii) an open subset O ⊆Rd with 0 ∈O, such that v0 +h ∈U for every h ∈O, (iii) a function ε : O →Rm continuous at 0 with ε(0) = 0, such that f(v0 +h)−f(v0) = Ch+ε(h) |h|, In this case, the m×d matrix C is called the (matrix) derivative of f at v0 and denoted by f ′(v0). The function f is called differentiable if it is differentiable at every v ∈U."
  },
  {
   "kind": "definition",
@@ -885,7 +885,7 @@
   "title": "Computing partial derivatives",
   "page": 178,
   "heading": null,
-  "text": "The partial derivative with respect to a specific variable is computed by letting all the other variables appear as constants. To get a feeling for the definition and computation of partial derivatives, take a look at the example below, where we compute using the classical (geometric) definition of the one variable derivative."
+  "text": "The partial derivative with respect to a specific variable is computed by letting all the other variables appear as constants."
  },
  {
   "kind": "proposition",
@@ -933,7 +933,7 @@
   "title": "Multivariable chain rule",
   "page": 187,
   "heading": "Theorem 7.23 — Multivariable chain rule",
-  "text": "Let f : U →Rm and g : V →Rd with U ⊆Rd, V ⊆Rl open subsets and g(V) ⊆U. If g is differentiable at v0 ∈V and f is differentiable at g(v0) ∈U, then f ◦g is differentiable at v0 with (f ◦g)′(v0) = f ′(g(v0))g′(v0). (7.15) The proof of the chain rule in this general setting uses Definition 7.3 just as in the one variable case. It is not conceptually difficult, but severely cumbersome. We will not give…"
+  "text": "Let f : U →Rm and g : V →Rd with U ⊆Rd, V ⊆Rl open subsets and g(V) ⊆U. If g is differentiable at v0 ∈V and f is differentiable at g(v0) ∈U, then f ◦g is differentiable at v0 with (f ◦g)′(v0) = f ′(g(v0))g′(v0). (7.15)"
  },
  {
   "kind": "theorem",
@@ -941,7 +941,7 @@
   "title": "Lagrange multipliers",
   "page": 204,
   "heading": "Theorem 7.39 — Lagrange multipliers",
-  "text": "Suppose that (z1,...,zd) is a local maximum/minimum for (7.20). Then there exists λ ∈R, such that (z1,...,zd,λ) is a critical point for L. So to solve (7.20) we simply (well, this is not always so simple) look for critical points for L. This amounts to solving the d +1 (non-linear) equations coming from ∇L = 0 i.e., g(x1,...,xd) = 0 (7.21) ∂f ∂x1 (x1,...,xd)+λ ∂g ∂x1 (x1,...,xd) = 0 (7.22) ... (7.…"
+  "text": "Suppose that (z1,...,zd) is a local maximum/minimum for (7.20). Then there exists λ ∈R, such that (z1,...,zd,λ) is a critical point for L."
  },
  {
   "kind": "proposition",
@@ -949,7 +949,7 @@
   "title": "Interior points of an optimum are critical points",
   "page": 207,
   "heading": "Proposition 7.46 — Interior points of an optimum are critical points",
-  "text": "Consider an optimization problem max/min v∈C f(v), (7.28) where C ⊆Rd is a subset, f : Rd →R a differentiable function and v0 an optimal solution to (7.28). If v0 ∈Co, then v0 is a critical point of f. Basically, to solve an optimization problem like (7.28) one needs to consider the boundary and interior as separate cases. For points on the boundary we cannot use the critical point test in Proposi…"
+  "text": "Consider an optimization problem max/min v∈C f(v), (7.28) where C ⊆Rd is a subset, f : Rd →R a differentiable function and v0 an optimal solution to (7.28). If v0 ∈Co, then v0 is a critical point of f."
  },
  {
   "kind": "definition",
@@ -957,7 +957,7 @@
   "title": "The Hessian matrix",
   "page": 211,
   "heading": "Definition 8.2 — The Hessian matrix",
-  "text": "The Hessian matrix of F at the point v ∈Rd is defined by ∇2F(v) :=        ∂2F ∂x1∂x1 (v) ··· ∂2F ∂x1∂xd (v) ... ... ... ∂2F ∂xd∂x1 (v) ··· ∂2F ∂xd∂xd (v)        . A very important observation is that ∇2F(v) above is a symmetric matrix if F satisfies the condition in the last part of Theorem 7.11."
+  "text": "The Hessian matrix of F at the point v ∈Rd is defined by ∇2F(v) :=        ∂2F ∂x1∂x1 (v) ··· ∂2F ∂x1∂xd (v) ... ... ... ∂2F ∂xd∂x1 (v) ··· ∂2F ∂xd∂xd (v)        ."
  },
  {
   "kind": "definition",
@@ -965,7 +965,7 @@
   "title": "Saddle point",
   "page": 214,
   "heading": "Definition 8.8 — Saddle point",
-  "text": "A critical point v0 is called a saddle point for F if there exists two vectors u,v ∈Rd, such that t = 0 is a local minimum for the function F(v0 +tu) t = 0 is a local maximum for the function F(v0 +tv) as illustrated in the graphics below. Now go back and recall the definition of positive definite matrices in Section 3.7. We call a symmetric A matrix negative definite if −A is positive definite. O…"
+  "text": "A critical point v0 is called a saddle point for F if there exists two vectors u,v ∈Rd, such that t = 0 is a local minimum for the function F(v0 +tu) t = 0 is a local maximum for the function F(v0 +tv) as illustrated in the graphics below."
  },
  {
   "kind": "definition",
@@ -973,7 +973,7 @@
   "title": "Indefinite matrix",
   "page": 214,
   "heading": "Definition 8.9 — Indefinite matrix",
-  "text": "A symmetric d ×d matrix A is called indefinite if there exists u,v ∈Rd with u⊤Au > 0 and v⊤Av < 0. So an indefinite matrix is mixed up in the sense that it is neither positive definite, nor negative definite."
+  "text": "A symmetric d ×d matrix A is called indefinite if there exists u,v ∈Rd with u⊤Au > 0 and v⊤Av < 0."
  },
  {
   "kind": "proposition",
@@ -981,7 +981,7 @@
   "title": "Congruence preserves definiteness/indefiniteness (Hessian version)",
   "page": 215,
   "heading": "Proposition 8.11 — Congruence preserves definiteness/indefiniteness (Hessian version)",
-  "text": "Let A be a symmetric d ×d matrix and B an invertible d ×d matrix. Then A is indefinite (positive definite, negative definite) if and only if B⊤AB is indefinite (positive definite, negative definite). From (8.8) one can prove the following nice criterion, which may be viewed as a several variable generalization of Theorem 6.50."
+  "text": "Let A be a symmetric d ×d matrix and B an invertible d ×d matrix. Then A is indefinite (positive definite, negative definite) if and only if B⊤AB is indefinite (positive definite, negative definite)."
  },
  {
   "kind": "theorem",
@@ -1013,7 +1013,7 @@
   "title": "Every symmetric matrix is congruent to a diagonal matrix",
   "page": 220,
   "heading": "Theorem 8.31 — Every symmetric matrix is congruent to a diagonal matrix",
-  "text": "Let A be a real symmetric n × n matrix. Then there exists an invertible matrix B, such that B⊤AB is a diagonal matrix. The proof contains an algorithm for building B by different steps. We will supply examples afterwards illus- trating these. An operational procedure implementing the steps is outlined in section 8.7."
+  "text": "Let A be a real symmetric n × n matrix. Then there exists an invertible matrix B, such that B⊤AB is a diagonal matrix."
  },
  {
   "kind": "theorem",
@@ -1021,7 +1021,7 @@
   "title": "Optimal separating hyperplane (SVM)",
   "page": 230,
   "heading": "Theorem 9.8 — Optimal separating hyperplane (SVM)",
-  "text": "Let the points v1,...,vm ∈Rd be labeled by y1,...,ym ∈{±1}. Then the optimal hyperplane H = {v ∈Rd | α⊤v+β = 0} separating the points is given by the optimization problem min α⊤vi+β ≥1 if yi=1 α⊤vi+β ≤−1 if yi=−1 |α|2 for i = 1,...,m. The vectors vi among the data points v1,...,vm satisfying α⊤vi +β = 1 or α⊤vi +β = −1 are called support vectors. An optimal solution always has support vectors. If …"
+  "text": "Let the points v1,...,vm ∈Rd be labeled by y1,...,ym ∈{±1}. Then the optimal hyperplane H = {v ∈Rd | α⊤v+β = 0} separating the points is given by the optimization problem min α⊤vi+β ≥1 if yi=1 α⊤vi+β ≤−1 if yi=−1 |α|2 for i = 1,...,m."
  },
  {
   "kind": "remark",
@@ -1037,7 +1037,7 @@
   "title": "Convergence of the barrier/interior-point method",
   "page": 240,
   "heading": "Theorem 9.21 — Convergence of the barrier/interior-point method",
-  "text": "Let vε be a point in Co with fε(vε) = min{fε(v)|v ∈Co} for ε > 0 and f ∗= min{ f(v)|v ∈C}. Then 0 ≤f(vε)−f ∗≤εm and f(vε) →f ∗as ε →0. If (9.22) has a unique optimum v∗, then by using ε = 1 n we obtain a sequence v 1 n →v∗as n →∞. We move on to give concrete examples of Theorem 9.21 in action."
+  "text": "Let vε be a point in Co with fε(vε) = min{fε(v)|v ∈Co} for ε > 0 and f ∗= min{ f(v)|v ∈C}. Then 0 ≤f(vε)−f ∗≤εm and f(vε) →f ∗as ε →0. If (9.22) has a unique optimum v∗, then by using ε = 1 n we obtain a sequence v 1 n →v∗as n →∞."
  },
  {
   "kind": "proposition",
@@ -1053,7 +1053,7 @@
   "title": "Strictly feasible",
   "page": 246,
   "heading": "Definition 9.36 — Strictly feasible",
-  "text": "The optimization problem (9.27) is called strictly feasible if there exists z0 ∈Rd with g1(z0) < 0 ... gm(z0) < 0. Below is the main result in our limited convex setting. We will not go into the proof, which can be found in my book Undergraduate Convexity."
+  "text": "The optimization problem (9.27) is called strictly feasible if there exists z0 ∈Rd with g1(z0) < 0 ... gm(z0) < 0."
  },
  {
   "kind": "theorem",

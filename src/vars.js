@@ -27,20 +27,99 @@ const GREEK = new Set([
 // Every variable defined in ```vars blocks of the note, later ones win.
 // Returns Map<name, { name, kind: "scalar"|"vector"|"matrix", env?, value }>,
 // where value is a LaTeX string (scalar), string[] (vector) or string[][].
-export function parseVars(doc) {
+// implicit: also variables defined elsewhere in the note, so a matrix works
+// everywhere no matter where it was written: $A = \begin{pmatrix}..$ in the
+// text or A = sp.Matrix(..) in a python block. The vars block wins on names.
+export function parseVars(doc, { implicit = true } = {}) {
   const vars = new Map();
-  const re = /^[ \t]*(```|~~~)[ \t]*vars[ \t]*\n([\s\S]*?)^[ \t]*\1[ \t]*$/gm;
+  // ```vars, ```Vars, ```VARS: any capitalisation.
+  const re = /^[ \t]*(```|~~~)[ \t]*vars[ \t]*\n([\s\S]*?)^[ \t]*\1[ \t]*$/gim;
   let m;
   while ((m = re.exec(doc))) {
     for (const v of parseBlock(m[2], vars)) vars.set(v.name, v);
   }
+  if (!implicit) return vars;
+  const add = (lines, source) => {
+    for (const v of parseBlock(lines.join("\n"), vars)) {
+      if (vars.has(v.name) || v.error) continue;
+      vars.set(v.name, { ...v, source });
+    }
+  };
+  try { add(pythonDefinitions(doc, vars).map((d) => d.line), "python"); } catch (_) { /* best effort */ }
+  try { add(findDefinitions(doc, vars).map((d) => d.line), "math"); } catch (_) { /* best effort */ }
   return vars;
+}
+
+// ---------- variables defined in python blocks ----------
+
+const PY_FENCE = /^[ \t]*(```|~~~)[ \t]*(python|py|python3|sage|ipython)[ \t]*\n([\s\S]*?)^[ \t]*\1[ \t]*$/gm;
+
+// Top-level `name = value` lines in python blocks whose value is a number,
+// an expression, a list or a matrix: A = sp.Matrix([[1, 2], [3, 4]]),
+// v = np.array([1, 2]), f = x**2 + 3*x*y, h = sp.Rational(1, 2).
+export function pythonDefinitions(doc, existing = new Map()) {
+  const out = [];
+  const seen = new Set(existing.keys());
+  let m;
+  PY_FENCE.lastIndex = 0;
+  while ((m = PY_FENCE.exec(doc))) {
+    for (const line of m[3].split("\n")) {
+      const d = line.match(/^([A-Za-z]\w*)\s*=\s*(.+?)\s*(#.*)?$/);
+      if (!d || seen.has(d[1]) || /^(sp|np|plt|opt|si|math)$/.test(d[1])) continue;
+      const value = pyToLatexValue(d[2]);
+      if (value == null) continue;
+      seen.add(d[1]);
+      out.push({ name: d[1], line: `${d[1]} = ${value}` });
+    }
+  }
+  return out;
+}
+
+const PY_OK_CALLS = /^(Matrix|array|Rational|sqrt|sin|cos|tan|exp|log|ln|asin|acos|atan|sinh|cosh|tanh|Abs|abs|FiniteSet|Interval)$/;
+
+// A python value as vars text (LaTeX), or null if it isn't plain data.
+export function pyToLatexValue(py) {
+  let s = py.trim().replace(/\b(sp|np|math|sympy|numpy)\./g, "");
+  // Only data and arithmetic: no other calls, lambdas, comprehensions, strings.
+  if (/["'\]]\s*\(|lambda|\bfor\b|\bif\b|["']/.test(s)) return null;
+  for (const c of s.matchAll(/([A-Za-z_]\w*)\s*\(/g)) if (!PY_OK_CALLS.test(c[1])) return null;
+  const m = s.match(/^(Matrix|array)\(\s*([\s\S]*)\)$/);
+  if (m) s = m[2];
+  const fs = s.match(/^FiniteSet\(([\s\S]*)\)$/);
+  if (fs) return `\\{${splitTop(fs[1], ",").map(pyExprTex).join(", ")}\\}`;
+  if (s.startsWith("[")) {
+    const items = splitTop(s.slice(1, s.lastIndexOf("]")), ",");
+    if (items.length && items.every((x) => x.startsWith("["))) {
+      const rows = items.map((r) => splitTop(r.slice(1, r.lastIndexOf("]")), ",").map(pyExprTex));
+      if (rows.some((r) => r.includes(null))) return null;
+      return `\\begin{pmatrix} ${rows.map((r) => r.join(" & ")).join(" \\\\ ")} \\end{pmatrix}`;
+    }
+    const xs = items.map(pyExprTex);
+    return xs.includes(null) ? null : `[${xs.join(", ")}]`;
+  }
+  if (s.startsWith("(") && closesAtEnd(s) && splitTop(s.slice(1, -1), ",").length > 1) {
+    const xs = splitTop(s.slice(1, -1), ",").map(pyExprTex);
+    return xs.includes(null) ? null : `(${xs.join(", ")})`;
+  }
+  return pyExprTex(s);
+}
+
+function pyExprTex(e) {
+  const t = String(e).trim()
+    .replace(/\bRational\(\s*([^,()]+)\s*,\s*([^,()]+)\s*\)/g, "($1)/($2)")
+    .replace(/\*\*/g, "^").replace(/\blog\(/g, "ln(").replace(/\bAbs\(/g, "abs(")
+    .replace(/\bpi\b/g, "\\pi").replace(/\bE\b/g, "e")
+    .replace(/\ba(sin|cos|tan)\(/g, "arc$1(");
+  const x = cas.tryParse(t);
+  return x ? cas.tex(x) : null;
 }
 
 export function parseBlock(src, known = new Map()) {
   const out = [];
   const scope = new Map(known);
   const lines = src.split("\n");
+  // Every name the block defines (constants like a = 2 may come after f).
+  const defined = new Set(lines.map((l) => l.match(/^\s*\\?([A-Za-z][A-Za-z0-9_]*)\s*(?:\([^)]*\))?\s*:?=/)?.[1]).filter(Boolean));
   for (let i = 0; i < lines.length; i++) {
     const line = stripComment(lines[i]);
     // name = value, or a function with its variables: f(x, y) = ...
@@ -49,12 +128,29 @@ export function parseBlock(src, known = new Map()) {
     let value = m[3].trim();
     // Multi-line values: an open \begin{..} or unbalanced brackets continue.
     while (i + 1 < lines.length && unfinished(value)) value += " " + stripComment(lines[++i]).trim();
-    const params = m[2] ? m[2].split(",").map((s) => s.trim()) : null;
+    let params = m[2] ? m[2].split(",").map((s) => s.trim()) : null;
+    // B = f(x) = x^3 + xy: a function written with its usual name on the right.
+    const named = !params && value.match(/^[A-Za-z]\w*\s*\(\s*([A-Za-z]\w*(?:\s*,\s*[A-Za-z]\w*)*)\s*\)\s*=\s*([^=]+)$/);
+    if (named) {
+      params = named[1].split(",").map((s) => s.trim());
+      value = named[2].trim();
+    }
     // Computed from other variables: H = hessian(f), Ai = A^{-1}, C = AB, ...
     const d = derivedValue(m[1], value, scope);
     const v = d || parseValue(m[1], value);
     if (!v) continue;
-    if (params && v.kind === "scalar") v.params = params;
+    // f(x, y) = ..., and statements like P(n) = \sum_{k=1}^{n} k = \frac{n(n+1)}{2}
+    if (params && (v.kind === "scalar" || v.kind === "relation")) {
+      v.params = params;
+      // f(x) = x^3 + xy also uses y: add the variables the formula uses.
+      if (v.kind === "scalar") {
+        try {
+          const used = fnExpr({ ...v, params: undefined }, scope).vars;
+          const extra = used.filter((x) => !params.includes(x) && !defined.has(x) && !scope.has(x));
+          if (extra.length) v.params = [...params, ...extra];
+        } catch (_) { /* keep the declared variables */ }
+      }
+    }
     out.push(v);
     scope.set(v.name, v);
   }
@@ -541,7 +637,9 @@ export function fnExpr(v, scope = new Map()) {
   for (const s of cas.symbols(x)) {
     if (params?.includes(s)) continue;
     const c = scope.get(s);
-    if (c && c !== v && c.kind === "scalar" && !c.params) {
+    // Only constants from a vars block: an "x = 3" in a solution elsewhere
+    // must not turn f's variable x into a number.
+    if (c && c !== v && c.kind === "scalar" && !c.params && !c.source) {
       const val = cas.tryParse(c.value);
       if (val && cas.symbols(val).size === 0) consts[s] = val;
     }
@@ -920,6 +1018,38 @@ function apply(name, args, ctx) {
     }
     default: throw new Error(`unknown ${name}`);
   }
+}
+
+// ---------- variables defined in the note's math ----------
+
+// Definitions written in the note's math: $f(x, y) = ...$, $A = \begin{pmatrix}..$,
+// $x_0 = (1, 2)$. Skips names the vars blocks already have.
+export function findDefinitions(doc, existing = new Map()) {
+  const text = doc.replace(/^[ \t]*(```|~~~)[\s\S]*?^[ \t]*\1[^\n]*$/gm, "");
+  const re = /\$\$([\s\S]+?)\$\$|(?<![\\$])\$(?![\s$])((?:\\.|[^$\n\\])+?)\$/g;
+  const out = [];
+  const seen = new Set(existing.keys());
+  let m;
+  while ((m = re.exec(text))) {
+    const math = (m[1] ?? m[2]).trim();
+    const parts = /\\begin\{/.test(math) ? math.split(/,\s*\\quad|\\quad|;\s/) : math.split(/\\\\|,\s*\\quad|\\quad|;\s/);
+    for (const part of parts) {
+      const d = part.trim().match(/^\\?([A-Za-z](?:_\{?\w+\}?)?|\\[a-zA-Z]+)\s*(\(\s*[a-z](?:_\{?\d\}?)?(?:\s*,\s*[a-z](?:_\{?\d\}?)?)*\s*\))?\s*:?=\s*([\s\S]+)$/);
+      if (!d) continue;
+      let name = d[1].replace(/^\\/, "").replace(/[{}]/g, "");
+      if (/^(text|mathrm|frac|sum|int|lim|nabla|partial)$/.test(name)) continue;
+      let value = d[3].trim().replace(/[.,]$/, "");
+      // Stop at a second "=" (a derivation chain): keep the first value only.
+      const rel = findRelation(value);
+      if (rel && rel.op === "=") value = rel.lhs;
+      if (!value || seen.has(name)) continue;
+      const v = parseValue(name, value);
+      if (!v) continue;
+      seen.add(name);
+      out.push({ name, line: `${name}${d[2] ? d[2].replace(/\s+/g, "").replace(/,/g, ", ") : ""} = ${value}` });
+    }
+  }
+  return out;
 }
 
 // ---------- what @name inserts ----------

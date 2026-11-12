@@ -7,6 +7,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { parsePySnippets, buildPySnippet, snippetQuestions } from "../src/pysnippets.js";
 import { parseVars } from "../src/vars.js";
+import { explainItems, pyExplainLines, pyRefs } from "../src/explain.js";
+
+const REFS = JSON.parse(fs.readFileSync(new URL("../src/refs/imo26.json", import.meta.url), "utf8"));
 
 const md = fs.readFileSync(new URL("../src/py-snippets.md", import.meta.url), "utf8");
 const snippets = parsePySnippets(md);
@@ -46,7 +49,9 @@ for (const s of snippets) {
     // point-like ones sized to the variables) go in as typed answers.
     const { questions } = snippetQuestions(v, { vars });
     const answers = Object.fromEntries(questions.map((q) => [q.key, q.value]));
-    const { text } = buildPySnippet(v, { vars, answers });
+    // With the explanation prints, as the plugin inserts it by default.
+    const explain = (used, route) => pyExplainLines({ title: s.desc, label: route.label, items: explainItems([s.desc, route.label, pyRefs(s.name, route.label)], REFS), inputs: used.map((u) => u.input) });
+    const { text } = buildPySnippet(v, { vars, answers, explain });
     let code = text.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (m, label) => {
       if (label in v.examples) return v.examples[label];
       throw new Error(`\\${s.name} [${v.label}]: no @ex for placeholder "${label}"`);

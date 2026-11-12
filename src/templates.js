@@ -135,26 +135,38 @@ export function rankExercises(q, exercises, picks = {}) {
 // names used inside $...$ (A, f, x0, alpha, f'), not prose like {{reason}}.
 // A matching ```vars variable prefills the answer: its LaTeX value when the
 // blank is a value slot (`f(x) = {{f}}`), otherwise just its name.
-export function textQuestions(body, vars = [], latexOf = (v) => v.name) {
+// resolve(label) -> { value, from, prose } | null fills other blanks from the
+// variables too: {{Hessian}}, {{f_x}}, {{statement}}, {{P(k+1)}}, ...
+// (see textlink.js); those are asked even outside math, prefilled.
+export function textQuestions(body, vars = [], latexOf = (v) => v.name, resolve = null) {
   const byName = vars instanceof Map ? vars : new Map(vars.map((v) => [v.name, v]));
   const math = [...body.matchAll(/\$\$[^$]*\$\$|\$[^$\n]*\$/g)].map((m) => [m.index, m.index + m[0].length]);
   const inMath = (i) => math.some(([a, b]) => i > a && i < b);
   const seen = new Map();
   for (const m of body.matchAll(/\{\{\s*([^{}\n]+?)\s*\}\}/g)) {
     const label = m[1];
-    if (label.startsWith("_") || !/^[A-Za-z][\w']{0,9}$/.test(label)) continue;
-    const q = seen.get(label) || { key: label, label, math: false, valueSlot: false };
+    if (label.startsWith("_")) continue;
+    const q = seen.get(label) || { key: label, label, math: false, valueSlot: false, simple: /^[A-Za-z][\w']{0,9}$/.test(label) };
     q.math ||= inMath(m.index);
     q.valueSlot ||= /=\s*$/.test(body.slice(0, m.index));
     seen.set(label, q);
   }
-  return [...seen.values()].filter((q) => q.math).map((q) => {
-    const v = byName.get(q.label);
-    return { key: q.key, label: q.label, from: v ? v.name : null, value: v ? (q.valueSlot ? latexOf(v) : v.name) : "" };
+  return [...seen.values()].flatMap((q) => {
+    const v = q.simple ? byName.get(q.label) : null;
+    if (v) return q.math ? [{ key: q.key, label: q.label, from: v.name, value: q.valueSlot ? latexOf(v) : v.name }] : [];
+    const r = resolve ? resolve(q.label) : null;
+    if (r) return [{ key: q.key, label: q.label, from: null, desc: `from ${r.from}`, value: r.value, wrap: !q.math && !r.prose }];
+    return q.math && q.simple ? [{ key: q.key, label: q.label, from: null, value: "" }] : [];
   });
 }
 
 // Puts the form's answers into the body. Empty answers stay {{blanks}}.
-export function fillTextAnswers(body, answers) {
-  return body.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (all, label) => (answers[label] ? answers[label] : all));
+// questions: answers to blanks outside math get $...$ around them.
+export function fillTextAnswers(body, answers, questions = []) {
+  const wrap = new Set(questions.filter((q) => q.wrap).map((q) => q.key));
+  return body.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (all, label) => {
+    const a = answers[label];
+    if (!a) return all;
+    return wrap.has(label) && !a.includes("$") ? `$${a}$` : a;
+  });
 }

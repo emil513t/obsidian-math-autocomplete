@@ -30,6 +30,18 @@ x0 = A^{-1} b
 - `@name` inserts a variable: LaTeX in math, `$name = ...$` in text, Python in python blocks.
 - The math popup works inside the vars block: `\hessian` on an empty line writes `H = ...` for you, `\pmatrix` writes `A = ...`.
 - Command "Create vars from this note's math" (or `\fromnote` in the block) copies definitions like `$f(x) = ...$` and `$A = \begin{pmatrix}...$` from the note into the vars block.
+- `\f` in math lists your variables too (LaTeX Suite turns some `@` + letter combinations into Greek letters). Any "type it" field accepts a variable name (`A`, `f`, `p`).
+- Variables that don't fit a command are listed with the reason (a 2×3 matrix in `\determinant`); where the math allows, an alternative is offered (one-sided inverse, numeric eigenvalues, "at a point you type").
+
+## Worked solutions
+
+Building something in math mode (`\hessian`, `\gradient`, `\inverse`, `\determinant`, `\eigenvalues`, `\taylor`, ...) inserts the answer where you typed and the full worked solution under the math block: every intermediate step (derivatives term by term, row operations, cofactor expansion, plugging in a point) with a sentence explaining it and the book reference. Setting: "Worked solutions in math".
+
+- `\gauss`: Gauss elimination with back substitution, from your equations, `Ax = b` or equations you type; no / one / infinitely many solutions.
+- `\fouriermotzkin`: Fourier-Motzkin elimination of variables from linear inequalities, down to bounds for the last variable.
+- `\induction`: proof by induction of `P(n)` (sums, products, (in)equalities with powers and factorials): base case computed, induction step done algebraically; a false formula is caught.
+
+Text templates that fill in computed values also get a ```` ```python ```` block that recomputes them with sympy, as evidence. Everything runs offline.
 
 ## Templates in normal text
 
