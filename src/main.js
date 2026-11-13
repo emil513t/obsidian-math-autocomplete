@@ -29,6 +29,7 @@ import { parseRefQuery, rankRefs, formatRef, kindLabel, refKey, refExcerpt } fro
 import { envOf, isMatrixEnv } from "./variants.js";
 import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS, fnExpr } from "./vars.js";
 import { parseGraph, drawScene, GRAPH_KEYWORDS, graphQuery, graphOptions } from "./graph.js";
+import { graphToPython } from "./graphpy.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
@@ -303,6 +304,7 @@ const DEFAULT_SETTINGS = {
   askInputs: true,
   explainRefs: true,
   textEvidence: true,
+  graphOutput: "python",
   showWork: true,
 };
 
@@ -461,9 +463,12 @@ class TemplateSuggest extends EditorSuggest {
       // The block goes on its own lines; the cursor ends on its last line.
       const pre = editor.getLine(start.line).slice(0, start.ch).trim() ? "\n" : "";
       const fence = "`".repeat(3);
-      const text = `${pre}${fence}graph\n${item.g.lines.join("\n")}\n${fence}\n`;
+      // Python (matplotlib, Code Suite draws it) or the plugin's own ```graph block.
+      const asPy = this.plugin.settings.graphOutput !== "graph";
+      const inner = asPy ? graphToPython(item.g.lines.join("\n"), this.plugin.textVars || new Map()) : item.g.lines.join("\n");
+      const text = `${pre}${fence}${asPy ? "python" : "graph"}\n${inner}\n${fence}\n`;
       editor.replaceRange(text, start, end);
-      const last = start.line + (pre ? 1 : 0) + item.g.lines.length;
+      const last = start.line + (pre ? 1 : 0) + inner.split("\n").length;
       editor.setCursor({ line: last, ch: editor.getLine(last).length });
       return;
     }
@@ -1030,6 +1035,21 @@ export default class MathAutocompletePlugin extends Plugin {
     this.addSettingTab(new MathAutocompleteSettingTab(this));
 
     this.addCommand({
+      id: "graph-to-python",
+      name: "Convert the graph block at the cursor to Python",
+      editorCallback: (editor) => {
+        const line = editor.getCursor().line;
+        const lines = editor.getValue().split("\n");
+        const isFence = (l) => /^[ \t]*(```|~~~)/.test(l);
+        let a = line; while (a >= 0 && !isFence(lines[a])) a--;
+        let b = a === line ? line + 1 : line; while (b < lines.length && !isFence(lines[b])) b++;
+        if (a < 0 || b >= lines.length || !/^[ \t]*(```|~~~)[ \t]*graph[ \t]*$/i.test(lines[a])) { new Notice("Put the cursor inside a ```graph block."); return; }
+        const code = graphToPython(lines.slice(a + 1, b).join("\n"), parseVars(editor.getValue()));
+        editor.replaceRange("```python\n" + code + "\n```", { line: a, ch: 0 }, { line: b, ch: lines[b].length });
+      },
+    });
+
+    this.addCommand({
       id: "open-templates-file",
       name: "Open (or create) the editable templates file",
       callback: () => this.openTemplatesFile(),
@@ -1430,6 +1450,11 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("Python evidence for computed text")
       .setDesc("When a text template fills in values computed from your variables (Hessian, gradient, D, definiteness, f(1, 2), base case, ...), a python block that recomputes them with sympy is inserted under the text.")
       .addToggle((t) => t.setValue(s.textEvidence).onChange(async (v) => { s.textEvidence = v; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("\\graph inserts Python")
+      .setDesc("On: \\graph inserts a short matplotlib block (only what the graph needs) that Code Suite runs. Off: it inserts the plugin's own ```graph block (offline, no Python).")
+      .addToggle((t) => t.setValue(s.graphOutput !== "graph").onChange(async (v) => { s.graphOutput = v ? "python" : "graph"; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
 

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=cjs --platform=browser --target=es2020 --external:obsidian --external:@codemirror/state --external:@codemirror/view --loader:.md=text --outfile=dist/main.js",
-    "test": "node --test test/core.test.js test/objects.test.js test/explain.test.js test/textlink.test.js test/refs.test.js test/evidence.test.js test/work.test.js test/graph.test.js test/symred.test.js test/unicode.test.js test/graphcmd.test.js",
+    "test": "node --test test/core.test.js test/objects.test.js test/explain.test.js test/textlink.test.js test/refs.test.js test/evidence.test.js test/work.test.js test/graph.test.js test/symred.test.js test/unicode.test.js test/graphcmd.test.js test/graphpy.test.js",
     "install-vault": "node scripts/install.mjs",
     "test:py": "node scripts/run-py-snippets.mjs"
   },

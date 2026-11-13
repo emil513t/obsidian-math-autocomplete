@@ -471,3 +471,12 @@ export function graphOptions(vars = new Map(), query = { all: true }) {
   const ok = out.filter((o) => { try { return parseGraph(o.lines.join("\n"), vars).errors.length === 0; } catch (_) { return false; } });
   return query.all ? ok : ok.filter((o) => o.tags.some((t) => t.startsWith(query.w)));
 }
+
+// The window drawScene would use, for the Python version of the same graph.
+export function graphWindow(src, vars = new Map()) {
+  const scene = parseGraph(src, vars);
+  const { X, Y } = autoWindow(scene.items, scene.win);
+  return { X, Y, equal: scene.win.equal, errors: scene.errors };
+}
+// Exported for graphpy.js (same parsing helpers, so both agree).
+export { pointOf, splitList, isIneq, relationOf, fnOf };
