@@ -1,5 +1,5 @@
 // Every graph the \graph popup offers, and every kind of graph line, turned
-// into Python: the script must be short (only what it draws) and must run.
+// into Python (Plotly, interactive in Code Suite): the script must be short (only what it draws) and must run.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -43,7 +43,7 @@ const EXTRA = [
 
 const python = (() => {
   for (const exe of ["C:/Users/emill/AppData/Local/Programs/Python/Python312/python.exe", "python"]) {
-    const r = spawnSync(exe, ["-I", "-c", "import matplotlib, numpy"], { encoding: "utf8", timeout: 60000 });
+    const r = spawnSync(exe, ["-I", "-c", "import plotly, numpy"], { encoding: "utf8", timeout: 60000 });
     if (!r.error && r.status === 0) return exe;
   }
   return null;
@@ -53,7 +53,7 @@ test("graph python is short: only what the graph uses", () => {
   const vars = parseVars(NOTE);
   const code = graphToPython("g", vars);
   assert.match(code, /g = lambda x: x\*\*2 - 1/);
-  for (const unused of ["lambda x, y", "c1", "u =", "M =", "meshgrid", "print("]) assert.ok(!code.includes(unused), `${unused} in\n${code}`);
+  for (const unused of ["lambda x, y", "c1", "u =", "M =", "meshgrid", "print(", "matplotlib"]) assert.ok(!code.includes(unused), `${unused} in\n${code}`);
   assert.ok(code.split("\n").length <= 12, code);
   // constants from the vars block are filled in
   assert.match(graphToPython("k", vars), /k = lambda x: 2\*x\*\*2/);
@@ -61,16 +61,16 @@ test("graph python is short: only what the graph uses", () => {
   assert.match(graphToPython("f\nnotavar", vars), /# can't draw notavar/);
 });
 
-test("every \\graph option and graph line runs in Python", { skip: !python && "no matplotlib" }, () => {
+test("every \\graph option and graph line runs in Python", { skip: !python && "no plotly" }, () => {
   const vars = parseVars(NOTE);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "graphpy-"));
   const cases = [...graphOptions(vars, graphQuery("graph")).map((o) => [o.label, o.lines.join("\n")]), ...EXTRA.map((s) => [s, s])];
   assert.ok(cases.length > 20);
   const fails = [];
   cases.forEach(([label, src], i) => {
-    const png = path.join(dir, `g${i}.png`).replace(/\\/g, "/");
-    const code = graphToPython(src, vars).replace("plt.show()", `plt.savefig(${JSON.stringify(png)})`);
-    const r = spawnSync(python, ["-I", "-c", code], { encoding: "utf8", timeout: 120000, env: { ...process.env, MPLBACKEND: "Agg" } });
+    const png = path.join(dir, `g${i}.html`).replace(/\\/g, "/");
+    const code = graphToPython(src, vars).replace("fig.show()", `fig.write_html(${JSON.stringify(png)}, include_plotlyjs="cdn")`);
+    const r = spawnSync(python, ["-I", "-c", code], { encoding: "utf8", timeout: 120000 });
     if (r.status !== 0 || !fs.existsSync(png)) fails.push(`${label}\n${code}\n${r.stderr.split("\n").slice(-4).join("\n")}`);
   });
   assert.deepEqual(fails, []);

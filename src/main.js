@@ -463,7 +463,7 @@ class TemplateSuggest extends EditorSuggest {
       // The block goes on its own lines; the cursor ends on its last line.
       const pre = editor.getLine(start.line).slice(0, start.ch).trim() ? "\n" : "";
       const fence = "`".repeat(3);
-      // Python (matplotlib, Code Suite draws it) or the plugin's own ```graph block.
+      // Python (Plotly, Code Suite shows it as an interactive widget) or the plugin's own ```graph block.
       const asPy = this.plugin.settings.graphOutput !== "graph";
       const inner = asPy ? graphToPython(item.g.lines.join("\n"), this.plugin.textVars || new Map()) : item.g.lines.join("\n");
       const text = `${pre}${fence}${asPy ? "python" : "graph"}\n${inner}\n${fence}\n`;
@@ -1453,7 +1453,7 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("\\graph inserts Python")
-      .setDesc("On: \\graph inserts a short matplotlib block (only what the graph needs) that Code Suite runs. Off: it inserts the plugin's own ```graph block (offline, no Python).")
+      .setDesc("On: \\graph inserts a short Plotly block (only what the graph needs) that Code Suite runs as an interactive plot (zoom, pan, hover). Off: it inserts the plugin's own ```graph block (offline, no Python).")
       .addToggle((t) => t.setValue(s.graphOutput !== "graph").onChange(async (v) => { s.graphOutput = v ? "python" : "graph"; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
