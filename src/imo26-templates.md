@@ -370,19 +370,29 @@ So $f$ is convex. $\blacksquare$
 ### graph above tangents (Thm 6.61 / Thm 8.23)
 **Proof.** For all $x, y$: $f(y) - f(x) - \nabla f(x)(y - x) = {{simplify}} \ge 0$. By Theorem 6.61 (one variable) / Theorem 8.23 (several variables), $f$ is convex. $\blacksquare$
 ### several variables: Hessian positive semi-definite (Thm 8.25)
-**Proof.** $\nabla^2 f({{x, y}}) = {{Hessian}}$, which is positive semi-definite on ${{U}}$ ({{symmetric reduction, Proposition 8.11}}). By Theorem 8.25, $f$ is convex. $\blacksquare$
+**Proof.** $\nabla^2 f({{x, y}}) = {{Hessian}}$, which is positive semi-definite at every point of the open convex set ${{U}}$ ({{symmetric reduction gives diagonal entries ≥ 0, Proposition 3.43}}). By Theorem 8.25, $f$ is convex. $\blacksquare$
 ### building blocks: sums, max, linear (Def 4.26)
 **Proof.** $f = {{f}}$ is a sum of convex functions ({{list them, with reasons}}) with non-negative coefficients; such a sum is convex directly from Definition 4.26 (add the inequalities). $\blacksquare$
 ### NOT convex: one bad pair of points (Def 4.26)
 $f$ is **not convex**: $x = {{x}}$, $y = {{y}}$, $t = \frac{1}{2}$ give $f(\frac{x+y}{2}) = {{value}} > {{value 2}} = \frac{f(x) + f(y)}{2}$ (Definition 4.26).
 
 ## \strictconvex — Ch6/8: show a function is strictly convex (Def 6.1)
-### one variable: f'' > 0 (Thm 6.54)
-**Proof.** $f''(x) = {{f''}} > 0$ for all $x \in {{interval}}$ {{(except at isolated points)}}, so $f'$ is strictly increasing (Proposition 6.43) and $f$ is strictly convex (Theorem 6.54). $\blacksquare$
+### one variable: f'' > 0 (Cor 6.55)
+**Proof.** $f$ is twice differentiable on ${{interval}}$ with $f''(x) = {{f''}} > 0$ for every $x \in {{interval}}$, so $f$ is strictly convex (Corollary 6.55). $\blacksquare$
+### one variable: f' strictly increasing (Thm 6.54)
+**Proof.** $f'(x) = {{f'}}$ is strictly increasing on ${{interval}}$ because {{reason, e.g. its derivative is > 0 / it is a sum of strictly increasing functions}}. By Theorem 6.54, $f$ is strictly convex. $\blacksquare$
+### f'' ≥ 0 and = 0 only at isolated points, like x^4 (Prop 6.43, Thm 6.54, Remark 6.56)
+**Proof.** $f''(x) = {{f''}} \ge 0$ on ${{interval}}$, with $f''(x) = 0$ only at ${{isolated points}}$. So $f'' > 0$ on each of the open intervals between those points, and $f'$ is strictly increasing on each of them (Proposition 6.43); since $f'$ is continuous, it is strictly increasing on all of ${{interval}}$. By Theorem 6.54, $f$ is strictly convex. (Corollary 6.55 alone does not give this, since $f''$ is not $> 0$ everywhere; see Remark 6.56.) $\blacksquare$
+### strictly convex + convex is strictly convex (Def 6.1, Def 4.26)
+**Proof.** $f = g + h$ with $g = {{g}}$ strictly convex ({{reason}}) and $h = {{h}}$ convex ({{reason}}). For $u \neq v$ and $0 < t < 1$, adding the strict inequality (6.1) for $g$ and the inequality of Definition 4.26 for $h$ gives $f((1-t)u + tv) < (1-t)f(u) + tf(v)$, so $f$ is strictly convex (Definition 6.1). $\blacksquare$
 ### by definition (Def 6.1)
 **Proof.** For $u \neq v$ and $0 < t < 1$: $(1-t)f(u) + tf(v) - f((1-t)u + tv) = {{simplify, e.g. t(1-t)(u-v)^2}} > 0$, so $f$ is strictly convex (Definition 6.1). $\blacksquare$
 ### several variables: Hessian positive definite (Thm 8.25)
-**Proof.** $\nabla^2 f = {{Hessian}}$ is positive definite at every point of ${{U}}$ ({{reason}}), so $f$ is strictly convex by Theorem 8.25. $\blacksquare$
+**Proof.** $f$ has continuous second order partial derivatives on the open convex set ${{U}}$, and $\nabla^2 f = {{Hessian}}$ is positive definite at every point of ${{U}}$ ({{reason, e.g. symmetric reduction gives positive diagonal entries, Proposition 8.11}}), so $f$ is strictly convex on ${{U}}$ by Theorem 8.25. $\blacksquare$
+### NOT convex: the Hessian / f'' is not positive semi-definite somewhere (Thm 8.25, Cor 6.55)
+At ${{point}}$: ${{f'' or the Hessian}} = {{value}}$, which is {{negative / not positive semi-definite (a negative entry after symmetric reduction, Proposition 3.43)}}. Since the condition in Corollary 6.55 / Theorem 8.25 is an "if and only if", $f$ is **not convex** on ${{U}}$, so not strictly convex either.
+### a strictly convex function has at most one minimum (Thm 6.13)
+$f$ is strictly convex ({{reason}}), so by Theorem 6.13 a global minimum is unique; ${{v0}}$ with $\nabla f({{v0}}) = 0$ is a local, hence the (unique) global minimum.
 ### convex but NOT strictly convex (Def 6.1, Remark 6.56)
 $f$ is convex but **not strictly convex**: on the segment from ${{u}}$ to ${{v}}$, $f((1-t)u + tv) = (1-t)f(u) + tf(v)$ (it is linear there), so the strict inequality in Definition 6.1 fails. Note $f'' > 0$ is sufficient, not necessary (Remark 6.56).
 

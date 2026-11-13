@@ -68,3 +68,8 @@
 .mac-error {
   color: var(--text-error);
 }
+
+/* ```graph blocks */
+.mac-graph { width: 100%; }
+.mac-graph canvas { display: block; max-width: 100%; border-radius: 6px; border: 1px solid var(--background-modifier-border); }
+.mac-graph-error { color: var(--text-error); font-size: var(--font-ui-smaller); margin-top: 0.3em; }

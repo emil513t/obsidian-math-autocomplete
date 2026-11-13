@@ -27,7 +27,8 @@ import IMO26_EXTRA from "./refs/imo26-extra.json";
 const IMO26_REFS = [...IMO26_NUMBERED, ...IMO26_EXTRA];
 import { parseRefQuery, rankRefs, formatRef, kindLabel, refKey, refExcerpt } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
-import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS } from "./vars.js";
+import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS, fnExpr } from "./vars.js";
+import { parseGraph, drawScene, GRAPH_KEYWORDS } from "./graph.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
@@ -184,6 +185,57 @@ export class InputsModal extends Modal {
 
 // sp.<...>, np.<...>, np.linalg.<...>, plt.<...>: members ranked by how often
 // your notes use them.
+// Inside ```graph: the drawing commands and the note's variables (with what
+// each one will draw).
+class GraphSuggest extends EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.limit = 25;
+  }
+
+  onTrigger(cursor, editor) {
+    const before = editor.getLine(cursor.line).slice(0, cursor.ch);
+    const docBefore = editor.getRange({ line: 0, ch: 0 }, cursor);
+    if (fenceLanguage(docBefore) !== "graph") return null;
+    const m = before.match(/(?:^|[\s,(])([A-Za-z][\w]*:?)$/) || (before.trim() === "" ? [before, ""] : null);
+    if (!m) return null;
+    this.vars = parseVars(editor.getValue());
+    const query = m[1];
+    if (!this.getSuggestions({ query }).length) return null;
+    return { start: { line: cursor.line, ch: cursor.ch - query.length }, end: cursor, query };
+  }
+
+  getSuggestions(ctx) {
+    const q = ctx.query.toLowerCase();
+    const kws = GRAPH_KEYWORDS.filter((k) => k.word.toLowerCase().startsWith(q)).map((k) => ({ kind: "kw", ...k }));
+    const what = (v) => {
+      if (v.kind === "relation") return /le|ge|<|>/.test(String(v.op)) ? "shaded half-plane (list several for their region)" : "curve";
+      if (v.kind === "vector") return v.tuple ? "point" : "point / vector";
+      if (v.kind === "matrix") return v.value[0]?.length === 2 ? "rows as points" : "matrix (not drawable)";
+      if (v.kind === "scalar") { try { const n = fnExpr(v, this.vars).vars.length; return n === 1 ? "graph y = f(x)" : n === 2 ? "level curves" : n ? `${n} variables (not drawable)` : "number"; } catch (_) { return "?"; } }
+      return v.kind;
+    };
+    const vs = [...(this.vars || new Map()).values()].filter((v) => !v.error && v.name.toLowerCase().startsWith(q)).map((v) => ({ kind: "var", word: v.name, insert: v.name, desc: what(v), v }));
+    return [...vs, ...kws];
+  }
+
+  renderSuggestion(s, el) {
+    el.addClass("mac-item");
+    const left = el.createDiv({ cls: "mac-left mac-template-left" });
+    const top = left.createDiv({ cls: "mac-template-top" });
+    top.createEl("code", { text: s.word });
+    top.createSpan({ cls: "mac-tag", text: s.kind === "var" ? `your variable: ${s.desc}` : s.desc });
+    if (s.hint) left.createDiv({ cls: "mac-template-snippet", text: s.hint });
+  }
+
+  selectSuggestion(s) {
+    const { editor, start, end } = this.context;
+    editor.replaceRange(s.insert, start, end);
+    editor.setCursor({ line: start.line, ch: start.ch + s.insert.length });
+  }
+}
+
 class PyMemberSuggest extends EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
@@ -901,8 +953,39 @@ export default class MathAutocompletePlugin extends Plugin {
     this.registerEditorSuggest(new VarSuggest(this));
     this.registerEditorSuggest(new PySnippetSuggest(this));
     this.registerEditorSuggest(new PyMemberSuggest(this));
+    this.registerEditorSuggest(new GraphSuggest(this));
 
     // Reading view: show the ```vars block as rendered math.
+    // ```graph: draw functions, regions, points, ... from the note's variables.
+    this.registerMarkdownCodeBlockProcessor("graph", async (src, el, ctx) => {
+      const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+      const doc = file instanceof TFile ? await this.app.vault.cachedRead(file) : "";
+      const vars = parseVars(doc);
+      const scene = parseGraph(src, vars);
+      const box = el.createDiv({ cls: "mac-graph" });
+      const canvas = box.createEl("canvas");
+      const css = getComputedStyle(document.body);
+      const v = (name, d) => css.getPropertyValue(name).trim() || d;
+      const theme = { fg: v("--text-normal", "#222"), bg: v("--background-primary", "#fff"), muted: v("--text-muted", "#888"), faint: v("--background-modifier-border", "#ddd") };
+      const draw = () => {
+        const W = Math.max(280, Math.min(900, box.clientWidth || 600));
+        const H = Math.round(W * 0.62);
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        canvas.style.width = `${W}px`; canvas.style.height = `${H}px`;
+        const g = canvas.getContext("2d");
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        try { drawScene(g, scene, W, H, theme); } catch (e) { g.fillStyle = theme.fg; g.fillText(`Can't draw: ${e.message}`, 10, 20); }
+      };
+      draw();
+      if (typeof ResizeObserver !== "undefined") {
+        let last = 0;
+        const ro = new ResizeObserver(() => { const w = box.clientWidth; if (Math.abs(w - last) > 4) { last = w; draw(); } });
+        ro.observe(box);
+      }
+      for (const err of scene.errors) box.createDiv({ cls: "mac-graph-error", text: err });
+    });
+
     this.registerMarkdownCodeBlockProcessor("vars", (src, el) => {
       const vars = parseBlock(src);
       if (!vars.length) { el.createEl("pre", { text: src }); return; }

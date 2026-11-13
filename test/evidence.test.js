@@ -35,7 +35,8 @@ test("evidence: python recomputes the Hessian chain, partials, values and base c
   const labels = ["Hessian", "Hessian at the point", "diagonal", "definiteness", "local minimum / local maximum / saddle point", "f_x", "f(1, 2)", "check the base case"];
   const code = evidencePy(labels, vars);
   assert.match(code, /H = sp\.hessian\(f, \(x, y\)\)/);
-  assert.match(code, /D = symmetric_reduction\(H0\)/);
+  assert.match(code, /D, B = symmetric_reduction\(H0\)/);
+  assert.match(code, /check B\^T H B = D/);
   assert.equal(evidencePy(["domain", "reason"], vars), "", "prose blanks give no block");
   const res = runPy(code);
   if (!res) return t.skip("python not available");

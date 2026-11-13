@@ -78,6 +78,6 @@ test("Hessian at a point: picked function and point, symmetric reduction, conclu
   assert.match(resolveLabel("Hessian at v0", parseVars("```vars\nf(x, y) = x^3 + y^2\np = (1, 1)\n```\n")).from, /not a critical point/);
   // Semi-definite: no verdict, the blank stays for you.
   const M = (rows) => rows.map((r) => r.map((x) => cas.num(x)));
-  assert.equal(definiteness(diagonalOf(M([[1, 2], [2, 4]]))), null);
+  assert.equal(definiteness(diagonalOf(M([[1, 2], [2, 4]]))), "positive semidefinite");
   assert.equal(definiteness(diagonalOf(M([[0, 1, 0], [1, 0, 0], [0, 0, 1]]))), "indefinite");
 });

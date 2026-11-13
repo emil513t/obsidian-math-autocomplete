@@ -14,8 +14,15 @@
 
 import { parseTemplates } from "./templates.js";
 import { toPython, parseValue, splitTop, latexToPy } from "./vars.js";
+import { SYMRED, DEFINITENESS } from "./pyhelpers.js";
+import { asciiMath } from "./cas.js";
 
 const IMPORTS = {
+  // The book's symmetric reduction B^T A B = D with every step, and the
+  // definiteness read off D (Section 8.6, Theorem 8.31).
+  symred: `${SYMRED}
+
+${DEFINITENESS}`,
   sympy: "import sympy as sp",
   numpy: "import numpy as np",
   plt: "import matplotlib.pyplot as plt",
@@ -32,9 +39,21 @@ const IMPORTS = {
     "    eqs = [e.lhs - e.rhs if isinstance(e, sp.Equality) else e for e in eqs]",
     "    syms = list(syms) if isinstance(syms, (list, tuple)) else [syms]",
     "    try:",
-    "        return sp.solve(eqs, syms, dict=True)",
+    "        sols = sp.solve(eqs, syms, dict=True)",
     "    except NotImplementedError:",
-    "        pass",
+    "        sols = None",
+    "    if sols is not None:",
+    "        # Drop repeats and points that a whole line/curve of solutions already covers.",
+    "        uniq = []",
+    "        for s in sols:",
+    "            if s not in uniq:",
+    "                uniq.append(s)",
+    "        sols = [s for s in uniq if not any(t != s and t.items() <= s.items() for t in uniq)]",
+    "        for s in sols:",
+    "            free = [str(v) for v in syms if v not in s]",
+    "            if free:",
+    "                print(\"(infinitely many solutions:\", \", \".join(f\"{k} = {v}\" for k, v in s.items()) or \"everything\", \"with\", \", \".join(free), \"free)\")",
+    "        return sols",
     "    print(\"(no exact solution from sympy: solving numerically, values rounded to 10 digits)\")",
     "    import itertools",
     "    grid = [-10, -3, -1, -0.5, 0, 0.5, 1, 3, 10] if len(syms) <= 2 else [-3, -1, 0, 1, 3]",
@@ -390,7 +409,7 @@ const LOGIC = /^(\s+(and|or)\s+|\s*\\(land|lor|wedge|vee)\s*)/;
 // (x^2 - 5x + 6 = 0, x < 1 and y > 2) become Python comparisons; Python is
 // kept as it is. A label like "text" keeps the answer as a string.
 export function answerToPy(text, style = "sympy", label = "") {
-  let t = text.trim();
+  let t = TEXTISH.test(label) ? text.trim() : asciiMath(text).trim();
   if (TEXTISH.test(label) && !/^["']/.test(t)) return JSON.stringify(t);
   if (PY_ONLY.test(t)) return t;
   const lib = style === "numpy" ? "np" : style === "plain" ? "math" : "sp";

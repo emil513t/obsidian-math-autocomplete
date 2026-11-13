@@ -143,3 +143,18 @@ test("every book reference in the plugin exists in the book with the right kind"
   }
   assert.deepEqual(bad, []);
 });
+
+test("convexity: decided with the book's tests for standard functions", async () => {
+  const fns = {
+    a: ["a(x) = x^4", "strictly convex"], b: ["b(x) = x^2 + e^{x}", "strictly convex"], c: ["c(x) = x^3", "not convex"],
+    d: ["d(x) = 2x + 1", "not strictly convex"], f: ["f(x,y) = x^2 + xy + y^2", "strictly convex"], g: ["g(x,y) = x^4 + y^2", "convex"],
+    h: ["h(x,y) = x^3 + y^2", "not convex"], k: ["k(x,y) = e^{x+y}", "convex"], m: ["m(x,y) = x^2 y^2", "not convex"], r: ["r(x,y) = x^2 - y^2", "not convex"],
+  };
+  const c = objectContext(parseVars("```vars\n" + Object.values(fns).map((x) => x[0]).join("\n") + "\n```\n"));
+  for (const [n, [def, verdict]] of Object.entries(fns)) {
+    const md = workFor("convexity", `f:${n}`, c, {});
+    assert.ok(md.includes(`**${verdict}**`), `${def}: expected ${verdict}\n${md}`);
+  }
+  assert.match(workFor("convexity", "f:a", c, {}), /Theorem 6\.54/);
+  assert.match(workFor("convexity", "f:f", c, {}), /Theorem 8\.25/);
+});

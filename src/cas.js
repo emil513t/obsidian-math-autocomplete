@@ -390,10 +390,34 @@ const GREEK = new Set(["alpha", "beta", "gamma", "delta", "epsilon", "varepsilon
   "Gamma", "Delta", "Theta", "Lambda", "Xi", "Pi", "Sigma", "Phi", "Psi", "Omega"]);
 const SKIP = new Set(["left", "right", ",", ";", ":", "!", " ", "quad", "qquad", "displaystyle", "big", "Big", "bigg", "Bigg"]);
 
+// Unicode math typed or pasted from a PDF/web page (− U+2212, ×, ·, ≤, ², α,
+// non-breaking spaces) -> plain LaTeX, so the CAS, the vars parser and the
+// generated Python only ever see ASCII. Every input path goes through this.
+const UNI_SUP = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁻": "-", "⁺": "+", "ⁿ": "n" };
+const UNI_SUB = { "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9" };
+const UNI_GREEK = { α: "alpha", β: "beta", γ: "gamma", δ: "delta", ε: "varepsilon", ζ: "zeta", η: "eta", θ: "theta", ι: "iota", κ: "kappa", λ: "lambda", μ: "mu", ν: "nu", ξ: "xi", π: "pi", ρ: "rho", σ: "sigma", τ: "tau", φ: "varphi", χ: "chi", ψ: "psi", ω: "omega", Γ: "Gamma", Δ: "Delta", Θ: "Theta", Λ: "Lambda", Ξ: "Xi", Π: "Pi", Σ: "Sigma", Φ: "Phi", Ψ: "Psi", Ω: "Omega" };
+const UNI_OPS = [
+  [/[−–—‐‑‒﹣－]/g, "-"],
+  [/[×✕✖]/g, " \\times "], [/[·⋅∙•]/g, " \\cdot "], [/[÷∕⁄]/g, "/"],
+  [/≤|⩽/g, " \\le "], [/≥|⩾/g, " \\ge "], [/≠/g, " \\ne "],
+  [/∈/g, " \\in "], [/∞/g, "\\infty "], [/∂/g, "\\partial "], [/∇/g, "\\nabla "], [/√/g, "\\sqrt"],
+  [/[‘’′]/g, "'"], [/[“”]/g, '"'], [/＝/g, "="], [/＋/g, "+"],
+  [/[  -​  　﻿]/g, " "],
+];
+export function asciiMath(src) {
+  let s = String(src ?? "");
+  if (/^[\x00-\x7F]*$/.test(s)) return s;
+  for (const [re, to] of UNI_OPS) s = s.replace(re, to);
+  s = s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿ]+/g, (m) => { const t = [...m].map((c) => UNI_SUP[c]).join(""); return t.length > 1 ? `^{${t}}` : `^${t}`; });
+  s = s.replace(/[₀₁₂₃₄₅₆₇₈₉]+/g, (m) => { const t = [...m].map((c) => UNI_SUB[c]).join(""); return t.length > 1 ? `_{${t}}` : `_${t}`; });
+  s = s.replace(/[α-ωΓ-Ω]/g, (c) => (UNI_GREEK[c] ? `\\${UNI_GREEK[c]} ` : c));
+  return s;
+}
+
 // Parses one expression. `names` (optional): multi-letter names that are one
 // symbol (e.g. a variable called "x0"), otherwise "xy" means x*y.
 export function parse(src, names = []) {
-  const p = new Parser(String(src), names);
+  const p = new Parser(asciiMath(src), names);
   const x = p.expr();
   p.ws();
   if (p.i < p.s.length) throw new Error(`can't read "${p.s.slice(p.i)}"`);

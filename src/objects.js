@@ -7,6 +7,8 @@
 import * as cas from "./cas.js";
 import { fnExpr, casOf, parseValue, toLatex, latexName, findRelation, derivedValue, pointError } from "./vars.js";
 import { gauss, parseSystem, parseIneqs, fmStep, ineqTex } from "./elim.js";
+import { convexityProof } from "./convex.js";
+import { symmetricReduction, definiteness } from "./textlink.js";
 
 const r = String.raw;
 
@@ -426,6 +428,23 @@ export const OBJECTS = [
   matOp("adjugate", "adj cofactor classical adjoint", "adjugate matrix adj(A)", "Ad", (M) => cas.mat.adjugate(M), "adj", { square: true }),
   matOp("symmetricpart", "symmetric part (A + A^T)/2", "symmetric part ½(A + Aᵀ)", "S", (M) => cas.mat.scale(cas.mat.add(M, cas.mat.transpose(M)), cas.num(1, 2)), "symmetric", { square: true }),
   scalarOp("determinant", "det |A|", "determinant det A", "d", (M) => cas.mat.det(M), "det", { square: true }),
+  {
+    name: "definiteness", words: "positive definite semidefinite negative indefinite posdef symmetric reduction congruent diagonal B^T A B = D",
+    desc: "definiteness of a symmetric matrix by symmetric reduction Bᵀ A B = D (Sec 8.6, Thm 8.31)", varName: "D",
+    options: (ctx) => {
+      const defOf = (M) => {
+        if (M.length !== M[0].length) throw new Error(`the matrix is ${M.length}×${M[0].length}; definiteness only exists for square symmetric matrices.`);
+        if (!M.every((r, i) => r.every((x, j) => cas.equal(x, M[j][i])))) throw new Error("the matrix is not symmetric, and definiteness (Sec 3.7) is only defined for symmetric matrices. Use its symmetric part ½(A + Aᵀ): same quadratic form.");
+        const R = symmetricReduction(M);
+        if (!R) throw new Error("the entries must be numbers for symmetric reduction.");
+        const d = definiteness(R.D);
+        if (!d) throw new Error("the signs of D cannot be decided.");
+        return { value: `\\text{${d}}` };
+      };
+      return ctx.mats.map((m) => computed(`A:${m.v.name}`, `Definiteness of ${m.v.name}`, () => defOf(m.M)))
+        .concat([askMatrix("own", "Of a matrix you type (or a variable name)", (M) => defOf(M))]);
+    },
+  },
   scalarOp("trace", "tr sum diagonal", "trace tr A", "t", (M) => cas.mat.trace(M), "trace", { square: true }),
   scalarOp("rank", "rank dimension column space", "rank of A", "r", (M) => cas.num(cas.mat.rank(M)), "rank"),
   scalarOp("charpoly", "characteristic polynomial det(A - λI) eigen", "characteristic polynomial det(A - λI)", "p", (M) => cas.charpoly(M), "charpoly", { square: true }),
@@ -527,6 +546,11 @@ export const OBJECTS = [
       } });
       return out;
     },
+  },
+  {
+    name: "convexity", words: "convex strictly convex convexity concave positive definite second derivative test", desc: "is f convex / strictly convex? decided and proved (Cor 6.55, Thm 6.54, Thm 8.25)", varName: "c",
+    options: (ctx) => ctx.fns.map((f) => computed(`f:${f.v.name}`, `Is ${fname(f)} (strictly) convex?`, () => ({ value: convexityProof(f, []) })))
+      .concat([askFunction("own", "A function you type (or a variable name)", ({ x, vars }) => ({ value: convexityProof({ v: { name: "f" }, x, vars }, []) }))]),
   },
   {
     name: "induction", words: "induction proof base case step sum formula principle", desc: "proof by induction of a statement P(n) (Thm 1.86)", varName: "P",

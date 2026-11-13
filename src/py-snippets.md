@@ -522,6 +522,15 @@ if A.is_diagonalizable():
     print("P =", P.tolist(), " D =", D.tolist())
 
 ## \posdef — (semi)definiteness of a symmetric matrix, also with parameters (Ch3/8)
+### symmetric reduction B^T A B = D, every step (book method, Sec 8.6)
+@uses sympy symred
+@in A matrix
+print("symmetric:", A == A.T)
+D, B = symmetric_reduction(A, verbose=True)
+print("B =", B.tolist())
+print("D = diag", D)
+print("check B^T A B = D:", B.T * A * B == sp.diag(*D))
+print("A is", definiteness(D), "(B invertible: Propositions 3.43, 8.11)")
 ### numbers
 @uses sympy
 @in A matrix

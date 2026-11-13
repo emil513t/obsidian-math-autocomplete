@@ -115,6 +115,7 @@ function pyExprTex(e) {
 }
 
 export function parseBlock(src, known = new Map()) {
+  src = cas.asciiMath(src);
   const out = [];
   const scope = new Map(known);
   const lines = src.split("\n");
@@ -327,7 +328,7 @@ const SPACING = new Set([",", ";", ":", "!", " ", "quad", "qquad"]);
 // Small LaTeX -> Python expression converter for the kind of values exercises
 // give: numbers, fractions, roots, powers, a few functions, implicit products.
 export function latexToPy(src, lib = "sp") {
-  const s = src.trim();
+  const s = cas.asciiMath(src).trim();
   const frac = s.match(/^(-?)(?:\\[dt]?frac\{(\d+)\}\{(\d+)\}|(\d+)\s*\/\s*(\d+))$/);
   if (frac && lib === "sp") return `${frac[1]}sp.Rational(${frac[2] ?? frac[4]}, ${frac[3] ?? frac[5]})`;
   if (/^-?\d+(\.\d+)?$/.test(s)) return s;

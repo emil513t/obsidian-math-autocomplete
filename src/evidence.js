@@ -5,6 +5,7 @@
 // Pure, no Obsidian imports.
 import * as cas from "./cas.js";
 import { latexToPy } from "./vars.js";
+import { SYMRED, DEFINITENESS } from "./pyhelpers.js";
 import {
   mainFn, fnByName, statementVar, pointVar, pointExprs, n0Var, AT_LABELS, CONCLUSION, substituteTex,
 } from "./textlink.js";
@@ -12,39 +13,6 @@ import {
 const pyName = (n, fallback) => (/^[A-Za-z_]\w*$/.test(n) ? n : fallback);
 const pyOf = (x, vars) => latexToPy(cas.tex(x, vars));
 const isConstMatrix = (M) => M.every((r) => r.every((x) => cas.isZero(x) || cas.constValue(x)));
-
-// The book's symmetric reduction (same steps as textlink.diagonalOf).
-const SYMRED = `def symmetric_reduction(A):
-    """Diagonal D of B^T A B = D by row-and-column operations (IMO26 Section 3.7.3)."""
-    A = sp.Matrix(A)
-    n = A.rows
-    def add_to(i, j, c):  # row i += c row j, then column i += c column j
-        A[i, :] = A[i, :] + c * A[j, :]
-        A[:, i] = A[:, i] + c * A[:, j]
-    for k in range(n):
-        if A[k, k] == 0:
-            d = next((j for j in range(k + 1, n) if A[j, j] != 0), None)
-            if d is not None:
-                A.row_swap(k, d)
-                A.col_swap(k, d)
-            else:
-                j = next((j for j in range(k + 1, n) if A[k, j] != 0), None)
-                if j is None:
-                    continue
-                add_to(k, j, 1)
-        for i in range(k + 1, n):
-            if A[i, k] != 0:
-                add_to(i, k, -A[i, k] / A[k, k])
-    return [A[i, i] for i in range(n)]`;
-
-const DEFINITENESS = `def definiteness(D):
-    if all(d > 0 for d in D):
-        return "positive definite"
-    if all(d < 0 for d in D):
-        return "negative definite"
-    if any(d > 0 for d in D) and any(d < 0 for d in D):
-        return "indefinite"
-    return "undecided (a zero on the diagonal)"`;
 
 // One side of a statement as sympy: \sum_{k=1}^{n} body -> sp.summation.
 function sidePy(tex, syms) {
@@ -98,7 +66,7 @@ export function evidencePy(labels, vars, ctx = {}) {
     });
     if (kind === "H") return;
     helpers.add(SYMRED);
-    once("D", () => body.push("D = symmetric_reduction(H0)", 'print("diagonal D (symmetric reduction):", D)'));
+    once("D", () => body.push("D, B = symmetric_reduction(H0)", 'print("diagonal D (symmetric reduction):", D)', 'print("check B^T H B = D:", B.T * H0 * B == sp.diag(*D))'));
     if (kind === "D") return;
     helpers.add(DEFINITENESS);
     once("def", () => body.push("kind = definiteness(D)", 'print("so H is", kind)'));

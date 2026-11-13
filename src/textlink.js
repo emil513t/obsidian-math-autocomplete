@@ -58,41 +58,83 @@ export const pointExprs = (P) => P.value.map((x) => cas.parse(String(x)));
 // below each pivot; a 0 pivot is fixed by swapping in a later non-zero
 // diagonal entry or by adding a later row and column. null when not constant.
 export function diagonalOf(M) {
+  const r = symmetricReduction(M);
+  return r ? r.D : null;
+}
+
+// The book's schematic procedure (Section 8.6, Theorem 8.31) on the extended
+// matrix (I over A): every column operation hits the whole extended matrix,
+// the matching row operation only the lower half. The upper half ends as B,
+// the lower half as D, and B^T A B = D. Returns { D, B, A: final lower half,
+// ops: [{ kind: "swap" | "add", i, j, c, B, A }] } (B, A after the op pair),
+// or null when the matrix is not a constant square matrix.
+export function symmetricReduction(M) {
+  if (!M.length || M.some((r) => r.length !== M.length)) return null;
   if (!M.every((r) => r.every((x) => cas.isZero(x) || cas.constValue(x)))) return null;
   const A = M.map((r) => [...r]);
   const n = A.length;
-  const swap = (i, j) => { [A[i], A[j]] = [A[j], A[i]]; for (const r of A) [r[i], r[j]] = [r[j], r[i]]; };
-  const addTo = (i, j, c) => { // row i += c row j, then column i += c column j
-    A[i] = A[i].map((x, k) => cas.add(x, cas.mul(c, A[j][k])));
-    for (const r of A) r[i] = cas.add(r[i], cas.mul(c, r[j]));
+  const B = A.map((_, i) => A.map((_, j) => (i === j ? cas.ONE : cas.ZERO)));
+  const ops = [];
+  const snap = (op) => ops.push({ ...op, B: B.map((r) => [...r]), A: A.map((r) => [...r]) });
+  const swap = (i, j) => {
+    for (const r of [...B, ...A]) [r[i], r[j]] = [r[j], r[i]]; // columns, whole matrix
+    [A[i], A[j]] = [A[j], A[i]]; // rows, lower half
+    snap({ kind: "swap", i, j });
+  };
+  const add = (i, j, c) => { // c times column i to column j (whole), c times row i to row j (lower half)
+    for (const r of [...B, ...A]) r[j] = cas.add(r[j], cas.mul(c, r[i]));
+    A[j] = A[j].map((x, k) => cas.add(x, cas.mul(c, A[i][k])));
+    snap({ kind: "add", i, j, c });
   };
   for (let k = 0; k < n; k++) {
     if (cas.isZero(A[k][k])) {
       const d = A.findIndex((r, j) => j > k && !cas.isZero(r[j]));
       if (d > k) swap(k, d);
-      else {
-        const j = A[k].findIndex((x, j) => j > k && !cas.isZero(x));
-        if (j < 0) continue; // the row is already 0
-        addTo(k, j, cas.ONE);
-      }
     }
-    for (let i = k + 1; i < n; i++) {
-      if (cas.isZero(A[i][k])) continue;
-      addTo(i, k, cas.neg(cas.div(A[i][k], A[k][k])));
+    if (cas.isZero(A[k][k])) {
+      // The diagonal from k on is all 0: adding a column/row with a non-zero
+      // entry in row k makes a_kk = 2 a_kj, not 0.
+      const j = A[k].findIndex((x, j) => j > k && !cas.isZero(x));
+      if (j < 0) continue; // row k is already 0
+      add(j, k, cas.ONE);
+    }
+    for (let j = k + 1; j < n; j++) {
+      if (cas.isZero(A[k][j])) continue;
+      add(k, j, cas.neg(cas.div(A[k][j], A[k][k])));
     }
   }
-  return A.map((r, i) => r[i]);
+  return { D: A.map((r, i) => r[i]), B, A, ops };
 }
-const sign = (x) => { const c = cas.constValue(x); return c ? Math.sign(c.n) : null; };
+
+const sign = (x) => { const c = cas.constValue(x); return c ? Math.sign(c.n) : cas.isZero(x) ? 0 : null; };
+// Definiteness of A from the diagonal D of B^T A B = D (B invertible, so
+// Propositions 3.43 and 8.11 carry every case over, zeros included).
 export function definiteness(D) {
   const s = D.map(sign);
   if (s.some((x) => x === null)) return null;
   if (s.every((x) => x > 0)) return "positive definite";
   if (s.every((x) => x < 0)) return "negative definite";
   if (s.some((x) => x > 0) && s.some((x) => x < 0)) return "indefinite";
-  return null;
+  if (s.every((x) => x === 0)) return "positive semidefinite and negative semidefinite";
+  if (s.every((x) => x >= 0)) return "positive semidefinite";
+  return "negative semidefinite";
 }
-export const CONCLUSION = { "positive definite": "local minimum", "negative definite": "local maximum", indefinite: "saddle point" };
+const NO_TEST = "no conclusion from the Hessian test (semidefinite)";
+export const CONCLUSION = {
+  "positive definite": "local minimum", "negative definite": "local maximum", indefinite: "saddle point",
+  "positive semidefinite": NO_TEST, "negative semidefinite": NO_TEST, "positive semidefinite and negative semidefinite": NO_TEST,
+};
+// Why D gives that answer, in words.
+export function definitenessWhy(d) {
+  return {
+    "positive definite": "all diagonal entries of $D$ are positive",
+    "negative definite": "all diagonal entries of $D$ are negative",
+    indefinite: "$D$ has both a positive and a negative diagonal entry",
+    "positive semidefinite": "all diagonal entries of $D$ are $\\ge 0$ and at least one is $0$",
+    "negative semidefinite": "all diagonal entries of $D$ are $\\le 0$ and at least one is $0$",
+    "positive semidefinite and negative semidefinite": "$D$ is the zero matrix",
+  }[d];
+}
 export const n0Var = (vars) => ["n0", "n_0", "n_{0}"].map((n) => vars.get(n)).find(Boolean);
 
 // Replace the variable `p` in LaTeX by `arg` (as text), bracketed when needed.

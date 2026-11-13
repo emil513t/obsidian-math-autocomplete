@@ -4,10 +4,11 @@
 // block in which the answer was put. Pure, no Obsidian imports.
 import * as cas from "./cas.js";
 import { latexName } from "./vars.js";
-import { diagonalOf, definiteness, CONCLUSION } from "./textlink.js";
+import { symmetricReduction, definiteness, definitenessWhy, CONCLUSION } from "./textlink.js";
 import { typedFunction, numericRoots, fmtC, taylor2, gaussSources, fmSystem } from "./objects.js";
 import { gauss, parseSystem, systemTex, parseIneqs, fmStep, ineqTex, inductionSteps } from "./elim.js";
 import { findRelation } from "./vars.js";
+import { convexityProof } from "./convex.js";
 
 const T = (x, vars) => cas.tex(x, vars);
 const M = (A, vars) => `\\begin{pmatrix} ${A.map((r) => r.map((x) => T(x, vars)).join(" & ")).join(" \\\\ ")} \\end{pmatrix}`;
@@ -117,14 +118,56 @@ function hessianAtPoint(F, H, p, steps, g) {
   return Hp;
 }
 
+// The extended matrix (B over A) with a line between the halves.
+const extTex = (B, A) => {
+  const n = A.length;
+  const rows = (R) => R.map((r) => r.map((x) => T(x)).join(" & ")).join(" \\\\ ");
+  return `\\left(\\begin{array}{${"c".repeat(n)}} ${rows(B)} \\\\ \\hline ${rows(A)} \\end{array}\\right)`;
+};
+const isSym = (A) => A.every((r, i) => r.every((x, j) => cas.equal(x, A[j][i])));
+
+// Symmetric reduction with every operation written out (Section 8.6,
+// Theorem 8.31), then the definiteness read off D. Returns the definiteness
+// (or null). name: LaTeX name of the matrix; pointName: the critical point
+// when this is a Hessian there (then the Hessian test conclusion is added).
+function symReductionSteps(A0, steps, { name = "A", pointName = null, hessian = false } = {}) {
+  const R = symmetricReduction(A0);
+  if (!R) return null;
+  const n = A0.length;
+  steps.push({ text: `Symmetric reduction (Section 8.6, Theorem 8.31). Write the identity matrix on top of $${name}$. Every column operation is done on the whole extended matrix, the matching row operation only on the lower half. When the lower half is diagonal it is $D$, the upper half is $B$, and $B^\\top ${name} B = D$.`, tex: extTex(A0.map((_, i) => A0.map((_, j) => (i === j ? cas.ONE : cas.ZERO))), A0) });
+  if (!R.ops.length) steps.push({ text: `The lower half is already diagonal, so no operations are needed.` });
+  for (let k = 0; k < R.ops.length; k++) {
+    const o = R.ops[k];
+    const i = o.i + 1, j = o.j + 1;
+    let text;
+    if (o.kind === "swap") {
+      text = `Diagonal entry ${i} is $0$ but diagonal entry ${j} is not: interchange columns ${i} and ${j} (whole matrix) and rows ${i} and ${j} (lower half).`;
+    } else if (o.i > o.j) { // the adding trick: a later column/row into column/row j
+      text = `The rest of the diagonal is $0$, but row ${j} has a non-zero entry in column ${i}: add column ${i} to column ${j} (whole matrix) and row ${i} to row ${j} (lower half). Now diagonal entry ${j} is not $0$.`;
+    } else {
+      const c = T(o.c);
+      text = `Clear entries $(${i}, ${j})$ and $(${j}, ${i})$: add $${paren(c)}$ times column ${i} to column ${j} (whole matrix), then $${paren(c)}$ times row ${i} to row ${j} (lower half).`;
+    }
+    steps.push({ text, tex: extTex(o.B, o.A) });
+  }
+  const Dm = A0.map((_, i) => A0.map((_, j) => (i === j ? R.D[i] : cas.ZERO)));
+  const BtAB = cas.mat.mul(cas.mat.mul(cas.mat.transpose(R.B), A0), R.B);
+  steps.push({ text: `Read off $B$ (upper half) and $D$ (lower half). $B$ is invertible (it is the identity after column operations), and the check holds:`, tex: `B = ${M(R.B)},\\quad B^\\top ${name} B = ${M(BtAB)} = D` });
+  const d = definiteness(R.D);
+  if (!d) { steps.push({ text: `The signs of the diagonal entries $${R.D.map((x) => T(x)).join(",\\ ")}$ cannot be decided.` }); return null; }
+  const prop = /semi/.test(d) ? "Proposition 3.43" : hessian ? "Proposition 8.11" : "Propositions 3.43 and 8.11";
+  let end = "";
+  if (pointName) {
+    end = /semi/.test(d)
+      ? `. A semidefinite Hessian is not covered by the Hessian test (Theorem 8.12), so it does not decide whether $${pointName}$ is a local extremum`
+      : `, so by the Hessian test (Theorem 8.12) $${pointName}$ is a **${CONCLUSION[d]}**`;
+  }
+  steps.push({ text: `$D$ has diagonal $${R.D.map((x) => T(x)).join(",\\ ")}$, so $D$ is ${d} because ${definitenessWhy(d)}. $B$ is invertible, so by ${prop} $${name}$ is **${d}** too${end}.` });
+  return d;
+}
+
 function classify(Hp, steps, pointName) {
-  const D = diagonalOf(Hp);
-  if (!D) return;
-  steps.push({ text: `Symmetric reduction (Theorem 8.31): row and column operations turn the Hessian into a diagonal matrix with the same definiteness (Proposition 8.11).`, tex: `D = ${M(Hp.map((r, i) => r.map((_, j) => (i === j ? D[i] : cas.ZERO))))}` });
-  const d = definiteness(D);
-  if (!d) { steps.push({ text: `A diagonal entry is $0$, so the signs alone do not decide the definiteness.` }); return; }
-  const why = d === "positive definite" ? "all diagonal entries are positive" : d === "negative definite" ? "all diagonal entries are negative" : "the diagonal has both positive and negative entries";
-  steps.push({ text: `The Hessian is **${d}** because ${why}${pointName ? `, so by the Hessian test (Theorem 8.12) $${pointName}$ is a **${CONCLUSION[d]}**` : ""}.` });
+  symReductionSteps(Hp, steps, { name: "H", pointName, hessian: true });
 }
 
 // Gauss-Jordan with every row operation written down.
@@ -498,6 +541,14 @@ const HANDLERS = {
     detSteps(A, steps);
     return "determinant";
   },
+  definiteness(id, ctx, a, steps) {
+    const own = id === "own";
+    const A = own ? parseMat(a.A) : find(ctx, "mats", id.split(":")[1])?.M;
+    if (!A || A.length !== A[0].length || !isSym(A)) return null;
+    const name = own ? "A" : latexName(id.split(":")[1]);
+    steps.push({ text: `The matrix is symmetric, so its definiteness is defined (Section 3.7).`, tex: `${name} = ${M(A)}` });
+    return symReductionSteps(A, steps, { name }) ? `definiteness of $${name}$ by symmetric reduction` : null;
+  },
   rref(id, ctx, a, steps) {
     const A = id === "own" ? parseMat(a.A) : find(ctx, "mats", id.split(":")[1])?.M;
     if (!A) return null;
@@ -746,6 +797,13 @@ HANDLERS.fouriermotzkin = (id, ctx, a, steps) => {
     steps.push({ text: `Only $${v}$ is left. Isolating it gives the possible values:`, tex: `${maxL ? `${cas.tex(maxL)} \\le ` : ""}${v}${minU ? ` \\le ${cas.tex(minU)}` : ""}` });
   }
   return "Fourier-Motzkin elimination";
+};
+
+HANDLERS.convexity = (id, ctx, a, steps) => {
+  const F = id === "own" ? parseF(a) : find(ctx, "fns", id.slice(2));
+  if (!F) return null;
+  convexityProof(F, steps);
+  return `is $${latexName(F.v.name)}$ convex?`;
 };
 
 HANDLERS.induction = (id, ctx, a, steps) => {
