@@ -20,7 +20,9 @@ import { fnExpr, findRelation, casOf } from "./vars.js";
 
 export const GRAPH_KEYWORDS = [
   { word: "region", insert: "region ", desc: "shade where all the inequalities hold (feasible set)", hint: "region c1, c2, c3" },
-  { word: "contour", insert: "contour ", desc: "level curves of a function of x, y", hint: "contour g: -1, 0, 1" },
+  { word: "surface", insert: "surface ", desc: "3D surface z = f(x, y) (rotate it in Python)", hint: "surface f" },
+  { word: "tangent plane", insert: "tangent plane ", desc: "3D tangent plane of f at a point", hint: "tangent plane f at p" },
+  { word: "contour", insert: "contour ", desc: "level curves of a function of x, y (flat, 2D)", hint: "contour g: -1, 0, 1" },
   { word: "tangent", insert: "tangent ", desc: "tangent line of f at a point", hint: "tangent f at 1" },
   { word: "gradient", insert: "gradient ", desc: "gradient arrow of g at a point", hint: "gradient g at p" },
   { word: "vector", insert: "vector ", desc: "an arrow (from the origin or a point)", hint: "vector u at p" },
@@ -106,6 +108,19 @@ export function parseGraph(src, vars = new Map()) {
         const rs = splitList(m[1]).map((s) => relationOf(s, vars));
         if (rs.some((r) => !r)) throw new Error("region needs inequalities (names of your inequality variables, or typed ones)");
         items.push({ t: "region", fs: rs.filter((r) => isIneq(r.op)).map((r) => ineqFn(r, vars)), eqs: rs.filter((r) => !isIneq(r.op)), label: m[1], color: next() });
+        continue;
+      }
+      // 3D lines (Python draws them in 3D; this offline 2D renderer shows level curves / the point).
+      if ((m = line.match(/^surface\s+(\w+)$/i))) {
+        const F = fnOf(m[1], vars);
+        if (!F || F.vars.length !== 2) throw new Error(`surface needs a function of two variables; ${m[1]} isn't one`);
+        items.push({ t: "contour", F, levels: null, label: m[1], color: next() });
+        continue;
+      }
+      if ((m = line.match(/^tangent\s+plane\s+(\w+)\s+at\s+(.+)$/i))) {
+        const F = fnOf(m[1], vars); const p = pointOf(m[2], vars);
+        if (!F || F.vars.length !== 2 || !p) throw new Error("tangent plane needs a function of two variables and a point");
+        items.push({ t: "point", p, color: "fg", label: m[2] });
         continue;
       }
       if ((m = line.match(/^contour\s+(\w+)\s*(?::\s*(.+))?$/i))) {
@@ -427,7 +442,7 @@ export function graphQuery(word) {
   if (GRAPH_TAGS.some((t) => t.startsWith(w))) return { all: false, w };
   return null;
 }
-const GRAPH_TAGS = ["region", "feasible", "contour", "level", "tangent", "gradient", "points", "vector", "line", "segment", "curve", "inequality", "function"];
+const GRAPH_TAGS = ["surface", "region", "feasible", "contour", "level", "tangent", "gradient", "points", "vector", "line", "segment", "curve", "inequality", "function"];
 
 // The graphs this note can draw, each { label, desc, lines, tags }. Every
 // option is checked with parseGraph, so none of them shows an error.
@@ -452,7 +467,9 @@ export function graphOptions(vars = new Map(), query = { all: true }) {
     add(`${f.name} with its tangent`, "tangent line at x = 1 (change the 1)", [f.name, `tangent ${f.name} at 1`], ["tangent", "function"]);
   }
   for (const f of fns2) {
-    add(`level curves of ${f.name}`, `${f.name}(x, y) = c for several c`, [f.name], ["contour", "level", "function"]);
+    add(`3D surface of ${f.name}`, `z = ${f.name}(x, y), rotate and zoom it`, [`surface ${f.name}`], ["surface", "3d", "function"]);
+    for (const p of pts.slice(0, 3)) add(`3D surface of ${f.name} + tangent plane at ${p.name}`, "the plane touching the surface at the point", [`surface ${f.name}`, p.name, `tangent plane ${f.name} at ${p.name}`], ["surface", "3d", "tangent"]);
+    add(`level curves of ${f.name}`, `${f.name}(x, y) = c for several c (flat, 2D)`, [`contour ${f.name}`], ["contour", "level", "function"]);
     for (const p of pts.slice(0, 3)) add(`level curves of ${f.name} + gradient at ${p.name}`, "the gradient is orthogonal to the level curve", [`contour ${f.name}`, p.name, `gradient ${f.name} at ${p.name}`], ["gradient", "contour", "level"]);
   }
   if (ineqs.length) {

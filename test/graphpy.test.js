@@ -8,7 +8,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { parseVars } from "../src/vars.js";
 import { graphQuery, graphOptions } from "../src/graph.js";
-import { graphToPython } from "../src/graphpy.js";
+import { graphToPython, graphIs3D } from "../src/graphpy.js";
 
 const NOTE = "```vars\n" + String.raw`f(x,y) = x^4y^2 + x^2y^4 − 3x^2y^2
 g(x) = x^2 - 1
@@ -39,6 +39,9 @@ const EXTRA = [
   "h",
   "x^2 - 2",
   "f\nnotavar",
+  "surface f\np\ntangent plane f at p",
+  "f, g",
+  "surface f\nx: -1.5..1.5\ny: -1.5..1.5",
 ];
 
 const python = (() => {
@@ -58,7 +61,22 @@ test("graph python is short: only what the graph uses", () => {
   // constants from the vars block are filled in
   assert.match(graphToPython("k", vars), /k = lambda x: 2\*x\*\*2/);
   // a line that can't be drawn becomes a comment, the rest still draws
-  assert.match(graphToPython("f\nnotavar", vars), /# can't draw notavar/);
+  assert.match(graphToPython("g\nnotavar", vars), /# can't draw notavar/);
+});
+
+test("a function of two variables is a 3D surface; contour stays 2D", () => {
+  const vars = parseVars(NOTE);
+  for (const src of ["f", "surface f", "f, p", "surface f\np\ntangent plane f at p"]) {
+    assert.ok(graphIs3D(src, vars), src);
+    assert.match(graphToPython(src, vars), /fig\.add_surface\(/, src);
+  }
+  assert.ok(!graphIs3D("contour f", vars));
+  assert.doesNotMatch(graphToPython("contour f", vars), /add_surface/);
+  const tp = graphToPython("surface f\ntangent plane f at p", vars);
+  assert.match(tp, /f_x = lambda x, y: 4\*x\*\*3\*y\*\*2/);   // exact partial derivatives
+  assert.match(tp, /add_scatter3d/);                            // the point sits on the surface
+  // things a 3D graph can't show are listed, not silently dropped
+  assert.match(graphToPython("f\nc1", vars), /# not drawn in 3D: c1/);
 });
 
 test("every \\graph option and graph line runs in Python", { skip: !python && "no plotly" }, () => {

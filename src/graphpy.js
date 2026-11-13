@@ -42,7 +42,120 @@ const levelCurves = (Z, name, levels) => [
 // A boundary/curve in one fixed colour.
 const oneColor = (c) => `colorscale=[[0, ${q(c)}], [1, ${q(c)}]]`;
 
+// ---------- 3D ----------
+
+const is2Var = (name, vars) => { const F = fnOf(name, vars); return !!F && F.vars.length === 2; };
+// A graph is 3D when it has a surface: `surface f`, `tangent plane f at p`,
+// or a function of two variables named on its own (`f`, `f, p`).
+export function graphIs3D(src, vars = new Map()) {
+  return String(src).split("\n").some((raw) => {
+    const line = raw.replace(/(^|\s)#.*$/, "").trim();
+    if (/^(surface|tangent\s+plane)\s/i.test(line)) return true;
+    return splitList(line).some((n) => vars.has(n) && is2Var(n, vars));
+  });
+}
+
+const SURFACE_SCALES = ["Viridis", "Plasma", "Cividis", "Turbo"];
+
+function graphTo3D(src, vars) {
+  const defs = []; const body = []; const notes = [];
+  const defined = new Set();
+  const surfaces = [];      // python names of the functions drawn
+  const points = [];        // { x0, y0, label }
+  let range = { x: null, y: null };
+  const fnDef = (name) => {
+    const F = fnOf(name, vars);
+    const n = pyName(name) || "_" + name;
+    if (!defined.has(name)) { defined.add(name); defs.push(`${n} = lambda ${F.vars.join(", ")}: ${arr(F.x, F.vars)}`); }
+    return { ...F, py: n, name };
+  };
+  const pt = (s) => {
+    const t = String(s).trim();
+    const p = pointOf(t, vars);
+    if (!p) return null;
+    const n = pyName(t);
+    if (n && vars.has(t)) {
+      if (!defined.has(t)) { defined.add(t); defs.push(`${n} = (${r4(p.x)}, ${r4(p.y)})`); }
+      return { ...p, x0: `${n}[0]`, y0: `${n}[1]`, label: t };
+    }
+    return { ...p, x0: r4(p.x), y0: r4(p.y), label: `(${r4(p.x)}, ${r4(p.y)})` };
+  };
+  const surface = (name) => { const F = fnDef(name); if (!surfaces.some((s) => s.py === F.py)) surfaces.push(F); return F; };
+  const planes = [];
+  for (const raw of String(src).split("\n")) {
+    const line = raw.replace(/(^|\s)#.*$/, "").trim();
+    if (!line) continue;
+    let m;
+    try {
+      if ((m = line.match(/^([xy])\s*:\s*(.+?)\s*\.\.\s*(.+)$/))) {
+        const v = (s) => cas.evaluate(fnExpr({ name: "_", kind: "scalar", value: s }, vars).x, {});
+        range[m[1]] = [v(m[2]), v(m[3])];
+        continue;
+      }
+      if (/^equal$/i.test(line)) continue;
+      if ((m = line.match(/^surface\s+(\w+)$/i))) { surface(m[1]); continue; }
+      if ((m = line.match(/^tangent\s+plane\s+(\w+)\s+at\s+(.+)$/i))) {
+        const F = surface(m[1]); const p = pt(m[2]);
+        const [u, w] = F.vars;
+        if (!defined.has(`${F.py}_${u}`)) {
+          defined.add(`${F.py}_${u}`);
+          defs.push(`${F.py}_${u} = lambda ${u}, ${w}: ${arr(cas.diff(F.x, u), F.vars)}`, `${F.py}_${w} = lambda ${u}, ${w}: ${arr(cas.diff(F.x, w), F.vars)}`);
+        }
+        planes.push({ F, p, u, w, label: `tangent plane of ${m[1]} at ${m[2]}` });
+        if (!points.some((q) => q.x0 === p.x0 && q.y0 === p.y0)) points.push({ ...p, F });
+        continue;
+      }
+      const names = splitList(line);
+      if (names.every((n) => vars.has(n))) {
+        for (const n of names) {
+          if (is2Var(n, vars)) surface(n);
+          else if (pointOf(n, vars)) { const p = pt(n); if (!points.some((q) => q.x0 === p.x0 && q.y0 === p.y0)) points.push(p); }
+          else notes.push(`# not drawn in 3D: ${n} (a 3D graph shows surfaces, points on them and tangent planes)`);
+        }
+        continue;
+      }
+      const p = pt(line);
+      if (p) { points.push(p); continue; }
+      notes.push(`# not drawn in 3D: ${line} (a 3D graph shows surfaces, points on them and tangent planes)`);
+    } catch (e) {
+      notes.push(`# can't draw ${line}: ${e.message}`);
+    }
+  }
+  // Window: x:/y: when given, else around the points with at least -2..2.
+  const span = (vals) => {
+    const lo = Math.min(-2, ...vals); const hi = Math.max(2, ...vals);
+    const pad = (hi - lo) * 0.1;
+    return [lo - pad, hi + pad];
+  };
+  const X = range.x || span(points.map((p) => p.x));
+  const Y = range.y || span(points.map((p) => p.y));
+  const out = ["import numpy as np", "import plotly.graph_objects as go", ...notes, ...defs];
+  out.push(`xs, ys = np.linspace(${r4(X[0])}, ${r4(X[1])}, 160), np.linspace(${r4(Y[0])}, ${r4(Y[1])}, 160)`, `X, Y = np.meshgrid(xs, ys)`, `fig = go.Figure()`);
+  surfaces.forEach((F, i) => {
+    const Z = surfaces.length > 1 ? `Z${i + 1}` : "Z";
+    // Huge values at the edges (x^6 ...) are cut off so the shape in the middle shows.
+    out.push(`${Z} = ${F.py}(X, Y)`, `lo, med, top = np.percentile(${Z}, [0, 50, 97])`, `hi = min(top, med + 2*(med - lo)) + 1e-9`);
+    out.push(`fig.add_surface(x=X, y=Y, z=np.minimum(${Z}, hi), customdata=${Z}, colorscale=${q(SURFACE_SCALES[i % SURFACE_SCALES.length])}, cmin=lo, cmax=hi, showscale=False, opacity=0.95, name=${q(F.name)}, contours_z=dict(show=True, usecolormap=True, project_z=True), hovertemplate=${q(`x = %{x:.3g}<br>y = %{y:.3g}<br>${F.name} = %{customdata:.3g}<extra></extra>`)})`);
+  });
+  const first = surfaces[0];
+  for (const pl of planes) {
+    const { F, p } = pl;
+    const P = `${F.py}(${p.x0}, ${p.y0}) + ${F.py}_${pl.u}(${p.x0}, ${p.y0})*(X - ${p.x0}) + ${F.py}_${pl.w}(${p.x0}, ${p.y0})*(Y - ${p.y0})`;
+    out.push(`near = (abs(X - ${p.x0}) <= ${r4((X[1] - X[0]) * 0.12)}) & (abs(Y - ${p.y0}) <= ${r4((Y[1] - Y[0]) * 0.12)})`);
+    out.push(`fig.add_surface(x=X, y=Y, z=np.where(near, ${P}, np.nan), colorscale=[[0, "#e8593c"], [1, "#e8593c"]], showscale=False, opacity=0.6, name=${q(pl.label)}, hoverinfo="skip")`);
+  }
+  for (const p of points) {
+    const F = p.F || first;
+    if (!F) { out.push(`fig.add_scatter3d(x=[${p.x0}], y=[${p.y0}], z=[0], mode="markers+text", text=[${q(p.label)}], marker=dict(size=5, color="black"), name=${q(p.label)})`); continue; }
+    out.push(`fig.add_scatter3d(x=[${p.x0}], y=[${p.y0}], z=[${F.py}(${p.x0}, ${p.y0})], mode="markers+text", text=[${q(p.label)}], marker=dict(size=5, color="black"), name=${q(p.label)})`);
+  }
+  out.push(`fig.update_layout(scene=dict(xaxis_title="x", yaxis_title="y", zaxis_title=${q(surfaces.map((s) => s.name).join(", ") || "z")}, aspectmode="cube"), height=600, margin=dict(l=0, r=0, t=0, b=0))`);
+  out.push("fig.show()");
+  return out.join("\n");
+}
+
 export function graphToPython(src, vars = new Map()) {
+  if (graphIs3D(src, vars)) return graphTo3D(src, vars);
   const win = graphWindow(src, vars);
   const [X0, X1] = win.X; const [Y0, Y1] = win.Y;
   const defs = [];       // f = lambda ..., p = (1, 2)
