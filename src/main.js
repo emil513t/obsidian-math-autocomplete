@@ -28,7 +28,7 @@ const IMO26_REFS = [...IMO26_NUMBERED, ...IMO26_EXTRA];
 import { parseRefQuery, rankRefs, formatRef, kindLabel, refKey, refExcerpt } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
 import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS, fnExpr } from "./vars.js";
-import { parseGraph, drawScene, GRAPH_KEYWORDS } from "./graph.js";
+import { parseGraph, drawScene, GRAPH_KEYWORDS, graphQuery, graphOptions } from "./graph.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
@@ -198,12 +198,13 @@ class GraphSuggest extends EditorSuggest {
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
     const docBefore = editor.getRange({ line: 0, ch: 0 }, cursor);
     if (fenceLanguage(docBefore) !== "graph") return null;
-    const m = before.match(/(?:^|[\s,(])([A-Za-z][\w]*:?)$/) || (before.trim() === "" ? [before, ""] : null);
+    // A plain word, or \word like everywhere else (\region, \tangent, or \ alone).
+    const m = before.match(/(?:^|[\s,(])(\\?)([A-Za-z][\w]*:?)$/) || before.match(/(?:^|[\s,(])(\\)()$/) || (before.trim() === "" ? [before, "", ""] : null);
     if (!m) return null;
     this.vars = parseVars(editor.getValue());
-    const query = m[1];
+    const query = m[2];
     if (!this.getSuggestions({ query }).length) return null;
-    return { start: { line: cursor.line, ch: cursor.ch - query.length }, end: cursor, query };
+    return { start: { line: cursor.line, ch: cursor.ch - query.length - m[1].length }, end: cursor, query };
   }
 
   getSuggestions(ctx) {
@@ -391,6 +392,7 @@ class TemplateSuggest extends EditorSuggest {
     const m = before.match(/(?:^|[\s(>*_[])\\((?:ref|ex|definition|theorem|proposition|lemma|corollary|remark|section)(?:\s[^\\$\n]{0,60})?|[a-zA-Z]+[\w.]*)$/);
     if (!m) return null;
     if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
+    this.plugin.textVars = graphQuery(m[1]) ? parseVars(editor.getValue()) : null;
     if (!this.plugin.textSuggestions(m[1]).length) return null;
     return {
       start: { line: cursor.line, ch: cursor.ch - m[1].length - 1 },
@@ -424,6 +426,14 @@ class TemplateSuggest extends EditorSuggest {
       } else left.createDiv({ cls: "mac-template-snippet", text: r.text });
       return;
     }
+    if (item.type === "graph") {
+      const g = item.g;
+      top.createEl("code", { text: "\\graph" });
+      top.createSpan({ cls: "mac-template-desc", text: g.label });
+      if (g.desc) top.createSpan({ cls: "mac-tag", text: g.desc });
+      left.createDiv({ cls: "mac-template-snippet", text: g.lines.join(" · ") });
+      return;
+    }
     const t = item.t;
     top.createEl("code", { text: "\\" + t.name });
     if (t.desc) top.createSpan({ cls: "mac-template-desc", text: t.desc });
@@ -445,6 +455,16 @@ class TemplateSuggest extends EditorSuggest {
       editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + text.length));
       s.refPicks[refKey(r)] = (s.refPicks[refKey(r)] || 0) + 1;
       this.plugin.saveSettings();
+      return;
+    }
+    if (item.type === "graph") {
+      // The block goes on its own lines; the cursor ends on its last line.
+      const pre = editor.getLine(start.line).slice(0, start.ch).trim() ? "\n" : "";
+      const fence = "`".repeat(3);
+      const text = `${pre}${fence}graph\n${item.g.lines.join("\n")}\n${fence}\n`;
+      editor.replaceRange(text, start, end);
+      const last = start.line + (pre ? 1 : 0) + item.g.lines.length;
+      editor.setCursor({ line: last, ch: editor.getLine(last).length });
       return;
     }
     const t = item.t;
@@ -1174,6 +1194,9 @@ export default class MathAutocompletePlugin extends Plugin {
   textSuggestions(raw) {
     const out = [];
     const word = raw.match(/^[a-zA-Z]+$/) ? raw : null;
+    // \graph, \plot, \draw, \region, \contour ...: graphs from the note's variables.
+    const gq = word ? graphQuery(word) : null;
+    if (gq) for (const g of graphOptions(this.textVars || new Map(), gq)) out.push({ type: "graph", g });
     const rq = this.settings.imo26 ? parseRefQuery(raw) : null;
     // With \def, \thm, ... only templates *named* like that, so the
     // references aren't buried under "(Def 1.10)" description matches.

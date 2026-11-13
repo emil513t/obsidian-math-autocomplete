@@ -412,3 +412,58 @@ export function drawScene(ctx, scene, W, H, theme = {}) {
   }
   return { X, Y, legend };
 }
+
+// ---------- \graph in the note's text: ready-made graphs from the note ----------
+
+const GRAPH_WORDS = ["graph", "plot", "draw", "sketch", "figure", "picture"];
+
+// Does \word ask for graphs? (any prefix of 3+ letters of a graph word, or of
+// one of the options' tags like region / contour / tangent / gradient).
+export function graphQuery(word) {
+  const w = String(word || "").toLowerCase();
+  if (w.length < 3) return null;
+  if (GRAPH_WORDS.some((g) => g.startsWith(w) || w.startsWith(g))) return { all: true, w };
+  if (GRAPH_TAGS.some((t) => t.startsWith(w))) return { all: false, w };
+  return null;
+}
+const GRAPH_TAGS = ["region", "feasible", "contour", "level", "tangent", "gradient", "points", "vector", "line", "segment", "curve", "inequality", "function"];
+
+// The graphs this note can draw, each { label, desc, lines, tags }. Every
+// option is checked with parseGraph, so none of them shows an error.
+export function graphOptions(vars = new Map(), query = { all: true }) {
+  const out = [];
+  const fnVars = (v) => { try { return fnExpr(v, vars).vars.length; } catch (_) { return -1; } };
+  const list = [...vars.values()].filter((v) => !v.error);
+  const fns1 = list.filter((v) => v.kind === "scalar" && fnVars(v) === 1);
+  const fns2 = list.filter((v) => v.kind === "scalar" && fnVars(v) === 2);
+  const pts = list.filter((v) => v.kind === "vector" && Array.isArray(v.value) && v.value.length === 2);
+  const rels = list.filter((v) => v.kind === "relation");
+  const ineqs = rels.filter((v) => isIneq(v.op));
+  const curves = rels.filter((v) => !isIneq(v.op));
+  const names = (vs) => vs.map((v) => v.name);
+  const add = (label, desc, lines, tags) => out.push({ label, desc, lines, tags });
+
+  for (const f of fns1) {
+    add(`graph of ${f.name}`, `y = ${f.name}(x)`, [f.name], ["function", "graph"]);
+    add(`${f.name} with its tangent`, "tangent line at x = 1 (change the 1)", [f.name, `tangent ${f.name} at 1`], ["tangent", "function"]);
+  }
+  for (const f of fns2) {
+    add(`level curves of ${f.name}`, `${f.name}(x, y) = c for several c`, [f.name], ["contour", "level", "function"]);
+    for (const p of pts.slice(0, 3)) add(`level curves of ${f.name} + gradient at ${p.name}`, "the gradient is orthogonal to the level curve", [`contour ${f.name}`, p.name, `gradient ${f.name} at ${p.name}`], ["gradient", "contour", "level"]);
+  }
+  if (ineqs.length) {
+    const ns = names(ineqs).join(", ");
+    add(`feasible region of ${ns}`, "where all the inequalities hold", [`region ${ns}`, ...names(ineqs)], ["region", "feasible", "inequality"]);
+    for (const f of fns2) add(`feasible region + level curves of ${f.name}`, "optimisation: objective over the feasible set", [`region ${ns}`, `contour ${f.name}`, ...names(pts)], ["region", "feasible", "contour", "level"]);
+  }
+  if (curves.length) add(`the curve${curves.length > 1 ? "s" : ""} ${names(curves).join(", ")}`, "equations in x, y drawn implicitly", names(curves), ["curve"]);
+  if (pts.length) add(`the point${pts.length > 1 ? "s" : ""} ${names(pts).join(", ")}`, "", names(pts), ["points"]);
+  if (pts.length >= 2) add(`line through ${pts[0].name} and ${pts[1].name}`, "", [pts[0].name, pts[1].name, `line ${pts[0].name} ${pts[1].name}`], ["line", "segment", "points"]);
+  for (const p of pts.filter((v) => !v.tuple).slice(0, 3)) add(`vector ${p.name}`, "arrow from the origin", [`vector ${p.name}`], ["vector"]);
+  const every = [...names(fns1), ...names(fns2), ...(ineqs.length ? [`region ${names(ineqs).join(", ")}`] : []), ...names(curves), ...names(pts)];
+  if (every.length > 1) add("everything in the note", "all functions, regions, curves and points", every, ["graph"]);
+  add("empty graph", "type the lines yourself (\\ shows the commands)", ["x: -5..5", "y: -5..5"], ["graph"]);
+
+  const ok = out.filter((o) => { try { return parseGraph(o.lines.join("\n"), vars).errors.length === 0; } catch (_) { return false; } });
+  return query.all ? ok : ok.filter((o) => o.tags.some((t) => t.startsWith(query.w)));
+}
