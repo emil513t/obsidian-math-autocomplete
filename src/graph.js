@@ -421,8 +421,9 @@ const GRAPH_WORDS = ["graph", "plot", "draw", "sketch", "figure", "picture"];
 // one of the options' tags like region / contour / tangent / gradient).
 export function graphQuery(word) {
   const w = String(word || "").toLowerCase();
-  if (w.length < 3) return null;
+  if (w.length < 2) return null;
   if (GRAPH_WORDS.some((g) => g.startsWith(w) || w.startsWith(g))) return { all: true, w };
+  if (w.length < 3) return null;
   if (GRAPH_TAGS.some((t) => t.startsWith(w))) return { all: false, w };
   return null;
 }
@@ -433,7 +434,10 @@ const GRAPH_TAGS = ["region", "feasible", "contour", "level", "tangent", "gradie
 export function graphOptions(vars = new Map(), query = { all: true }) {
   const out = [];
   const fnVars = (v) => { try { return fnExpr(v, vars).vars.length; } catch (_) { return -1; } };
-  const list = [...vars.values()].filter((v) => !v.error);
+  // Not the partial derivatives a worked solution writes out ($A_{xy} = ...$):
+  // a name like A_xy where A is another variable of the note.
+  const derived = (v) => v.source === "math" && /^([A-Za-z]+)_/.test(v.name) && vars.has(v.name.match(/^([A-Za-z]+)_/)[1]);
+  const list = [...vars.values()].filter((v) => !v.error && !derived(v));
   const fns1 = list.filter((v) => v.kind === "scalar" && fnVars(v) === 1);
   const fns2 = list.filter((v) => v.kind === "scalar" && fnVars(v) === 2);
   const pts = list.filter((v) => v.kind === "vector" && Array.isArray(v.value) && v.value.length === 2);
