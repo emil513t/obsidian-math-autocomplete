@@ -45,7 +45,9 @@ const EXTRA = [
 ];
 
 const python = (() => {
-  for (const exe of ["C:/Users/emill/AppData/Local/Programs/Python/Python312/python.exe", "python"]) {
+  // Code Suite's python (Python 3.12 user install on Windows) first, then PATH.
+  const local = process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}/Programs/Python/Python312/python.exe` : null;
+  for (const exe of [process.env.PYTHON, local, "python"].filter(Boolean)) {
     const r = spawnSync(exe, ["-I", "-c", "import plotly, numpy"], { encoding: "utf8", timeout: 60000 });
     if (!r.error && r.status === 0) return exe;
   }
