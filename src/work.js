@@ -270,11 +270,11 @@ const HANDLERS = {
     if (!F) return null;
     steps.push({ text: `The function:`, tex: fnTex(F) });
     const g = firstPartials(F, steps);
-    steps.push({ text: `The gradient collects the first partial derivatives (Section 7.5):`, tex: `\\nabla ${nameOf(F)} = ${Mraw(F.vars.map((v) => [sub(nameOf(F), [v])]))} = ${col(g, F.vars)}` });
+    steps.push({ text: `The gradient is the derivative $${nameOf(F)}'$, the $1 \\times ${F.vars.length}$ matrix of the first partial derivatives (Section 7.5):`, tex: `\\nabla ${nameOf(F)} = ${Mraw([F.vars.map((v) => sub(nameOf(F), [v]))])} = ${M([g], F.vars)}` });
     if (p) {
       steps.push({ text: `Plug in $${latexName(p.v.name)} = ${tup(p.xs)}$:`, tex: aligned(atPointLines((i) => sub(nameOf(F), [F.vars[i]]), g, F.vars, p.xs)) });
       const map = Object.fromEntries(F.vars.map((v, i) => [v, p.xs[i]]));
-      steps.push({ text: `So`, tex: `\\nabla ${nameOf(F)}${tup(p.xs)} = ${col(g.map((x) => cas.subs(x, map)))}` });
+      steps.push({ text: `So`, tex: `\\nabla ${nameOf(F)}${tup(p.xs)} = ${M([g.map((x) => cas.subs(x, map))])}` });
     }
     return `gradient of $${nameOf(F)}$`;
   },
@@ -340,7 +340,7 @@ const HANDLERS = {
     const formula = `${z} = ${nameOf(F)}${tup(p.xs)} + ${F.vars.map((v, i) => `${sub(nameOf(F), [v])}${tup(p.xs)}(${v} - ${T(p.xs[i])})`).join(" + ")}`;
     const filled = `${z} = ${T(f0)} + ${F.vars.map((v, i) => `${paren(T(gp[i]))}(${v} - ${paren(T(p.xs[i]))})`).join(" + ")}`;
     const t = cas.add(f0, ...F.vars.map((v, i) => cas.mul(gp[i], cas.sub(cas.sym(v), p.xs[i]))));
-    steps.push({ text: `The tangent ${F.vars.length === 1 ? "line" : "plane"} is the first-order approximation: value plus gradient times the displacement.`, tex: aligned([formula, filled, `${z} = ${T(t, F.vars)}`]) });
+    steps.push({ text: F.vars.length === 1 ? `The tangent line: the value plus $${nameOf(F)}'$ at the point times the displacement, $f(x_0) + f'(x_0)h$ (Definition 6.17).` : `The tangent plane at the point is $z = f(v_0) + Ch$ with $C = f'(v_0)$ the derivative and $h$ the displacement (Definition 7.3).`, tex: aligned([formula, filled, `${z} = ${T(t, F.vars)}`]) });
     return `tangent ${F.vars.length === 1 ? "line" : "plane"} of $${nameOf(F)}$`;
   },
   directional(id, ctx, a, steps) {
@@ -398,12 +398,12 @@ const HANDLERS = {
     const G = find(ctx, "fns", gn) || find(ctx, "rels", gn);
     if (!F || !G) return null;
     const lam = cas.sym("lambda");
-    const L = cas.sub(F.x, cas.mul(lam, G.x));
+    const L = cas.add(F.x, cas.mul(lam, G.x));
     const vars = cas.orderVars(new Set([...F.vars, ...cas.symbols(G.x)]));
-    steps.push({ text: `The Lagrangian subtracts $\\lambda$ times the constraint $${latexName(G.v.name)} = 0$ from the objective (Theorem 7.39):`, tex: `L = ${nameOf(F)} - \\lambda ${latexName(G.v.name)} = ${T(L, [...vars, "lambda"])}` });
+    steps.push({ text: `Introduce the Lagrange multiplier $\\lambda$ and the Lagrangian function, the objective plus $\\lambda$ times the constraint $${latexName(G.v.name)} = 0$ (Section 7.10):`, tex: `L = ${nameOf(F)} + \\lambda ${latexName(G.v.name)} = ${T(L, [...vars, "lambda"])}` });
     const ds = vars.map((v) => diffLine(`\\frac{\\partial L}{\\partial ${v}}`, L, v, [...vars, "lambda"]));
     steps.push({ text: `Differentiate $L$ with respect to each variable (Definition 7.4):`, tex: aligned(ds.map((d) => d.tex)) });
-    steps.push({ text: `Set them to $0$ together with the constraint; solving this system gives the candidates for the constrained extrema:`, tex: `\\begin{cases} ${[...ds.map((d) => `${T(d.d, [...vars, "lambda"])} = 0`), `${T(G.x, vars)} = 0`].join(" \\\\ ")} \\end{cases}` });
+    steps.push({ text: `By Theorem 7.39 a local maximum/minimum gives a critical point of $L$, so set them to $0$ together with the constraint; solving this system gives the candidates:`, tex: `\\begin{cases} ${[...ds.map((d) => `${T(d.d, [...vars, "lambda"])} = 0`), `${T(G.x, vars)} = 0`].join(" \\\\ ")} \\end{cases}` });
     return "Lagrange conditions";
   },
   derivative(id, ctx, a, steps) {
@@ -458,7 +458,7 @@ const HANDLERS = {
     }
     steps.push({ text: `Compute the derivatives up to order ${n} and evaluate them at $${v} = ${T(at)}$:`, tex: aligned(lines) });
     const fact = (k) => (k <= 1 ? 1 : k * fact(k - 1));
-    steps.push({ text: `Insert them in $P_n(${v}) = \\sum_{k=0}^{n} \\frac{f^{(k)}(a)}{k!}(${v} - a)^k$ (Section 6.4):`, tex: `P_{${n}}(${v}) = ${coeffs.map((c, k) => `\\frac{${T(c)}}{${fact(k)}}${k ? `(${v} - ${T(at)})^{${k}}` : ""}`).join(" + ")} = ${cas.taylorTex(F.x, v, at, n)}` });
+    steps.push({ text: `Insert them in the Taylor polynomial of order ${n} about the point $a = ${T(at)}$, $f(a) + f'(a)(${v} - a) + \\frac{f''(a)}{2}(${v} - a)^2 + \\dots + \\frac{f^{(n)}(a)}{n!}(${v} - a)^n$ (Section 6.4):`, tex: `${nameOf(F)}(${T(at)}) + \\dots = ${coeffs.map((c, k) => `\\frac{${T(c)}}{${fact(k)}}${k ? `(${v} - ${T(at)})^{${k}}` : ""}`).join(" + ")} = ${cas.taylorTex(F.x, v, at, n)}` });
     return `Taylor polynomial of $${nameOf(F)}$`;
   },
   evaluate(id, ctx, a, steps) {
@@ -492,7 +492,7 @@ const HANDLERS = {
     const F = find(ctx, "fns", n); if (!F) return null;
     const g = firstPartials(F, steps);
     const H = secondPartials(F, g, steps);
-    steps.push({ text: `For a quadratic form $f(x) = x^\\top A x$ with $A$ symmetric, the Hessian is $2A$, so $A = \\tfrac12 \\nabla^2 f$:`, tex: `A = \\frac{1}{2}${M(H, F.vars)} = ${M(cas.mat.scale(H, cas.num(1, 2)), F.vars)}` });
+    steps.push({ text: `With $H$ the Hessian, $f(v) = v^\\top A v$ for $A = \\tfrac12 H$ (Exercise 8.38 (ii)):`, tex: `A = \\frac{1}{2}${M(H, F.vars)} = ${M(cas.mat.scale(H, cas.num(1, 2)), F.vars)}` });
     return "symmetric matrix of the quadratic form";
   },
   // ----- matrices -----
@@ -714,7 +714,7 @@ const HANDLERS = {
     const [x, y] = id.split(":"); const u = find(ctx, "vecs", x); const w = find(ctx, "vecs", y);
     if (!u || !w) return null;
     const t = cas.sym("t");
-    steps.push({ text: `The line through $u$ and $v$ is $u + t(v - u)$ (Definition 4.12). The direction:`, tex: `v - u = ${col(w.xs)} - ${col(u.xs)} = ${col(w.xs.map((s, i) => cas.sub(s, u.xs[i])))}` });
+    steps.push({ text: `A line is $\\{u + tw \\mid t \\in \\mathbb{R}\\}$ with $w \\neq 0$ (Definition 4.12). Through the points $u$ and $v$ use the direction $w = v - u$:`, tex: `w = v - u = ${col(w.xs)} - ${col(u.xs)} = ${col(w.xs.map((s, i) => cas.sub(s, u.xs[i])))}` });
     steps.push({ text: `So`, tex: `${col(u.xs)} + t${col(w.xs.map((s, i) => cas.sub(s, u.xs[i])))} = ${col(u.xs.map((s, i) => cas.add(s, cas.mul(t, cas.sub(w.xs[i], s)))))}` });
     return "line";
   },

@@ -351,15 +351,15 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "lagrangian", words: "lagrange multiplier constraint kkt", desc: "Lagrangian L = f - λ g (Thm 7.39)", varName: "L",
+    name: "lagrangian", words: "lagrange multiplier constraint kkt", desc: "Lagrangian L = f + λ g (Sec 7.10, Thm 7.39)", varName: "L",
     options: (ctx) => {
       const gs = [...ctx.rels.map((g) => ({ name: g.v.name, x: g.x })), ...ctx.fns.filter((g) => /^[gh]/.test(g.v.name)).map((g) => ({ name: g.v.name, x: g.x }))];
       return [
         ...ctx.fns.filter((f) => !/^[gh]/.test(f.v.name)).flatMap((f) => [
-          ...gs.map((g) => computed(`fg:${f.v.name}:${g.name}`, `${f.v.name} - λ ${g.name}`, () => ({ value: cas.tex(cas.sub(f.x, cas.mul(cas.sym("lambda"), g.x))), formula: `lagrangian(${f.v.name}, ${g.name})` }))),
-          ...(gs.length > 1 ? [computed(`fall:${f.v.name}`, `${f.v.name} - Σ λ_i g_i (all ${gs.length} constraints)`, () => ({ value: cas.tex(cas.sub(f.x, cas.add(...gs.map((g, i) => cas.mul(cas.sym(`lambda_${i + 1}`), g.x))))) }))] : []),
+          ...gs.map((g) => computed(`fg:${f.v.name}:${g.name}`, `${f.v.name} + λ ${g.name}`, () => ({ value: cas.tex(cas.add(f.x, cas.mul(cas.sym("lambda"), g.x))), formula: `lagrangian(${f.v.name}, ${g.name})` }))),
+          ...(gs.length > 1 ? [computed(`fall:${f.v.name}`, `${f.v.name} + Σ λ_i g_i (all ${gs.length} constraints)`, () => ({ value: cas.tex(cas.add(f.x, cas.add(...gs.map((g, i) => cas.mul(cas.sym(`lambda_${i + 1}`), g.x))))) }))] : []),
         ]),
-        { id: "gen", label: "General L(x, λ)", value: r`L(x, \lambda) = f(x) - \lambda g(x)` },
+        { id: "gen", label: "General L(x, λ)", value: r`L(x, \lambda) = f(x) + \lambda g(x)` },
         { id: "kkt", label: "KKT conditions (general)", value: r`\nabla f(x) + \sum_{i} \lambda_i \nabla g_i(x) = 0, \quad \lambda_i \geq 0, \quad \lambda_i g_i(x) = 0` },
       ];
     },

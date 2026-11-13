@@ -675,19 +675,17 @@ $\nabla^2 f = {{Hessian with a}}$. Symmetric reduction gives $D = {{diagonal wit
 
 ## \lagrange — Ch7: Lagrange multipliers (Thm 7.39)
 ### one constraint (Thm 7.39)
-**Optimize** $f({{x, y}}) = {{f}}$ subject to $g({{x, y}}) = {{g}} = 0$. By Theorem 7.39 an extremum satisfies $\nabla f = \lambda \nabla g$, $g = 0$:
-$${{f_x}} = \lambda\,({{g_x}}), \quad {{f_y}} = \lambda\,({{g_y}}), \quad {{g}} = 0$$
+**Optimize** $f({{x, y}}) = {{f}}$ subject to $g({{x, y}}) = {{g}} = 0$. Introduce the Lagrangian $L(x, y, \lambda) = f(x, y) + \lambda g(x, y)$ (Section 7.10). By Theorem 7.39 a local maximum/minimum gives a critical point of $L$, i.e. $\nabla L = 0$:
+$${{f_x}} + \lambda\,({{g_x}}) = 0, \quad {{f_y}} + \lambda\,({{g_y}}) = 0, \quad {{g}} = 0$$
 {{solve the system}}
 Candidates: ${{candidate points}}$ with $f$-values ${{values}}$.
 The constraint set is compact ({{reason}}), so by Theorem 5.84 the max is ${{max}}$ and the min is ${{min}}$.
-### eliminate λ by dividing the equations
-From the first two equations, $\lambda = \frac{ {{f_x}} }{ {{g_x}} } = \frac{ {{f_y}} }{ {{g_y}} }$ (when the denominators are $\neq 0$), so ${{relation between x and y}}$. Substituting in $g = 0$: {{solve}}. (Check separately the cases where a denominator is $0$.)
+### regard λ as a constant: Gaussian elimination in x, y (Ex 7.42)
+Regarding $\lambda$ as a constant, the equations ${{f_x}} + \lambda\,({{g_x}}) = 0$ and ${{f_y}} + \lambda\,({{g_y}}) = 0$ form a system of linear equations in $x$ and $y$. Gaussian elimination (Section 2.3) gives {{equation in λ}}, assuming {{y \neq 0}}; the case {{y = 0}} is handled separately: {{_}}. Substituting in $g = 0$: {{solve}}.
 ### word problem (box, fence, ...)
 **Variables:** ${{variables}}$. **Objective:** ${{f}}$. **Constraint:** ${{g}} = 0$.
-Theorem 7.39: $\nabla f = \lambda \nabla g$ gives {{equations}}; solving: ${{solution}}$.
+Theorem 7.39: the critical points of $L = f + \lambda g$ give {{equations}}; solving: ${{solution}}$.
 **Answer:** {{answer in words}}.
-### also check where ∇g = 0 (Thm 7.39)
-Theorem 7.39 needs $\nabla g \neq 0$; here $\nabla g = 0$ only at ${{points}}$, which {{are not on the constraint set / are added to the candidates}}.
 
 ## \compactopt — Ch7: max/min on a compact set: interior + boundary (Prop 7.46)
 ### interior critical points + each edge + corners (Prop 7.46)
@@ -705,7 +703,7 @@ $C = {{C}}$ is compact and $f = {{f}}$ is continuous, so max and min exist (Theo
 **Max** ${{max}}$ at ${{argmax}}$, **min** ${{min}}$ at ${{argmin}}$.
 ### curved boundary: Lagrange on the boundary (Thm 7.39, Prop 7.46)
 **Interior:** $\nabla f = 0 \iff {{interior critical points}}$ (Proposition 7.46).
-**Boundary** ${{g}} = 0$: Theorem 7.39 gives $\nabla f = \lambda \nabla g$: {{solve}} → candidates ${{boundary candidates}}$.
+**Boundary** ${{g}} = 0$: Theorem 7.39 gives a critical point of $L = f + \lambda g$: {{solve}} → candidates ${{boundary candidates}}$.
 Comparing all values: **max** ${{max}}$, **min** ${{min}}$.
 ### linear objective: optimum at a corner (Sec 4.4)
 $f$ is linear, so $\nabla f \neq 0$ and there are no interior optima (Proposition 7.46); on each edge $f$ is linear too, so the optima are at corners:

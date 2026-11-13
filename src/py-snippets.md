@@ -387,8 +387,10 @@ print("solution set:", sp.linsolve((A, b), *xs))
 @in b vector
 xs = sp.symbols(f'x1:{A.cols + 1}')
 print("exact:", sp.linsolve((A, b), *xs))
-if A.is_square and A.det() != 0:
+try:
     print("numeric:", np.linalg.solve(np.array(A, dtype=float), np.array(b, dtype=float).ravel()))
+except (np.linalg.LinAlgError, ValueError):
+    print("numeric: no unique solution (see the exact solution set above)")
 
 ## \polydiv — polynomial division p = q·k + r (Thm 2.22)
 @uses sympy
@@ -530,28 +532,29 @@ print("B =", B.tolist())
 print("D = diag", D)
 print("check B^T A B = D:", B.T * A * B == sp.diag(*D))
 print("A is", definiteness(D), "(B invertible: Propositions 3.43, 8.11)")
-### numbers
-@uses sympy
+### numbers: only the answer (symmetric reduction, Sec 8.6)
+@uses sympy symred
 @in A matrix
 print("symmetric:", A == A.T)
-print("positive definite:", A.is_positive_definite)
-print("positive semidefinite:", A.is_positive_semidefinite)
-print("negative definite:", A.is_negative_definite)
-print("negative semidefinite:", A.is_negative_semidefinite)
-print("indefinite:", A.is_indefinite)
+D, B = symmetric_reduction(A)
+print("D = diag", D, "  check B^T A B = D:", B.T * A * B == sp.diag(*D))
+print("A is", definiteness(D), "(Propositions 3.43, 8.11)")
 ### entries with parameters: for which values is it positive (semi)definite? (Ex 8.37)
-@uses sympy itertools
+@uses sympy symred
 @ex matrix with parameters := [[2, 1, a], [1, 1, 1], [a, 1, b]]
 a, b, c, d, t = sp.symbols('a b c d t', real=True)
 A = sp.Matrix({{matrix with parameters}})
-n_ = A.rows
-lead = [sp.factor(A[:k, :k].det()) for k in range(1, n_ + 1)]
-print("positive definite  <=>", " and ".join(f"({m}) > 0" for m in lead))
-allm = sorted({sp.factor(A.extract(list(I), list(I)).det()) for k in range(1, n_ + 1) for I in itertools.combinations(range(n_), k)}, key=str)
-print("positive semidefinite  <=>", " and ".join(f"({m}) >= 0" for m in allm))
+D, B = symmetric_reduction(A, verbose=True)
+D = [sp.factor(sp.simplify(x)) for x in D]
+print("D = diag", D, "  check B^T A B = D:", sp.simplify(B.T * A * B - sp.diag(*D)) == sp.zeros(A.rows))
+used = [x for x in D[:-1] if x.free_symbols]
+if used:
+    print("the reduction divided by", used, "-- assuming these are not 0; put the values making them 0 into A and reduce again")
+print("positive definite  <=>", " and ".join(f"({x}) > 0" for x in D), "  (Propositions 3.43, 8.11)")
+print("positive semidefinite  <=>", " and ".join(f"({x}) >= 0" for x in D))
 free = sorted(A.free_symbols, key=str)
 if len(free) == 1:
-    print("solved:", sp.reduce_inequalities([m > 0 for m in lead], free))
+    print("solved:", sp.reduce_inequalities([x > 0 for x in D], free))
 
 ## \kernelperceptron — kernel perceptron on labeled points (Ex 9.19)
 @uses numpy
@@ -1151,7 +1154,7 @@ print("equal:", sp.simplify(sp.diff(fx, Y_) - sp.diff(fy, X_)) == 0)
 @in g expr
 @sym x y
 lam = sp.symbols('lam')
-L = f - lam*g
+L = f + lam*g
 eqs = [sp.diff(L, s) for s in $SYMS] + [g]
 cands = [p for p in solve_all(eqs, $SYMS + [lam]) if all(sp.N(v).is_real for v in p.values())]
 for p in cands:
@@ -1170,7 +1173,7 @@ cands = []
 for p in solve_all([sp.diff(f, s) for s in $SYMS], $SYMS):
     if all(v.is_real for v in p.values()) and g.subs(p) <= 0:
         cands.append(("interior", p))
-for p in solve_all([sp.diff(f - lam*g, s) for s in $SYMS] + [g], $SYMS + [lam]):
+for p in solve_all([sp.diff(f + lam*g, s) for s in $SYMS] + [g], $SYMS + [lam]):
     if all(p[s].is_real for s in $SYMS):
         cands.append(("boundary", {s: p[s] for s in $SYMS}))
 vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
@@ -1189,7 +1192,7 @@ for p in solve_all([sp.diff(f, s) for s in V], V):
     if all(c.is_real for c in p.values()) and inside(p):
         cands.append(("interior", p))
 for g_ in gs:
-    for p in solve_all([sp.diff(f - lam*g_, s) for s in V] + [g_], V + [lam]):
+    for p in solve_all([sp.diff(f + lam*g_, s) for s in V] + [g_], V + [lam]):
         q = {s: p[s] for s in V if s in p}
         if len(q) == len(V) and all(c.is_real for c in q.values()) and inside(q):
             cands.append((f"edge {g_} = 0", q))

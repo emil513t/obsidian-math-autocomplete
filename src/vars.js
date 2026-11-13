@@ -955,7 +955,7 @@ function apply(name, args, ctx) {
       const parts = [x];
       args.slice(1).forEach((g, i) => {
         const gx = g.t === "fn" ? fnExpr(g.v, ctx.scope).x : S(i + 1);
-        parts.push(cas.neg(cas.mul(cas.sym(args.length > 2 ? `lambda_${i + 1}` : "lambda"), gx)));
+        parts.push(cas.mul(cas.sym(args.length > 2 ? `lambda_${i + 1}` : "lambda"), gx));
       });
       return { t: "s", x: cas.add(...parts) };
     }
