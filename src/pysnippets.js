@@ -19,7 +19,7 @@ import { asciiMath } from "./cas.js";
 
 const IMPORTS = {
   // The book's symmetric reduction B^T A B = D with every step, and the
-  // definiteness read off D (Section 8.6, Theorem 8.31).
+  // definiteness read off D (Section 8.7, Theorem 8.31).
   symred: `${SYMRED}
 
 ${DEFINITENESS}

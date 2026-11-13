@@ -303,8 +303,8 @@ $${{LHS}} = {{step}} = {{RHS}}.$$ $\blacksquare$
 **Proof.** $({{M}})^\top = {{transpose using Proposition 3.35}} = {{M}}$, so ${{M}}$ is symmetric. $\blacksquare$
 
 ## \posdef — Ch3/8: decide (semi-)definiteness of a symmetric matrix
-### symmetric reduction to a diagonal matrix (Sec 8.6, Thm 8.31, Prop 3.43)
-**Is** $A = {{A}}$ positive definite? Symmetric reduction (Section 8.6, Theorem 8.31): write $I$ on top of $A$; every column operation is done on the whole extended matrix, and the same row operation on the lower half.
+### symmetric reduction to a diagonal matrix (Sec 8.7, Thm 8.31, Prop 3.43)
+**Is** $A = {{A}}$ positive definite? Symmetric reduction (Section 8.7, Theorem 8.31): write $I$ on top of $A$; every column operation is done on the whole extended matrix, and the same row operation on the lower half.
 {{row op + column op}}
 This gives $B^\top A B = D = {{diagonal matrix}}$ with $B$ invertible.
 By Proposition 3.43 / 8.11 $A$ is {{positive definite / positive semi-definite / indefinite}}, since the diagonal entries of $D$ are {{all > 0 / all ≥ 0 / of both signs}}.

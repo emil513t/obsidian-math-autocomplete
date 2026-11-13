@@ -126,7 +126,7 @@ const extTex = (B, A) => {
 };
 const isSym = (A) => A.every((r, i) => r.every((x, j) => cas.equal(x, A[j][i])));
 
-// Symmetric reduction with every operation written out (Section 8.6,
+// Symmetric reduction with every operation written out (Section 8.7,
 // Theorem 8.31), then the definiteness read off D. Returns the definiteness
 // (or null). name: LaTeX name of the matrix; pointName: the critical point
 // when this is a Hessian there (then the Hessian test conclusion is added).
@@ -134,7 +134,7 @@ function symReductionSteps(A0, steps, { name = "A", pointName = null, hessian = 
   const R = symmetricReduction(A0);
   if (!R) return null;
   const n = A0.length;
-  steps.push({ text: `Symmetric reduction (Section 8.6, Theorem 8.31). Write the identity matrix on top of $${name}$. Every column operation is done on the whole extended matrix, the matching row operation only on the lower half. When the lower half is diagonal it is $D$, the upper half is $B$, and $B^\\top ${name} B = D$.`, tex: extTex(A0.map((_, i) => A0.map((_, j) => (i === j ? cas.ONE : cas.ZERO))), A0) });
+  steps.push({ text: `Symmetric reduction (Section 8.7, Theorem 8.31). Write the identity matrix on top of $${name}$. Every column operation is done on the whole extended matrix, the matching row operation only on the lower half. When the lower half is diagonal it is $D$, the upper half is $B$, and $B^\\top ${name} B = D$.`, tex: extTex(A0.map((_, i) => A0.map((_, j) => (i === j ? cas.ONE : cas.ZERO))), A0) });
   if (!R.ops.length) steps.push({ text: `The lower half is already diagonal, so no operations are needed.` });
   for (let k = 0; k < R.ops.length; k++) {
     const o = R.ops[k];

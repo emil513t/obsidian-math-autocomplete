@@ -523,7 +523,7 @@ if A.is_diagonalizable():
     print("P =", P.tolist(), " D =", D.tolist())
 
 ## \posdef — (semi)definiteness of a symmetric matrix, also with parameters (Ch3/8)
-### symmetric reduction B^T A B = D, every step (book method, Sec 8.6)
+### symmetric reduction B^T A B = D, every step (book method, Sec 8.7)
 @uses sympy symred
 @in A matrix
 print("symmetric:", A == A.T)
@@ -532,7 +532,7 @@ print("B =", B.tolist())
 print("D = diag", D)
 print("check B^T A B = D:", B.T * A * B == sp.diag(*D))
 print("A is", definiteness(D), "(B invertible: Propositions 3.43, 8.11)")
-### numbers: only the answer (symmetric reduction, Sec 8.6)
+### numbers: only the answer (symmetric reduction, Sec 8.7)
 @uses sympy symred
 @in A matrix
 print("symmetric:", A == A.T)
@@ -626,7 +626,7 @@ print("where f'' < 0:", sp.solveset(f2 < 0, $SYM, sp.S.Reals), " (empty set mean
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
-print("symmetric reduction B^T H B = D (Sec 8.6), D = diag", [sp.factor(d) for d in D])
+print("symmetric reduction B^T H B = D (Sec 8.7), D = diag", [sp.factor(d) for d in D])
 if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
 print("every diagonal entry of D >= 0 everywhere, so H is positive semidefinite and f convex (Prop 3.43, Thm 8.25):", holds_everywhere(D, strict=False))
 
@@ -637,7 +637,7 @@ print("every diagonal entry of D >= 0 everywhere, so H is positive semidefinite 
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
-print("symmetric reduction B^T H B = D (Sec 8.6), D = diag", [sp.factor(d) for d in D])
+print("symmetric reduction B^T H B = D (Sec 8.7), D = diag", [sp.factor(d) for d in D])
 if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
 print("every diagonal entry of D > 0 everywhere, so H is positive definite and f strictly convex (Prop 8.11, Thm 8.25):", holds_everywhere(D, strict=True))
 
@@ -1128,7 +1128,7 @@ print("H =", H.tolist())
 Hp = H.subs(dict(zip($SYMS, {{point}})))
 print("H(point) =", Hp.tolist())
 D, B = symmetric_reduction(Hp)
-print("symmetric reduction B^T H B = D (Sec 8.6): D = diag", D, "->", definiteness(D))
+print("symmetric reduction B^T H B = D (Sec 8.7): D = diag", D, "->", definiteness(D))
 ### for all x: positive (semi)definite everywhere?
 @uses sympy symred
 @in f expr
@@ -1137,7 +1137,7 @@ H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 d_ = [sp.factor(d) for d in D]
-print("symmetric reduction B^T H B = D (Sec 8.6): D = diag", d_)
+print("symmetric reduction B^T H B = D (Sec 8.7): D = diag", d_)
 def where_not_positive(m_):
     if not m_.free_symbols:
         return sp.S.EmptySet if m_ > 0 else sp.S.Reals

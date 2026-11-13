@@ -62,7 +62,7 @@ export function diagonalOf(M) {
   return r ? r.D : null;
 }
 
-// The book's schematic procedure (Section 8.6, Theorem 8.31) on the extended
+// The book's schematic procedure (Section 8.7, Theorem 8.31) on the extended
 // matrix (I over A): every column operation hits the whole extended matrix,
 // the matching row operation only the lower half. The upper half ends as B,
 // the lower half as D, and B^T A B = D. Returns { D, B, A: final lower half,

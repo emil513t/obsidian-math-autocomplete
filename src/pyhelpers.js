@@ -1,12 +1,12 @@
 // Python helper functions shared by the evidence blocks (evidence.js) and the
 // python snippets (pysnippets.js @uses symred).
 
-// The book's symmetric reduction (Section 8.6, Theorem 8.31; same steps as
+// The book's symmetric reduction (Section 8.7, Theorem 8.31; same steps as
 // textlink.symmetricReduction): identity on top of A, column operations on the
 // whole extended matrix, row operations on the lower half. verbose=True
 // prints every operation. Returns (diagonal of D, B) with B^T A B = D.
 export const SYMRED = `def symmetric_reduction(A, verbose=False):
-    """B and the diagonal of D with B^T A B = D (IMO26 Section 8.6, Theorem 8.31)."""
+    """B and the diagonal of D with B^T A B = D (IMO26 Section 8.7, Theorem 8.31)."""
     A = sp.Matrix(A)
     n = A.rows
     ext = sp.eye(n).col_join(A)  # B on top, A below

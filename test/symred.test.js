@@ -1,4 +1,4 @@
-// Symmetric reduction B^T A B = D (Section 8.6, Theorem 8.31): the JS version
+// Symmetric reduction B^T A B = D (Section 8.7, Theorem 8.31): the JS version
 // (math worked solutions) and the Python version (\posdef route, evidence
 // blocks) must give the same D, the check must hold, and zeros on the
 // diagonal must give the semidefinite cases instead of "undecided".

@@ -428,7 +428,7 @@ export const OBJECTS = [
   scalarOp("determinant", "det |A|", "determinant det A", "d", (M) => cas.mat.det(M), "det", { square: true }),
   {
     name: "definiteness", words: "positive definite semidefinite negative indefinite posdef symmetric reduction diagonal B^T A B = D",
-    desc: "definiteness of a symmetric matrix by symmetric reduction Bᵀ A B = D (Sec 8.6, Thm 8.31)", varName: "D",
+    desc: "definiteness of a symmetric matrix by symmetric reduction Bᵀ A B = D (Sec 8.7, Thm 8.31)", varName: "D",
     options: (ctx) => {
       const defOf = (M) => {
         if (M.length !== M[0].length) throw new Error(`the matrix is ${M.length}×${M[0].length}; definiteness only exists for square symmetric matrices.`);
