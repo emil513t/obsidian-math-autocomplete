@@ -83,7 +83,7 @@ function secondPartials(F, g, steps) {
   }));
   steps.push({ text: `Differentiate each first partial derivative once more to get the second-order partial derivatives.`, tex: aligned(lines) });
   const sym = H.every((r, i) => r.every((x, j) => cas.equal(x, H[j][i])));
-  if (F.vars.length > 1 && sym) steps.push({ text: `The mixed partials agree (${F.vars.length === 2 ? `$${sub(nameOf(F), F.vars)} = ${sub(nameOf(F), [...F.vars].reverse())}$` : "the matrix is symmetric"}), as Clairaut's theorem (Theorem 7.11) says they must; that is a good check.` });
+  if (F.vars.length > 1 && sym) steps.push({ text: `The second order partial derivatives agree (${F.vars.length === 2 ? `$${sub(nameOf(F), F.vars)} = ${sub(nameOf(F), [...F.vars].reverse())}$` : "the matrix is symmetric"}), as Clairaut's theorem (Theorem 7.11) says they must; that is a good check.` });
   return H;
 }
 
@@ -200,7 +200,7 @@ function gaussJordan(A0, steps, { split = null, label = "" } = {}) {
       const coef = cas.equal(m, cas.ONE) ? "" : `${paren(T(m))} `;
       ops.push(`R_{${k + 1}} \\to R_{${k + 1}} ${neg ? "+" : "-"} ${coef}R_{${r + 1}}`);
     }
-    if (ops.length) steps.push({ text: `Pivot in column ${lead + 1}: ${ops.length === 1 ? "one row operation" : "row operations"} $${ops.join(",\\ ")}$.`, tex: show() });
+    if (ops.length) steps.push({ text: `Column ${lead + 1}: ${ops.length === 1 ? "one row operation" : "row operations"} $${ops.join(",\\ ")}$.`, tex: show() });
     lead++;
   }
   return A;
@@ -303,14 +303,14 @@ const HANDLERS = {
     steps.push({ text: `The Laplacian is their sum:`, tex: `\\Delta ${nameOf(F)} = ${F.vars.map((v) => sub(nameOf(F), [v, v])).join(" + ")} = ${T(cas.add(...lines.map((l) => l.d)), F.vars)}` });
     return `Laplacian of $${nameOf(F)}$`;
   },
-  jacobian(id, ctx, a, steps) {
+  matrixderivative(id, ctx, a, steps) {
     let fs, names;
     if (id.startsWith("s:")) {
       const F = find(ctx, "fns", id.slice(2)); if (!F) return null;
       steps.push({ text: `The function:`, tex: fnTex(F) });
       const g = firstPartials(F, steps);
-      steps.push({ text: `For one function the Jacobian is the $1 \\times ${F.vars.length}$ row of its partial derivatives (Proposition 7.9), i.e. the gradient written as a row:`, tex: `J = ${M([g], F.vars)}` });
-      return `Jacobian of $${nameOf(F)}$`;
+      steps.push({ text: `For a function into $\\mathbb{R}$ the (matrix) derivative is the $1 \\times ${F.vars.length}$ matrix of its partial derivatives (Definition 7.3, Proposition 7.9):`, tex: `${nameOf(F)}' = ${M([g], F.vars)}` });
+      return `matrix derivative of $${nameOf(F)}$`;
     }
     if (id.startsWith("F:")) { const F = find(ctx, "vecs", id.slice(2)); if (!F) return null; fs = F.xs; names = fs.map((_, i) => `${latexName(F.v.name)}_{${i + 1}}`); }
     else if (id === "fns") { const list = ctx.fns.filter((f) => f.vars.length); fs = list.map((f) => f.x); names = list.map((f) => latexName(f.v.name)); }
@@ -320,9 +320,9 @@ const HANDLERS = {
     steps.push({ text: `The component functions:`, tex: aligned(fs.map((f, i) => `${names[i]} = ${T(f, vars)}`)) });
     const lines = [];
     const J = fs.map((f, i) => vars.map((v) => { const l = diffLine(`\\frac{\\partial ${names[i]}}{\\partial ${v}}`, f, v, vars); lines.push(l.tex); return l.d; }));
-    steps.push({ text: `Every entry of the Jacobian is a partial derivative: row $i$ is the gradient of the $i$-th component (Proposition 7.9).`, tex: aligned(lines) });
-    steps.push({ text: `Collect them in the matrix:`, tex: `J = ${M(J, vars)}` });
-    return "Jacobian";
+    steps.push({ text: `Entry $(i, j)$ of the matrix derivative is $\\frac{\\partial f_i}{\\partial x_j}$ (Proposition 7.9):`, tex: aligned(lines) });
+    steps.push({ text: `Collect them in the $${fs.length}\\times${vars.length}$ matrix (Definition 7.3):`, tex: `f' = ${M(J, vars)}` });
+    return "matrix derivative";
   },
   tangentplane(id, ctx, a, steps) {
     let F, p;
@@ -497,39 +497,38 @@ const HANDLERS = {
   },
   // ----- matrices -----
   inverse(id, ctx, a, steps) {
-    if (id.startsWith("os:")) {
-      const m = find(ctx, "mats", id.slice(3)); if (!m) return null;
-      const A = m.M; const At = cas.mat.transpose(A);
-      const right = A.length < A[0].length;
-      const N = latexName(m.v.name);
-      const G2 = right ? `${N}${N}^\\top` : `${N}^\\top ${N}`;
-      const formula = right ? `${N}^\\top (${G2})^{-1}` : `(${G2})^{-1} ${N}^\\top`;
-      steps.push({ text: `$${N}$ is ${A.length}×${A[0].length}. Only square matrices have an inverse, so there is no $${N}^{-1}$. A non-square matrix of full rank has a one-sided inverse instead: a **${right ? "right" : "left"} inverse** $X$ with $${right ? `${N}X = I` : `X${N} = I`}$, given by $X = ${formula}$.` });
-      steps.push({ text: `The transpose:`, tex: `${N}^\\top = ${M(At)}` });
-      const G = right ? cas.mat.mul(A, At) : cas.mat.mul(At, A);
-      steps.push({ text: `The square ${G.length}×${G.length} matrix $${G2}$ (Definition 3.4):`, tex: `${G2} = ${M(G)}` });
-      const d = detSteps(G, steps, `\\det(${G2})`);
-      if (cas.isZero(d)) { steps.push({ text: `That determinant is $0$ (the rank is not full), so there is no one-sided inverse either.` }); return "one-sided inverse"; }
-      const Gi = cas.mat.inverse(G);
-      steps.push({ text: `Its inverse:`, tex: `(${G2})^{-1} = ${M(Gi)}` });
-      const X = right ? cas.mat.mul(At, Gi) : cas.mat.mul(Gi, At);
-      steps.push({ text: `Multiply:`, tex: `X = ${right ? `${N}^\\top (${N}${N}^\\top)^{-1}` : `(${N}^\\top ${N})^{-1} ${N}^\\top`} = ${M(X)}` });
-      steps.push({ text: `Check:`, tex: `${right ? `${latexName(m.v.name)}X` : `X${latexName(m.v.name)}`} = ${M(right ? cas.mat.mul(A, X) : cas.mat.mul(X, A))}` });
-      return `one-sided inverse of $${latexName(m.v.name)}$`;
-    }
-    const A = id === "own" ? parseMat(a.A) : find(ctx, "mats", id.split(":")[1])?.M;
+    // Only square matrices have an inverse (Section 3.5); the book has no
+    // one-sided inverses, so a non-square matrix just gets that answer.
+    const own = id.startsWith("os:") ? find(ctx, "mats", id.slice(3))?.M : null;
+    const A = own || (id === "own" ? parseMat(a.A) : find(ctx, "mats", id.split(":")[1])?.M);
     if (!A) return null;
-    if (A.length !== A[0].length) { steps.push({ text: `This matrix is ${A.length}×${A[0].length}. Only square matrices have an inverse.` }); return "inverse"; }
+    if (A.length !== A[0].length) { steps.push({ text: `This matrix is ${A.length}×${A[0].length}. Only square matrices can be invertible (Section 3.5), so there is no inverse.` }); return "inverse"; }
     const n = A.length;
-    steps.push({ text: `First check that the inverse exists: the determinant must not be $0$.` });
-    const d = detSteps(A, steps);
-    if (cas.isZero(d)) { steps.push({ text: `The determinant is $0$, so there is no inverse.` }); return "inverse"; }
+    if (n === 2) {
+      // Exercise 3.26: D = ad - bc.
+      const [[a11, b12], [c21, d22]] = A;
+      const D = cas.sub(cas.mul(a11, d22), cas.mul(b12, c21));
+      steps.push({ text: `For a $2\\times2$ matrix $A = \\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$ put $D = ad - bc$. If $D \\neq 0$, then $A$ is invertible with $A^{-1} = \\frac{1}{D}\\begin{pmatrix} d & -b \\\\ -c & a \\end{pmatrix}$ (Exercise 3.26).`, tex: `D = ${paren(T(a11))} \\cdot ${paren(T(d22))} - ${paren(T(b12))} \\cdot ${paren(T(c21))} = ${T(D)}` });
+      if (cas.isZero(D)) {
+        steps.push({ text: `$D = 0$, so the formula does not apply. Solving $AB = I$ below shows that there is no inverse.` });
+      } else {
+        steps.push({ text: `$D \\neq 0$, so:`, tex: `A^{-1} = \\frac{1}{${T(D)}}${M([[d22, cas.neg(b12)], [cas.neg(c21), a11]])} = ${M(cas.mat.inverse(A))}` });
+        const I2 = cas.mat.mul(A, cas.mat.inverse(A));
+        steps.push({ text: `Check: $AA^{-1} = I$.`, tex: `A A^{-1} = ${M(I2)}` });
+        return "inverse";
+      }
+    }
     if (cas.mat.isConst(A)) {
-      steps.push({ text: `Row reduce $(A \\mid I)$; when the left side becomes $I$ the right side is $A^{-1}$ (Gauss-Jordan elimination, Section 2.3).` });
+      steps.push({ text: `Finding the inverse is a matter of solving systems of linear equations: the $j$-th column $B_j$ of $B = A^{-1}$ must satisfy $AB_j = I_j$ (Section 3.5.1). Solve all ${n} systems at once by Gauss elimination on $(A \\mid I)$; when the left side has become $I$, the right side is $A^{-1}$.` });
       const R = gaussJordan(A.map((r, i) => [...r, ...cas.mat.identity(n)[i]]), steps, { split: n, label: " with $(A \\mid I)$" });
+      const left = R.map((r) => r.slice(0, n));
+      if (!left.every((r, i) => r.every((x, j) => cas.equal(x, i === j ? cas.ONE : cas.ZERO)))) {
+        steps.push({ text: `The left side cannot be made into $I$: one of the systems $AB_j = I_j$ has no solution, so $A$ is **not invertible**.` });
+        return "inverse";
+      }
       steps.push({ text: `The right half is the inverse:`, tex: `A^{-1} = ${M(R.map((r) => r.slice(n)))}` });
     } else {
-      steps.push({ text: `With symbols in the matrix use $A^{-1} = \\frac{1}{\\det A}\\operatorname{adj}(A)$:`, tex: `A^{-1} = \\frac{1}{${T(d)}}${M(cas.mat.adjugate(A))} = ${M(cas.mat.inverse(A))}` });
+      steps.push({ text: `Solve the systems $AB_j = I_j$ for the columns of $B = A^{-1}$ (Section 3.5.1):`, tex: `A^{-1} = ${M(cas.mat.inverse(A))}` });
     }
     const I = cas.mat.mul(A, cas.mat.inverse(A));
     steps.push({ text: `Check: $AA^{-1} = I$.`, tex: `A A^{-1} = ${M(I)}` });
@@ -703,13 +702,11 @@ const HANDLERS = {
       steps.push({ text: `So`, tex: `\\cos\\theta = \\frac{${T(dot(u, w))}}{\\sqrt{${T(dot(u, u))}}\\sqrt{${T(dot(w, w))}}} = ${T(cas.mul(dot(u, w), cas.pow(cas.mul(dot(u, u), dot(w, w)), cas.Q(-1, 2))))}` });
     }
     if (kind === "p") {
+      // Exercise 5.6: find λ with u − λv and v orthogonal.
       const c = cas.div(dot(u, w), dot(w, w));
-      steps.push({ text: `Projection of $u$ onto $v$: $\\frac{u\\cdot v}{v\\cdot v} v$.`, tex: aligned([dotLine(u, w, latexName(x), latexName(y)), dotLine(w, w, latexName(y), latexName(y)), `\\operatorname{proj} = \\frac{${T(dot(u, w))}}{${T(dot(w, w))}}${col(w.xs)} = ${col(w.xs.map((s) => cas.mul(c, s)))}`]) });
-    }
-    if (kind === "x") {
-      const [a1, a2, a3] = u.xs; const [b1, b2, b3] = w.xs;
-      const e = (p, q, r2, s) => `${paren(T(p))} \\cdot ${paren(T(q))} - ${paren(T(r2))} \\cdot ${paren(T(s))}`;
-      steps.push({ text: `Cross product, coordinate by coordinate:`, tex: `${latexName(x)} \\times ${latexName(y)} = ${Mraw([[e(a2, b3, a3, b2)], [e(a3, b1, a1, b3)], [e(a1, b2, a2, b1)]])} = ${col([cas.sub(cas.mul(a2, b3), cas.mul(a3, b2)), cas.sub(cas.mul(a3, b1), cas.mul(a1, b3)), cas.sub(cas.mul(a1, b2), cas.mul(a2, b1))])}` });
+      const U = latexName(x); const V = latexName(y);
+      steps.push({ text: `We want $\\lambda$ with $${U} - \\lambda ${V}$ and $${V}$ orthogonal (Exercise 5.6): $(${U} - \\lambda ${V}) \\cdot ${V} = 0 \\iff \\lambda = \\frac{${U} \\cdot ${V}}{${V} \\cdot ${V}}$ (Definition 5.1).`, tex: aligned([dotLine(u, w, U, V), dotLine(w, w, V, V), `\\lambda = \\frac{${T(dot(u, w))}}{${T(dot(w, w))}} = ${T(c)}`]) });
+      steps.push({ text: `Then`, tex: `${U} - \\lambda ${V} = ${col(u.xs.map((s, i) => cas.sub(s, cas.mul(c, w.xs[i]))))}` });
     }
     return "vectors";
   },
@@ -738,14 +735,14 @@ HANDLERS.gauss = (id, ctx, a, steps) => {
     steps.push({ text: `Equation (${g.bad + 1}) has become $0 = ${cas.tex(g.rows[g.bad][vars.length])}$, which is false. So the system has **no solution**.` });
     return "Gauss elimination";
   }
-  steps.push({ text: `The system is now in echelon form: each equation has fewer unknowns than the one above. Solve from the bottom up (back substitution), inserting the values already found.` });
+  steps.push({ text: `The system is now reduced: each equation has fewer unknowns than the one above (as in Example 2.9). Solve the last equation first, then insert the values found into the equations above.` });
   for (const b of g.back) {
     const lines = [b.eq];
     if (b.plugged) lines.push(`${b.plugged} \\quad (${b.known.join(",\\ ")})`);
     lines.push(`${b.var} = ${cas.tex(b.value)}`);
     steps.push({ tex: `\\begin{aligned} ${lines.map((l, i) => (i ? `\\Rightarrow\\ & ${l}` : `& ${l}`)).join(" \\\\ ")} \\end{aligned}` });
   }
-  if (g.kind === "infinite") steps.push({ text: `${g.free.map((f) => `$${f}$`).join(", ")} ${g.free.length === 1 ? "has" : "have"} no pivot, so ${g.free.length === 1 ? "it is a free parameter" : "they are free parameters"}: there are **infinitely many solutions**, one for each value of ${g.free.map((f) => `$${cas.tex(g.params[f])}$`).join(", ")}.`, tex: vars.map((v, i) => `${v} = ${cas.tex(g.values[i])}`).join(",\\quad ") });
+  if (g.kind === "infinite") steps.push({ text: `${g.free.map((f) => `$${f}$`).join(", ")} ${g.free.length === 1 ? "is" : "are"} not isolated in any equation, so ${g.free.length === 1 ? "it can be chosen freely" : "they can be chosen freely"}: there are **infinitely many solutions**, one for each value of ${g.free.map((f) => `$${cas.tex(g.params[f])}$`).join(", ")}.`, tex: vars.map((v, i) => `${v} = ${cas.tex(g.values[i])}`).join(",\\quad ") });
   else {
     steps.push({ text: `The **only** solution (every step was an equivalence $\\iff$):`, tex: `(${vars.join(", ")}) = (${g.values.map((x) => cas.tex(x)).join(", ")})` });
     const check = rows.map((r) => `${cas.tex(cas.add(...vars.map((_, j) => cas.mul(r[j], g.values[j]))))} = ${cas.tex(r[vars.length])}`);

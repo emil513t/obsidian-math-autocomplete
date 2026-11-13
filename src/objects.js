@@ -180,8 +180,6 @@ export function sizedMatrixOptions(env = "pmatrix") {
     { id: "size-id", label: "Identity n×n (asks n)", ask: nAsk(), build: (a) => ({ value: matTex(range(int(a.n, 3)).map((i) => range(int(a.n, 3)).map((j) => (i === j ? "1" : "0"))), env) }) },
     { id: "size-diag", label: "Diagonal (asks the entries)", ask: [{ key: "d", label: "Diagonal entries", hint: "1, 2, 3" }], build: (a) => { const d = a.d.split(",").map((s) => s.trim()); return { value: matTex(d.map((x, i) => d.map((_, j) => (i === j ? x : "0"))), env) }; } },
     { id: "size-sym", label: "Symmetric n×n: a_{ij} = a_{ji} (asks n)", ask: nAsk(), build: (a) => ({ value: matTex(range(int(a.n, 3)).map((i) => range(int(a.n, 3)).map((j) => sub("a", Math.min(i, j) + 1, Math.max(i, j) + 1))), env) }) },
-    { id: "size-upper", label: "Upper triangular n×n (asks n)", ask: nAsk(), build: (a) => ({ value: matTex(range(int(a.n, 3)).map((i) => range(int(a.n, 3)).map((j) => (j >= i ? sub("a", i + 1, j + 1) : "0"))), env) }) },
-    { id: "size-lower", label: "Lower triangular n×n (asks n)", ask: nAsk(), build: (a) => ({ value: matTex(range(int(a.n, 3)).map((i) => range(int(a.n, 3)).map((j) => (j <= i ? sub("a", i + 1, j + 1) : "0"))), env) }) },
     { id: "size-col", label: "Column vector with n entries (asks n)", ask: [...nAsk(), { key: "a", label: "Letter", value: "x" }], build: (a) => ({ value: matTex(range(int(a.n, 3)).map((i) => [sub(a.a || "x", i + 1)]), env) }) },
     { id: "size-row", label: "Row vector with n entries (asks n)", ask: [...nAsk(), { key: "a", label: "Letter", value: "x" }], build: (a) => ({ value: matTex([range(int(a.n, 3)).map((i) => sub(a.a || "x", i + 1))], env) }) },
     { id: "size-unit", label: "Unit vector e_i in R^n (asks n, i)", ask: [...nAsk(), { key: "i", label: "Index i", value: "1" }], build: (a) => ({ value: matTex(range(int(a.n, 3)).map((k) => [k + 1 === int(a.i, 1) ? "1" : "0"]), env) }) },
@@ -233,19 +231,19 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "jacobian", words: "jacobi derivative matrix vector function DF", desc: "Jacobian matrix of a vector function (Prop 7.9)", varName: "J",
+    name: "matrixderivative", words: "matrix derivative vector function partial derivatives differentiable", desc: "matrix derivative f′ of a vector function (Def 7.3, Prop 7.9)", varName: "C",
     options: (ctx) => [
-      ...ctx.vecs.filter((F) => F.xs.some((x) => cas.symbols(x).size)).map((F) => computed(`F:${F.v.name}`, `Jacobian of ${F.v.name} = ${tuple(F.xs)}`, () => {
+      ...ctx.vecs.filter((F) => F.xs.some((x) => cas.symbols(x).size)).map((F) => computed(`F:${F.v.name}`, `Matrix derivative of ${F.v.name} = ${tuple(F.xs)}`, () => {
         const vars = cas.orderVars(new Set(F.xs.flatMap((x) => [...cas.symbols(x)])));
-        return { value: texM(cas.jacobian(F.xs, vars), vars), formula: `jacobian(${F.v.name})` };
+        return { value: texM(cas.jacobian(F.xs, vars), vars), formula: `matrixderivative(${F.v.name})` };
       })),
-      ...(sameVars(ctx).length >= 2 ? [computed("fns", `Jacobian of (${sameVars(ctx).map((f) => f.v.name).join(", ")})`, () => {
+      ...(sameVars(ctx).length >= 2 ? [computed("fns", `Matrix derivative of (${sameVars(ctx).map((f) => f.v.name).join(", ")})`, () => {
         const fs = sameVars(ctx);
         const vars = cas.orderVars(new Set(fs.flatMap((f) => f.vars)));
         return { value: texM(cas.jacobian(fs.map((f) => f.x), vars), vars) };
       })] : []),
-      // One function: its Jacobian is the 1×n row of partial derivatives.
-      ...ctx.fns.map((f) => computed(`s:${f.v.name}`, `Jacobian of ${fname(f)} alone (1×${f.vars.length} row)`, () => ({ value: texM([cas.gradient(f.x, f.vars)], f.vars), formula: `jacobian(${f.v.name})` }))),
+      // One function into R: its matrix derivative is the 1×n matrix of partial derivatives.
+      ...ctx.fns.map((f) => computed(`s:${f.v.name}`, `Matrix derivative of ${fname(f)} (1×${f.vars.length})`, () => ({ value: texM([cas.gradient(f.x, f.vars)], f.vars), formula: `matrixderivative(${f.v.name})` }))),
       { id: "genmn", label: "General m×n: ∂f_i/∂x_j (asks m, n)", ask: sizeAsk("2", "2"), build: (a) => ({ value: matTex(range(int(a.m, 2)).map((i) => xi(int(a.n, 2)).map((x) => partialTex(`f_{${i + 1}}`, x)))) }) },
       { id: "own", label: "Of functions you type", ask: [{ key: "F", label: "Functions, separated by ;", hint: "x^2 y; x + \\sin y" }], build: (a) => {
         const fs = a.F.split(";").map((s) => cas.parse(s));
@@ -255,7 +253,7 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "partial", words: "partial derivative fx fxy mixed", desc: "partial derivatives ∂f/∂x, ∂²f/∂x∂y", varName: "fx",
+    name: "partial", words: "partial derivative fx fxy second order", desc: "partial derivatives ∂f/∂x, ∂²f/∂x∂y", varName: "fx",
     options: (ctx) => [
       ...ctx.fns.flatMap((f) => [
         ...f.vars.map((v) => computed(`f:${f.v.name}:${v}`, `∂${f.v.name}/∂${v}`, () => ({ value: cas.tex(cas.diff(f.x, v), f.vars), formula: `diff(${f.v.name}, ${v})` }), { name: `${f.v.name}_${v}` })),
@@ -273,7 +271,7 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "tangentplane", words: "tangent plane linear approximation linearization", desc: "tangent plane z = f(a) + ∇f(a)·(x - a)", varName: "T",
+    name: "tangentplane", words: "tangent plane differentiable surface", desc: "tangent plane z = f(a) + ∇f(a)·(x - a)", varName: "T",
     options: (ctx) => [
       ...ctx.fns.flatMap((f) => pointsFor(ctx, f.vars.length).map((p) => computed(`fp:${f.v.name}:${p.v.name}`, `Tangent of ${fname(f)} at ${p.v.name} = ${tuple(p.xs)}`, () => {
         const m = at(f, p);
@@ -306,7 +304,7 @@ export const OBJECTS = [
     [{ id: "gen", label: "General ∇f(p)·v", value: r`\nabla f(p) \cdot v` }]),
   },
   {
-    name: "critical", words: "critical point stationary gradient zero equations", desc: "the equations ∇f = 0 for critical points (Def 7.15)", varName: "eqs",
+    name: "critical", words: "critical point gradient zero equations", desc: "the equations ∇f = 0 for critical points (Def 7.15)", varName: "eqs",
     options: (ctx) => [
       ...ctx.fns.map((f) => computed(`f:${f.v.name}`, f.vars.length > 1 ? `∇${fname(f)} = 0` : `${f.v.name}' = 0`, () => {
         const g = cas.gradient(f.x, f.vars).map((e) => `${cas.tex(e, f.vars)} = 0`);
@@ -387,7 +385,7 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "taylor", words: "taylor polynomial maclaurin series expansion", desc: "Taylor polynomial of degree n at a (Sec 6.4)", varName: "P",
+    name: "taylor", words: "taylor polynomial degree", desc: "Taylor polynomial of degree n at a (Sec 6.4)", varName: "P",
     options: (ctx) => [
       ...ctx.fns.filter((f) => f.vars.length === 1).map((f) => ({ id: `f:${f.v.name}`, label: `Of ${fname(f)} (asks a, n)`, ask: [{ key: "a", label: "Around a", value: "0" }, { key: "n", label: "Degree n", value: "3" }], build: (a) => ({ value: cas.taylorTex(f.x, f.vars[0], cas.parse(a.a || "0"), int(a.n, 3, 0, 15)), formula: `taylor(${f.v.name}, ${a.a || 0}, ${int(a.n, 3, 0, 15)})` }) })),
       // Several variables: the second-order Taylor polynomial at a point.
@@ -429,12 +427,12 @@ export const OBJECTS = [
   matOp("symmetricpart", "symmetric part (A + A^T)/2", "symmetric part ½(A + Aᵀ)", "S", (M) => cas.mat.scale(cas.mat.add(M, cas.mat.transpose(M)), cas.num(1, 2)), "symmetric", { square: true }),
   scalarOp("determinant", "det |A|", "determinant det A", "d", (M) => cas.mat.det(M), "det", { square: true }),
   {
-    name: "definiteness", words: "positive definite semidefinite negative indefinite posdef symmetric reduction congruent diagonal B^T A B = D",
+    name: "definiteness", words: "positive definite semidefinite negative indefinite posdef symmetric reduction diagonal B^T A B = D",
     desc: "definiteness of a symmetric matrix by symmetric reduction Bᵀ A B = D (Sec 8.6, Thm 8.31)", varName: "D",
     options: (ctx) => {
       const defOf = (M) => {
         if (M.length !== M[0].length) throw new Error(`the matrix is ${M.length}×${M[0].length}; definiteness only exists for square symmetric matrices.`);
-        if (!M.every((r, i) => r.every((x, j) => cas.equal(x, M[j][i])))) throw new Error("the matrix is not symmetric, and definiteness (Sec 3.7) is only defined for symmetric matrices. Use its symmetric part ½(A + Aᵀ): same quadratic form.");
+        if (!M.every((r, i) => r.every((x, j) => cas.equal(x, M[j][i])))) throw new Error("the matrix is not symmetric, and definiteness (Sec 3.7) is only defined for symmetric matrices.");
         const R = symmetricReduction(M);
         if (!R) throw new Error("the entries must be numbers for symmetric reduction.");
         const d = definiteness(R.D);
@@ -488,7 +486,7 @@ export const OBJECTS = [
     },
   },
   {
-    name: "matpower", words: "power A^k A^n markov", desc: "matrix power Aᵏ", varName: "P",
+    name: "matpower", words: "power powers A^k A^n stochastic", desc: "powers Aᵏ = A·A·…·A", varName: "P",
     options: (ctx) => square(ctx).map((m) => ({ id: `A:${m.v.name}`, label: `${m.v.name}^k (asks k)`, ask: [{ key: "k", label: "k", value: "2" }], build: (a) => ({ value: texM(cas.mat.power(m.M, int(a.k, 2, -10, 50))), formula: `${m.v.name}^{${int(a.k, 2, -10, 50)}}` }) })).concat(notSquare(ctx, "a matrix power Aᵏ")),
   },
   {
@@ -517,7 +515,7 @@ export const OBJECTS = [
     ],
   },
   {
-    name: "gauss", words: "gauss elimination gaussian solve linear system equations back substitution eliminate", desc: "solve a linear system by Gauss elimination + back substitution (Sec 2.3)", varName: "sol",
+    name: "gauss", words: "gauss elimination solve system linear equations isolate insert eliminate", desc: "solve a system of linear equations by Gauss elimination (Sec 2.3)", varName: "sol",
     options: (ctx) => [
       ...gaussSources(ctx).map((s) => computed(`gs:${s.id}`, `Solve ${s.label}`, () => ({ value: gaussAnswer(s.rows, s.vars) }))),
       { id: "own", label: "Equations you type (or variable names)", ask: [{ key: "e", label: "Equations, separated by ;", hint: "2x + y + z = 7; x + 2y + z = 8; x + y + 2z = 9" }], build: (a) => {
@@ -548,7 +546,7 @@ export const OBJECTS = [
     },
   },
   {
-    name: "convexity", words: "convex strictly convex convexity concave positive definite second derivative test", desc: "is f convex / strictly convex? decided and proved (Cor 6.55, Thm 6.54, Thm 8.25)", varName: "c",
+    name: "convexity", words: "convex strictly convex convexity positive definite second derivative", desc: "is f convex / strictly convex? decided and proved (Cor 6.55, Thm 6.54, Thm 8.25)", varName: "c",
     options: (ctx) => ctx.fns.map((f) => computed(`f:${f.v.name}`, `Is ${fname(f)} (strictly) convex?`, () => ({ value: convexityProof(f, []) })))
       .concat([askFunction("own", "A function you type (or a variable name)", ({ x, vars }) => ({ value: convexityProof({ v: { name: "f" }, x, vars }, []) }))]),
   },
@@ -583,13 +581,10 @@ export const OBJECTS = [
             const nb = cas.add(...b.xs.map((x) => cas.mul(x, x)));
             return { value: cas.tex(cas.mul(dot, cas.pow(cas.mul(na, nb), cas.Q(-1, 2)))) };
           }));
-          out.push(computed(`p:${a.v.name}:${b.v.name}`, `projection of ${a.v.name} onto ${b.v.name}`, () => {
+          // Exercise 5.6: the λ that makes u − λv and v orthogonal.
+          out.push(computed(`p:${a.v.name}:${b.v.name}`, `λ with ${a.v.name} − λ${b.v.name} orthogonal to ${b.v.name} (Ex 5.6)`, () => {
             const c = cas.div(cas.add(...a.xs.map((x, i) => cas.mul(x, b.xs[i]))), cas.add(...b.xs.map((x) => cas.mul(x, x))));
-            return { value: texCol(b.xs.map((x) => cas.mul(c, x))), formula: `proj(${a.v.name}, ${b.v.name})` };
-          }));
-          if (a.xs.length === 3) out.push(computed(`x:${a.v.name}:${b.v.name}`, `${a.v.name} × ${b.v.name} (cross product)`, () => {
-            const [a1, a2, a3] = a.xs; const [b1, b2, b3] = b.xs;
-            return { value: texCol([cas.sub(cas.mul(a2, b3), cas.mul(a3, b2)), cas.sub(cas.mul(a3, b1), cas.mul(a1, b3)), cas.sub(cas.mul(a1, b2), cas.mul(a2, b1))]), formula: `cross(${a.v.name}, ${b.v.name})` };
+            return { value: `\\lambda = ${cas.tex(c)}` };
           }));
         }
       }
@@ -749,7 +744,7 @@ export function gaussSources(ctx) {
     out.push({ id: `Ab:${a.v.name}:${b.v.name}`, label: `${a.v.name}x = ${b.v.name}`, rows: a.M.map((r, i) => [...r, b.M[i][0]]), vars: xs(a.M[0].length) });
   }
   for (const a of ctx.mats) if (a.M[0].length >= 2 && a.M.every((r) => r.every((x) => cas.symbols(x).size === 0))) {
-    out.push({ id: `aug:${a.v.name}`, label: `${a.v.name} as an augmented matrix [A | b]`, rows: a.M.map((r) => [...r]), vars: xs(a.M[0].length - 1) });
+    out.push({ id: `aug:${a.v.name}`, label: `${a.v.name} as a system (last column = right-hand side)`, rows: a.M.map((r) => [...r]), vars: xs(a.M[0].length - 1) });
   }
   return out;
 }

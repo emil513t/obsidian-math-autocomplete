@@ -17,7 +17,7 @@ c3 = y \ge 0
 k = x^2 + y^2 = 4` + "\n```\n";
 
 test("graph words trigger, others don't", () => {
-  for (const w of ["gr", "graph", "gra", "plot", "draw", "sketch", "region", "contour", "tangent", "gradient", "feasible"]) assert.ok(graphQuery(w), w);
+  for (const w of ["gr", "graph", "gra", "plot", "draw", "sketch", "region", "level", "tangent", "gradient", "feasible"]) assert.ok(graphQuery(w), w);
   for (const w of ["frac", "in", "induction", "def"]) assert.equal(graphQuery(w), null, w);
 });
 

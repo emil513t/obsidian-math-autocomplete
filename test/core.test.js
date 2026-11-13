@@ -22,7 +22,8 @@ test("python snippets use the note's variables", async () => {
   const hess = all.find((s) => s.name === "hessian").all[0];
   const { text, used } = buildPySnippet(hess, { vars });
   assert.deepEqual(used, [{ input: "f", var: "f" }]);
-  assert.ok(text.startsWith("import sympy as sp\nx, y = sp.symbols('x y')\nf = x**2 + x*y + 3*y**2\n"), text);
+  assert.ok(text.startsWith("import sympy as sp\n"), text);
+  assert.ok(text.includes("x, y = sp.symbols('x y')\nf = x**2 + x*y + 3*y**2\n"), text);
   assert.ok(text.includes("sp.hessian(f, [x, y])"));
 
   // Already defined above in the same block: nothing is repeated.
@@ -44,10 +45,10 @@ test("python snippets use the note's variables", async () => {
   const q = snippetQuestions(grad, { vars: three });
   assert.deepEqual(q.syms, ["x", "y", "z"]);
   assert.deepEqual(q.questions.map((x) => [x.key, x.value, x.from]), [
-    ["f", "x^2 + yz + sin(z)", "f"], ["point", "[1, 1, 1]", null], ["direction", "[1, 0, 0]", null]]);
+    ["f", "x^2 + yz + sin(z)", "f"], ["point", "[1, 1, 1]", null]]);
   const filled = buildPySnippet(grad, { vars: three, answers: { f: "x^2 + yz + sin(z)", point: "(1, 2, \\frac{1}{2})", direction: "[0, 1, 0]" } }).text;
   assert.ok(!filled.includes("{{"), filled);
-  assert.ok(filled.includes("[1, 2, sp.Rational(1, 2)]") && filled.includes("sp.Matrix([0, 1, 0])"), filled);
+  assert.ok(filled.includes("[1, 2, sp.Rational(1, 2)]"), filled);
   // Typed f with no vars block: its symbols come from what was typed.
   const typed = buildPySnippet(grad, { answers: { f: "a^2 b + e^{c}", point: "[1, 1, 1]", direction: "[1, 0, 0]" } });
   assert.deepEqual(typed.syms, ["a", "b", "c"]);

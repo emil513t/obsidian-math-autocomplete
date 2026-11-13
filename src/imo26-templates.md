@@ -35,9 +35,9 @@ The last two columns agree in every row, so ${{P}} \equiv {{Q}}$ (Definition 1.1
 ### equivalence by rewriting with known equivalences (Def 1.18)
 **Claim.** ${{P}} \equiv {{Q}}$.
 $${{P}} \equiv {{step 1}} \equiv {{step 2}} \equiv {{Q}}$$
-using {{De Morgan / p ⇒ q ≡ ¬p ∨ q / p ⇔ q ≡ (p ⇒ q) ∧ (q ⇒ p) (Definition 1.18)}}. $\blacksquare$
-### tautology: true in every row (Def 1.10)
-${{proposition}}$ is a **tautology**: in its truth table (Definition 1.10) the last column is t in every row:
+using {{¬(p ∧ q) ≡ ¬p ∨ ¬q (Exercise 1.20) / p ⇔ q ≡ (p ⇒ q) ∧ (q ⇒ p) (Definition 1.18)}}. $\blacksquare$
+### true in every row (Def 1.10)
+${{proposition}}$ is **always true**: in its truth table (Definition 1.10) the last column is t in every row:
 {{table}}
 $\blacksquare$
 
@@ -66,7 +66,7 @@ ${{A}} \neq {{B}}$ (Definition 1.27): ${{element}} \in {{A}}$ because {{reason}}
 **Proof.** Let $x \in {{A}}$, i.e. {{what membership in A means}}.
 {{argument}}
 So $x \in {{B}}$. Since $x$ was arbitrary, ${{A}} \subseteq {{B}}$. $\blacksquare$
-### not a subset: counterexample
+### not a subset: an element of A outside B
 ${{A}} \not\subseteq {{B}}$: ${{element}} \in {{A}}$ since {{reason}}, but ${{element}} \notin {{B}}$ since {{reason}}.
 
 ## \setbuilder — Ch1: list the elements of a set-builder set / set operations
@@ -85,7 +85,7 @@ $S = \{ ({{variables}}) \in {{universe}} \mid {{conditions}} \}$, since a point 
 **Proof.** Let $x, y \in {{domain}}$ with $f(x) = f(y)$, i.e. ${{f(x) = f(y) written out}}$.
 {{algebra}}
 So $x = y$, and $f$ is injective (Definition 1.106). $\blacksquare$
-### contrapositive: x ≠ y implies f(x) ≠ f(y) (Def 1.106)
+### x ≠ y implies f(x) ≠ f(y) (Def 1.106, Ex 1.20)
 **Proof.** Let $x, y \in {{domain}}$ with $x \neq y$, say $x < y$. Then {{f(x) < f(y), e.g. because f is strictly increasing}}, so $f(x) \neq f(y)$. Hence $f$ is injective (Definition 1.106). $\blacksquare$
 ### strictly increasing, via the derivative (Prop 6.43, Def 1.106)
 **Proof.** $f'(x) = {{f'}} > 0$ on ${{domain}}$, so $f$ is strictly increasing (Proposition 6.43, Definition 6.41). If $x \neq y$, say $x < y$, then $f(x) < f(y)$, so $f(x) \neq f(y)$. Hence $f$ is injective (Definition 1.106). $\blacksquare$
@@ -203,28 +203,28 @@ Everything before it is fine; from this step on the argument proves nothing.
 ### division by zero
 **The mistake:** going from ${{before}}$ to ${{after}}$ divides by ${{expression}}$, which is $0$ because {{reason}}. Division by $0$ is not allowed, so the conclusion does not follow.
 ### ⇐ used where only ⇒ holds (Def 1.18)
-**The mistake:** the argument writes ${{A}} \iff {{B}}$, but only ${{A}} \Rightarrow {{B}}$ holds: {{counterexample to ⇐}} (Definition 1.18). So the chain cannot be read backwards.
+**The mistake:** the argument writes ${{A}} \iff {{B}}$, but only ${{A}} \Rightarrow {{B}}$ holds: {{an example where ⇐ fails}} (Definition 1.18). So the chain cannot be read backwards.
 ### induction step fails for a small n (Thm 1.86)
 **The mistake:** the induction step from $n$ to $n+1$ uses {{assumption, e.g. two overlapping groups}}, which fails for $n = {{n}}$. So the chain $p(1) \Rightarrow p(2) \Rightarrow \cdots$ breaks there and Theorem 1.86 does not apply.
 
 ## \gauss — Ch2: solve a linear system by Gauss elimination (Sec 2.3)
 ### unique solution (Thm 2.8)
-**Solve** with Gauss elimination (Section 2.3; row operations keep the solutions, Theorem 2.8). Augmented matrix:
-$$\left(\begin{array}{ccc|c} {{augmented matrix rows}} \end{array}\right)$$
+**Solve** with Gauss elimination (Section 2.3: multiplying an equation by a number and adding it to another keeps the solutions, Theorem 2.8). The system, with the right-hand sides after the bar:
+$$\left(\begin{array}{ccc|c} {{system rows}} \end{array}\right)$$
 $R_2 \leftarrow R_2 - {{c}} R_1$, $R_3 \leftarrow R_3 - {{c}} R_1$:
 $$\left(\begin{array}{ccc|c} {{after step 1}} \end{array}\right)$$
 $R_3 \leftarrow R_3 - {{c}} R_2$:
-$$\left(\begin{array}{ccc|c} {{echelon form}} \end{array}\right)$$
-Back substitution: {{x3, then x2, then x1}}.
+$$\left(\begin{array}{ccc|c} {{reduced system}} \end{array}\right)$$
+Solve the last equation and insert into the ones above: {{x3, then x2, then x1}}.
 **Solution:** $({{x1}}, {{x2}}, {{x3}})$. Check: {{check in the original equations}}.
-### infinitely many solutions: free variable (Thm 2.8)
+### infinitely many solutions (Thm 2.8)
 After elimination (Theorem 2.8) the system reduces to
-$$\left(\begin{array}{ccc|c} {{echelon form}} \end{array}\right)$$
-so ${{free variable}}$ is free. Expressing the others in terms of ${{free variable}} = t$: ${{x = ..., y = ...}}$.
+$$\left(\begin{array}{ccc|c} {{reduced system}} \end{array}\right)$$
+so ${{free variable}}$ can be chosen freely. Expressing the others in terms of ${{free variable}} = t$: ${{x = ..., y = ...}}$.
 **All solutions:** $\{ {{solution vector in terms of t}} \mid t \in \mathbb{R} \}$.
-### no solutions: contradictory row (Thm 2.8)
+### no solutions: an impossible equation (Thm 2.8)
 After elimination (Theorem 2.8):
-$$\left(\begin{array}{ccc|c} {{echelon form}} \end{array}\right)$$
+$$\left(\begin{array}{ccc|c} {{reduced system}} \end{array}\right)$$
 The last row says $0 = {{nonzero}}$, which is impossible, so the system has **no solutions**.
 ### word problem: set up the system first
 **Unknowns:** ${{unknowns}}$ = {{what they mean}}.
@@ -278,8 +278,8 @@ $A^2 = {{A^2}}$, $A^3 = {{A^3}}$, so (by induction, Theorem 1.86) $A^k = {{A^k}}
 By Proposition 3.17, $(A + B)^2 = A^2 + AB + BA + B^2$. This equals $A^2 + 2AB + B^2$ iff $AB = BA$; for $A = {{A}}$, $B = {{B}}$: $AB = {{AB}} \neq {{BA}} = BA$.
 
 ## \matinv — Ch3: inverse matrices
-### row reduce (A | I) (Def 3.24, Sec 3.5.1)
-**Inverse of** $A = {{A}}$: row reduce $(A \mid I)$ to $(I \mid A^{-1})$ (Section 3.5.1):
+### Gauss elimination on (A | I) (Def 3.24, Sec 3.5.1)
+**Inverse of** $A = {{A}}$: the columns $B_j$ of $A^{-1}$ solve $AB_j = I_j$ (Section 3.5.1). Solve them all at once by Gauss elimination on $(A \mid I)$ until it is $(I \mid A^{-1})$:
 $$\left(\begin{array}{ccc|ccc} {{A | I}} \end{array}\right) \to {{steps}} \to \left(\begin{array}{ccc|ccc} {{I | A inverse}} \end{array}\right)$$
 So $A^{-1} = {{A inverse}}$. Check: $AA^{-1} = I$ (Definition 3.24).
 ### 2x2 formula (Ex 3.26)
@@ -415,10 +415,10 @@ What is left is ${{bounds on z}}$, so the optimal value is ${{optimum}}$, attain
 ### bounded set via projections (Ex 5.38)
 Eliminating ${{y}}$ shows the $x$-values of $S$ lie in $[{{a}}, {{b}}]$; eliminating ${{x}}$ shows the $y$-values lie in $[{{c}}, {{d}}]$. So $S \subseteq B(0, R)$ for $R = {{R}}$, i.e. $S$ is bounded (Definition 5.33).
 
-## \projection — Ch5: dot products, orthogonality, projections
-### orthogonal projection onto a line (Ex 5.6-5.7, Prop 5.15)
+## \orthogonal — Ch5: dot products, angles, orthogonal vectors
+### u − λv orthogonal to v (Ex 5.6-5.7, Prop 5.15)
 We want $\lambda$ with $(u - \lambda v) \perp v$: $(u - \lambda v) \cdot v = 0 \iff \lambda = \frac{u \cdot v}{v \cdot v} = {{lambda}}$.
-With $u = {{u}}$, $v = {{v}}$: $\lambda v = {{projection}}$, and by Pythagoras (Proposition 5.15) this minimizes $|u - \lambda v|$; the minimal distance is ${{distance}}$.
+With $u = {{u}}$, $v = {{v}}$: $\lambda v = {{lambda v}}$, and by Pythagoras (Proposition 5.15) this minimizes $|u - \lambda v|$; the minimal distance is ${{distance}}$.
 ### angle / cosine similarity (Def 5.1, Thm 5.24)
 $u \cdot v = {{dot}}$, $|u| = {{norm u}}$, $|v| = {{norm v}}$, so $\cos\theta = \frac{u \cdot v}{|u||v|} = {{cos}}$ (Definition 5.1), which lies in $[-1, 1]$ by Theorem 5.24.
 ### orthogonal vectors (Def 5.1)
@@ -492,7 +492,7 @@ $S^\circ$ is open, and $S$ is open iff $S = S^\circ$ (Exercise 5.59): {{argument
 ### cancel the factor that vanishes (Def 5.62)
 $$\lim_{x \to {{a}}} {{expression}} = \lim_{x \to {{a}}} {{simplified}} = {{value}}$$
 The simplification is valid for $x \neq {{a}}$, which is all the limit looks at (Definition 5.62).
-### epsilon-delta proof (Def 5.62, Remark 5.61)
+### ε–δ proof (Def 5.62, Remark 5.61)
 **Proof.** Let $\varepsilon > 0$. Choose $\delta = {{delta}}$. If $0 < |x - {{a}}| < \delta$, then
 $$|{{f(x)}} - {{L}}| = {{rewrite}} \le {{bound}} < \varepsilon.$$
 Hence $\lim_{x \to {{a}}} {{f(x)}} = {{L}}$ (Definition 5.62). $\blacksquare$
@@ -506,7 +506,7 @@ ${{f}}$ is continuous at ${{a}}$ ({{reason}}), so $\lim_{x \to {{a}}} {{f}} = f(
 $f({{variables}}) = {{f}}$ is built from the projections (continuous, Lemma 5.72) and constants using $+$, $\cdot$ and division by a non-zero function (Proposition 5.75) and composition (Proposition 5.74). So $f$ is continuous.
 ### polynomials and known functions (Remark 5.77, Remark 5.79)
 $f$ is a polynomial (continuous by Remark 5.77){{ composed with sin / e^x, continuous by Remark 5.79 and Proposition 5.74}}, hence continuous.
-### epsilon-delta from scratch (Def 5.62, Def 5.65)
+### ε–δ from the definition (Def 5.62, Def 5.65)
 **Proof.** Let $v$ and $\varepsilon > 0$ be given. Choose $\delta = {{delta}}$. If $|u - v| < \delta$, then $|f(u) - f(v)| = {{rewrite}} \le {{bound}} < \varepsilon$. So $f$ is continuous at $v$ (Definition 5.65). $\blacksquare$
 ### differentiable implies continuous (Prop 6.22)
 $f$ is differentiable ({{reason}}), hence continuous (Proposition 6.22).
@@ -582,8 +582,8 @@ At ${{x0}}$: $f'({{x0}}) = \dots = f^{(n)}({{x0}}) = 0$ and $f^{(n+1)}({{x0}}) =
 $f' < 0$ on $({{a}}, {{x0}})$ and $f' > 0$ on $({{x0}}, {{b}})$, so $f$ decreases then increases (Proposition 6.43) and ${{x0}}$ is a local minimum.
 ### convex function: critical point is the global min (Thm 6.13)
 $f$ is convex ({{reason}}), and $f'({{x0}}) = 0$. For a differentiable convex function the critical point is a global minimum (Theorem 6.61 with $f'(x_0) = 0$, Theorem 6.13).
-### global max/min on [a, b]: compare critical points and endpoints (Thm 5.84)
-$f$ is continuous on the compact $[{{a}}, {{b}}]$, so max and min exist (Theorem 5.84) and lie at critical points or endpoints (Lemma 6.37):
+### global max/min on [a, b]: compare the critical points with a and b (Thm 5.84)
+$f$ is continuous on the compact $[{{a}}, {{b}}]$, so max and min exist (Theorem 5.84) and lie at critical points or at $a$ or $b$ (Lemma 6.37):
 
 | $x$ | $f(x)$ |
 |---|---|
@@ -602,7 +602,7 @@ $$P_{ {{n}} }(x) = \sum_{k=0}^{ {{n}} } \frac{f^{(k)}({{x0}})}{k!}(x - {{x0}})^k
 ### pattern in the derivatives (e.g. sin, cos, e^x)
 The derivatives at ${{x0}}$ repeat as ${{pattern}}$, so only the {{even / odd}} terms survive: $P(x) = {{polynomial}}$.
 
-## \monotone — Ch6: increasing / decreasing (Def 6.41)
+## \increasing — Ch6: increasing / decreasing (Def 6.41)
 ### sign of f' (Prop 6.43)
 $f'(x) = {{f'}}$ {{≥ 0 / > 0}} for all $x \in {{interval}}$, so $f$ is {{increasing / strictly increasing}} on ${{interval}}$ (Proposition 6.43).
 ### from the definition (Def 6.41)
@@ -633,7 +633,7 @@ They agree, as Theorem 7.11 predicts.
 ### descent direction (Lemma 7.17)
 $\nabla f(v_0) = {{gradient}}$ and $u = {{u}}$ give $\nabla f(v_0)\,u = {{value}} < 0$, so $f(v_0 + tu) < f(v_0)$ for small $t > 0$ (Lemma 7.17).
 
-## \jacobian — Ch7: matrix derivative of a vector function (Prop 7.9)
+## \matrixderivative — Ch7: matrix derivative of a vector function (Prop 7.9)
 ### matrix of partial derivatives (Prop 7.9)
 $f({{x, y}}) = ({{f1}}, {{f2}})$. By Proposition 7.9 the derivative is the matrix of partial derivatives:
 $$f'({{x, y}}) = \begin{pmatrix} \partial f_1/\partial x & \partial f_1/\partial y \\ \partial f_2/\partial x & \partial f_2/\partial y \end{pmatrix} = {{matrix}}$$

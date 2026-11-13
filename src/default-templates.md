@@ -26,8 +26,8 @@ So {{Theorem X.Y}} gives {{conclusion}}, which is {{claim}}. $\blacksquare$
 **Proof by contradiction.** Assume {{the claim is false}}.
 {{derivation}}
 This contradicts {{known fact}}. Hence {{claim}}. $\blacksquare$
-### contrapositive
-**Proof (contrapositive).** We show: if {{not B}}, then {{not A}}.
+### show: not B implies not A (Ex 1.20)
+**Proof.** Since $(p \Rightarrow q) \equiv (\neg q \Rightarrow \neg p)$ (Exercise 1.20), we show: if {{not B}}, then {{not A}}.
 {{argument}}
 So {{not A}}, which proves: if {{A}}, then {{B}}. $\blacksquare$
 ### by cases
@@ -68,10 +68,10 @@ using {{rules / Definition X.Y}}. $\blacksquare$
 **Show that** {{statement}}.
 
 **Solution.** Compute both sides: {{LHS computation}} and {{RHS computation}}. They agree, so {{statement}}. $\blacksquare$
-### show it is false (counterexample)
+### show it is false (an example where it fails)
 **Claim:** {{statement}} — this is **false** in general.
 
-**Counterexample:** {{example}}. Then {{what holds}}, but {{what fails}}.
+**Example where it fails:** {{example}}. Then {{what holds}}, but {{what fails}}.
 
 ## \induction — proof by induction on n
 **Proof by induction on $n$.** Let $P(n)$ be the statement: {{statement}}.

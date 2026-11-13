@@ -586,7 +586,7 @@ export function displayName(v) {
 // ---------- computed variables: H = hessian(f), Ai = A^{-1}, ... ----------
 
 const DERIVED_FNS = {
-  hessian: "hessian", hess: "hessian", grad: "grad", gradient: "grad", jacobian: "jacobian", jac: "jacobian",
+  hessian: "hessian", hess: "hessian", grad: "grad", gradient: "grad", matrixderivative: "jacobian", jacobian: "jacobian", jac: "jacobian",
   inv: "inv", inverse: "inv", det: "det", transpose: "transpose", rref: "rref", rank: "rank", trace: "trace", tr: "trace",
   diff: "diff", derivative: "diff", partial: "diff", taylor: "taylor", charpoly: "charpoly", eig: "eig", eigenvalues: "eig",
   adj: "adj", adjugate: "adj", cofactor: "cofactor", dot: "dot", norm: "norm", cross: "cross", subs: "at", at: "at",

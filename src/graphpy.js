@@ -247,7 +247,7 @@ export function graphToPython(src, vars = new Map()) {
       if (ineqs.length) region(ineqs, `region ${m[1]}`);
       continue;
     }
-    if ((m = line.match(/^contour\s+(\w+)\s*(?::\s*(.+))?$/i))) {
+    if ((m = line.match(/^(?:level\s+curves|contour)\s+(\w+)\s*(?::\s*(.+))?$/i))) {
       const F = fnDef(m[1]); grid = true;
       const lv = m[2] ? `[${splitList(m[2]).map((s) => r4(cas.evaluate(exprOf(s), {}))).join(", ")}]` : null;
       body.push(`Z = ${F.py}(X, Y)`, ...levelCurves("Z", m[1], lv));

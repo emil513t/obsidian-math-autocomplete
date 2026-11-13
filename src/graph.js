@@ -9,7 +9,7 @@
 //   vector u at p           an arrow
 //   line p q / segment p q  through two points
 //   tangent f at 1          tangent line;  gradient g at p: the gradient arrow
-//   contour g: -1, 0, 1     level curves (levels optional)
+//   level curves g: -1, 0, 1   level curves (levels optional)
 //   curve (\cos t, \sin t), t: 0..2\pi    parametric curve
 //   polygon (0,0), (1,0), (0,1)
 //   x: -5..5   y: -2..4     the window;  equal  (same scale on both axes)
@@ -22,7 +22,7 @@ export const GRAPH_KEYWORDS = [
   { word: "region", insert: "region ", desc: "shade where all the inequalities hold (feasible set)", hint: "region c1, c2, c3" },
   { word: "surface", insert: "surface ", desc: "3D surface z = f(x, y) (rotate it in Python)", hint: "surface f" },
   { word: "tangent plane", insert: "tangent plane ", desc: "3D tangent plane of f at a point", hint: "tangent plane f at p" },
-  { word: "contour", insert: "contour ", desc: "level curves of a function of x, y (flat, 2D)", hint: "contour g: -1, 0, 1" },
+  { word: "level curves", insert: "level curves ", desc: "level curves of a function of x, y (flat, 2D)", hint: "level curves g: -1, 0, 1" },
   { word: "tangent", insert: "tangent ", desc: "tangent line of f at a point", hint: "tangent f at 1" },
   { word: "gradient", insert: "gradient ", desc: "gradient arrow of g at a point", hint: "gradient g at p" },
   { word: "vector", insert: "vector ", desc: "an arrow (from the origin or a point)", hint: "vector u at p" },
@@ -123,9 +123,9 @@ export function parseGraph(src, vars = new Map()) {
         items.push({ t: "point", p, color: "fg", label: m[2] });
         continue;
       }
-      if ((m = line.match(/^contour\s+(\w+)\s*(?::\s*(.+))?$/i))) {
+      if ((m = line.match(/^(?:level\s+curves|contour)\s+(\w+)\s*(?::\s*(.+))?$/i))) {
         const F = fnOf(m[1], vars);
-        if (!F || F.vars.length !== 2) throw new Error(`contour needs a function of two variables; ${m[1]} isn't one`);
+        if (!F || F.vars.length !== 2) throw new Error(`level curves need a function of two variables; ${m[1]} isn't one`);
         items.push({ t: "contour", F, levels: m[2] ? splitList(m[2]).map((s) => num(s, vars)) : null, label: m[1], color: next() });
         continue;
       }
@@ -433,7 +433,7 @@ export function drawScene(ctx, scene, W, H, theme = {}) {
 const GRAPH_WORDS = ["graph", "plot", "draw", "sketch", "figure", "picture"];
 
 // Does \word ask for graphs? (any prefix of 3+ letters of a graph word, or of
-// one of the options' tags like region / contour / tangent / gradient).
+// one of the options' tags like region / level / tangent / gradient).
 export function graphQuery(word) {
   const w = String(word || "").toLowerCase();
   if (w.length < 2) return null;
@@ -442,7 +442,7 @@ export function graphQuery(word) {
   if (GRAPH_TAGS.some((t) => t.startsWith(w))) return { all: false, w };
   return null;
 }
-const GRAPH_TAGS = ["surface", "region", "feasible", "contour", "level", "tangent", "gradient", "points", "vector", "line", "segment", "curve", "inequality", "function"];
+const GRAPH_TAGS = ["surface", "region", "feasible", "level", "tangent", "gradient", "points", "vector", "line", "segment", "curve", "inequality", "function"];
 
 // The graphs this note can draw, each { label, desc, lines, tags }. Every
 // option is checked with parseGraph, so none of them shows an error.
@@ -469,13 +469,13 @@ export function graphOptions(vars = new Map(), query = { all: true }) {
   for (const f of fns2) {
     add(`3D surface of ${f.name}`, `z = ${f.name}(x, y), rotate and zoom it`, [`surface ${f.name}`], ["surface", "3d", "function"]);
     for (const p of pts.slice(0, 3)) add(`3D surface of ${f.name} + tangent plane at ${p.name}`, "the plane touching the surface at the point", [`surface ${f.name}`, p.name, `tangent plane ${f.name} at ${p.name}`], ["surface", "3d", "tangent"]);
-    add(`level curves of ${f.name}`, `${f.name}(x, y) = c for several c (flat, 2D)`, [`contour ${f.name}`], ["contour", "level", "function"]);
-    for (const p of pts.slice(0, 3)) add(`level curves of ${f.name} + gradient at ${p.name}`, "the gradient is orthogonal to the level curve", [`contour ${f.name}`, p.name, `gradient ${f.name} at ${p.name}`], ["gradient", "contour", "level"]);
+    add(`level curves of ${f.name}`, `${f.name}(x, y) = c for several c (flat, 2D)`, [`level curves ${f.name}`], ["level", "function"]);
+    for (const p of pts.slice(0, 3)) add(`level curves of ${f.name} + gradient at ${p.name}`, "the gradient is orthogonal to the level curve", [`level curves ${f.name}`, p.name, `gradient ${f.name} at ${p.name}`], ["gradient", "level"]);
   }
   if (ineqs.length) {
     const ns = names(ineqs).join(", ");
     add(`feasible region of ${ns}`, "where all the inequalities hold", [`region ${ns}`, ...names(ineqs)], ["region", "feasible", "inequality"]);
-    for (const f of fns2) add(`feasible region + level curves of ${f.name}`, "optimisation: objective over the feasible set", [`region ${ns}`, `contour ${f.name}`, ...names(pts)], ["region", "feasible", "contour", "level"]);
+    for (const f of fns2) add(`feasible region + level curves of ${f.name}`, "optimization: objective function over the feasible set", [`region ${ns}`, `level curves ${f.name}`, ...names(pts)], ["region", "feasible", "level"]);
   }
   if (curves.length) add(`the curve${curves.length > 1 ? "s" : ""} ${names(curves).join(", ")}`, "equations in x, y drawn implicitly", names(curves), ["curve"]);
   if (pts.length) add(`the point${pts.length > 1 ? "s" : ""} ${names(pts).join(", ")}`, "", names(pts), ["points"]);

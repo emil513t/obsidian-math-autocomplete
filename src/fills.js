@@ -40,7 +40,6 @@ const CURATED = {
   dot: [r`\dot{x}`, r`\dot{y}`],
   ddot: [r`\ddot{x}`],
   tilde: [r`\tilde{x}`],
-  operatorname: [r`\operatorname{rank}`, r`\operatorname{tr}`, r`\operatorname{span}`, r`\operatorname{Var}`, r`\operatorname{Cov}`],
   pmod: [r`\pmod{n}`, r`\pmod{m}`, r`\pmod{p}`],
   overbrace: [r`\overbrace{a + \cdots + a}^{n \text{ times}}`],
   underbrace: [r`\underbrace{a + \cdots + a}_{n \text{ times}}`],

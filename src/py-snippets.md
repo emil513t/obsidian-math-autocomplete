@@ -113,15 +113,13 @@ print("A ^ B =", A ^ B)
 print("A <= B:", A <= B, "  B <= A:", B <= A, "  A = B:", A == B)
 print("|A | B| = |A| + |B| - |A & B|:", len(A | B) == len(A) + len(B) - len(A & B))
 
-## \cartesian — Cartesian product A × B, power set, product identities (Def 1.50)
-### A x B and the power set
+## \cartesian — Cartesian product A × B, product identities (Def 1.50)
+### A x B
 @uses itertools
 @in A set
 @in B set
 AxB = set(itertools.product(A, B))
 print("A x B =", sorted(AxB), " |A x B| =", len(AxB))
-P = [set(c) for k in range(len(A) + 1) for c in itertools.combinations(sorted(A), k)]
-print("P(A) =", P, " |P(A)| =", len(P))
 ### check product identities with four sets A, B, C, D (Ex 1.52)
 @uses itertools
 @ex A := {1, 2}
@@ -136,7 +134,7 @@ print("(A x B) & (C x D) = (A & C) x (B & D):", X(A, B) & X(C, D) == X(A & C, B 
 print("(A x B) - (C x D) = (A - C) x (B - D):", X(A, B) - X(C, D) == X(A - C, B - D))
 print("  left :", sorted(X(A, B) - X(C, D)), "\n  right:", sorted(X(A - C, B - D)))
 
-## \mediant — Stern-Brocot tree: mediants and the path to a fraction (Ex 1.75)
+## \mediant — mediants: the path to a fraction (Ex 1.75)
 @uses sympy
 @ex fraction := sp.Rational(3, 5)
 target = sp.Rational({{fraction}})
@@ -301,7 +299,7 @@ for a_, b_ in zip(sizes, sizes[1:]):
     total += a_*b_ + b_
 print("total parameters:", total)
 
-## \horner — evaluate a polynomial with Horner's scheme (Ex 2.19)
+## \polyeval — compute f(x) with fewer multiplications (Ex 2.19)
 @uses sympy
 @in f expr
 @sym x
@@ -312,7 +310,7 @@ acc = 0
 for a_ in c:
     acc = acc*x0 + a_
     print("acc =", acc)
-print("Horner form:", sp.horner(f), "   f(x0) =", acc, "=", f.subs($SYM, x0))
+print("f written with fewer multiplications:", sp.horner(f), "   f(x0) =", acc, "=", f.subs($SYM, x0))
 print("multiplications:", len(c) - 1, "  additions:", len(c) - 1)
 
 ## \preimage — preimage f^-1(S) of an interval (Def 1.115)
@@ -377,9 +375,9 @@ for name_, h in [("f", f_), ("f o g", fog)]:
 @in A matrix
 @in b vector
 M = A.row_join(b)
-R, pivots = M.rref()
-print("augmented [A | b]:", M.tolist())
-print("reduced row echelon form:", R.tolist(), " pivots:", pivots)
+R, _ = M.rref()
+print("the system (A | b):", M.tolist())
+print("reduced by Gauss elimination:", R.tolist())
 xs = sp.symbols(f'x1:{A.cols + 1}')
 print("solution set:", sp.linsolve((A, b), *xs))
 
@@ -426,7 +424,7 @@ P = sp.expand(sp.interpolate(pts, $SYM))
 print("polynomial through the shares:", P)
 print("secret p(0) =", P.subs($SYM, 0))
 
-## \markov — stochastic matrix: powers P^n and the stable distribution (Ex 3.10)
+## \stochastic — stochastic matrix: powers P^n and the stable distribution (Ex 3.10)
 @uses sympy solve
 @in P matrix
 print("columns sum to 1:", [sp.simplify(sum(P[:, j])) for j in range(P.cols)])
@@ -456,29 +454,30 @@ D_ = sp.expand({{left side}} - ({{right side}}))
 print("left - right =", D_.tolist())
 print("always equal:", D_ == sp.zeros(2, 2))
 
-## \matinv — inverse matrix, determinant, check, by row reduction (Ch3)
+## \matinv — inverse matrix: solve AB_j = I_j, D = ad - bc for 2x2, check (Ch3)
 ### inverse and check
 @uses sympy
 @in A matrix
-d = A.det()
-print("det A =", d)
-if d != 0:
+if A.shape == (2, 2):
+    D_ = A[0, 0]*A[1, 1] - A[0, 1]*A[1, 0]
+    print("D = ad - bc =", D_, "(Exercise 3.26: A is invertible when D != 0)")
+try:
     Ainv = A.inv()
     print("A^-1 =", Ainv.tolist())
-    print("A*A^-1 = I:", A*Ainv == sp.eye(A.rows))
-else:
+    print("A*A^-1 = I:", sp.simplify(A*Ainv) == sp.eye(A.rows))
+except ValueError:
     print("not invertible")
-### by row reduction of [A | I] (Ex 3.34)
+### by Gauss elimination on (A | I) (Sec 3.5.1, Ex 3.34)
 @uses sympy
 @in A matrix
 M = A.row_join(sp.eye(A.rows))
-print("[A | I] =", M.tolist())
+print("(A | I) =", M.tolist())
 R, piv = M.rref()
-print("rref [A | I] =", R.tolist())
+print("after Gauss elimination:", R.tolist())
 if list(piv[:A.rows]) == list(range(A.rows)):
     print("A^-1 =", R[:, A.rows:].tolist())
 else:
-    print("not invertible: the left block does not reduce to I")
+    print("not invertible: the left side cannot be made into I")
 
 ## \eliminate — optimize with a constraint by eliminating a variable (Ex 4.2, 4.5)
 @uses sympy
@@ -535,10 +534,6 @@ print("A is", definiteness(D), "(B invertible: Propositions 3.43, 8.11)")
 @uses sympy
 @in A matrix
 print("symmetric:", A == A.T)
-n_ = A.rows
-minors = [A[:k, :k].det() for k in range(1, n_ + 1)]
-print("leading principal minors:", minors)
-print("eigenvalues:", A.eigenvals())
 print("positive definite:", A.is_positive_definite)
 print("positive semidefinite:", A.is_positive_semidefinite)
 print("negative definite:", A.is_negative_definite)
@@ -611,7 +606,7 @@ for _ in range(4000):
     if not inside(lam*a + (1 - lam)*b):
         bad = (a, b, lam)
         break
-print("counterexample found:" if bad else "no counterexample in 4000 tries (looks convex)", bad or "")
+print("not convex: two points whose segment leaves the set:" if bad else "no failing pair in 4000 tries (looks convex)", bad or "")
 
 ## \convexfn — is f convex? second derivative / Hessian (Ch4/6/8)
 ### one variable: f'' >= 0
@@ -622,22 +617,23 @@ f2 = sp.simplify(sp.diff(f, $SYM, 2))
 print("f'' =", f2)
 print("where f'' < 0:", sp.solveset(f2 < 0, $SYM, sp.S.Reals), " (empty set means convex on R)")
 ### several variables: Hessian positive semidefinite everywhere
-@uses sympy
+@uses sympy symred
 @in f expr
 @sym x y
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
-print("leading principal minors:", [sp.factor(H[:k, :k].det()) for k in range(1, H.rows + 1)])
-print("all principal minors >= 0 needed for PSD; eigenvalues:", {sp.simplify(k): v for k, v in H.eigenvals().items()})
-print("sympy PSD for all x:", H.is_positive_semidefinite)
+D, B = symmetric_reduction(H)
+print("symmetric reduction B^T H B = D (Sec 8.6), D = diag", [sp.factor(d) for d in D])
+print("positive semidefinite for all x:", H.is_positive_semidefinite)
 
 ## \strictconvex — strictly convex: f'' > 0 / Hessian positive definite (Def 6.1)
-@uses sympy
+@uses sympy symred
 @in f expr
 @sym x y
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
-print("leading principal minors (all > 0 => PD):", [sp.factor(H[:k, :k].det()) for k in range(1, H.rows + 1)])
+D, B = symmetric_reduction(H)
+print("symmetric reduction B^T H B = D (Sec 8.6), D = diag", [sp.factor(d) for d in D])
 print("positive definite for all x:", H.is_positive_definite)
 
 ## \fm — Fourier–Motzkin elimination of a variable (Sec 4.5)
@@ -659,7 +655,7 @@ new, lower, upper = fm_eliminate(ineqs, $SYM)
 print("lower bounds for", $SYM, ":", lower, "  upper bounds:", upper)
 print("after eliminating (each <= 0):", new)
 
-## \lp — linear program with scipy linprog (Ch4)
+## \lp — linear optimization (linear programming) with scipy (Sec 4.4)
 @uses numpy scipy
 @ex objective c (minimize c*x) := [-1, -2]
 @ex A_ub := [[1, 1], [1, -1]]
@@ -680,13 +676,13 @@ print("|u| =", sp.sqrt(u.dot(u)), "  |v| =", sp.sqrt(v.dot(v)))
 print("angle =", sp.simplify(sp.acos(u.dot(v)/(sp.sqrt(u.dot(u))*sp.sqrt(v.dot(v))))))
 print("orthogonal:", u.dot(v) == 0)
 
-## \projection — projection of u onto v, and the orthogonal part (Ch5)
+## \orthogonal — find lambda with u - lambda v orthogonal to v (Ex 5.6)
 @uses sympy
 @in u vector
 @in v vector
-proj = (u.dot(v)/v.dot(v))*v
-print("proj_v(u) =", list(proj))
-print("u - proj (perp v) =", list(u - proj), "  check *v =", sp.simplify((u - proj).dot(v)))
+lam = u.dot(v)/v.dot(v)
+print("lambda = u.v / v.v =", lam)
+print("u - lambda v =", list(u - lam*v), "  check (u - lambda v).v =", sp.simplify((u - lam*v).dot(v)))
 
 ## \gramschmidt — orthonormal basis by Gram–Schmidt
 @uses sympy
@@ -741,7 +737,7 @@ for b_ in sorted({0.0, 1.0, 10.0, 100.0, float({{beta}})}):
 if len(s_) == 2:
     print("two classes: sigma(s1 - s2) =", 1/(1 + np.exp(-(s_[0] - s_[1]))))
 
-## \limit — limits, one-sided and along paths (Def 5.62)
+## \limit — limits, from the right and left and along lines (Def 5.62)
 ### one variable
 @uses sympy
 @in f expr
@@ -788,7 +784,7 @@ for _ in range(100):
     a, b = (a, m) if F(a)*F(m) <= 0 else (m, b)
 print("root ~", (a + b)/2)
 
-## \evt — max and min on [a, b]: critical points + endpoints (Thm 5.84)
+## \evt — max and min on [a, b]: critical points, a and b (Thm 5.84)
 @uses sympy
 @in f expr
 @sym x
@@ -847,7 +843,7 @@ for k in range(20):
     print(k + 1, xk)
     if abs(step) < 1e-12:
         break
-### system F(x, y) = 0 with the Jacobian (Ex 7.14)
+### system F(x, y) = 0 with the matrix derivative (Sec 7.4, Ex 7.14)
 @uses sympy
 @in F vector
 @sym x y
@@ -859,14 +855,14 @@ for k in range(30):
     try:
         step = J.subs(sub).solve(F.subs(sub))
     except Exception:
-        print("Jacobian is singular at", list(v), "- try another start point")
+        print("the matrix derivative is not invertible at", list(v), "- try another start point")
         break
     v = v - step
     print(k + 1, [float(c) for c in v])
     if step.norm() < 1e-12:
         break
 
-## \logistic — logistic regression: sigmoid, log-likelihood, gradient, fit (Ex 7.30-7.34)
+## \logistic — logistic regression: sigmoid, likelihood, gradient, fit (Ex 7.30-7.34)
 @uses numpy
 @in pts points
 @ex steps := 20000
@@ -880,12 +876,12 @@ for _ in range(int({{steps}})):
     b_ += {{learning rate}}*np.mean((ys_ - p_)*xs_)
 p_ = np.clip(sig(a_ + b_*xs_), 1e-12, 1 - 1e-12)
 print(f"P(y = 1 | x) = sigma({a_:.4f} + {b_:.4f} x)")
-print("log-likelihood:", float(np.sum(ys_*np.log(p_) + (1 - ys_)*np.log(1 - p_))))
+print("log of the likelihood:", float(np.sum(ys_*np.log(p_) + (1 - ys_)*np.log(1 - p_))))
 print("gradient (d/da, d/db):", float(np.sum(ys_ - p_)), float(np.sum((ys_ - p_)*xs_)))
 if b_ != 0:
     print("x where P = 1/2:", -a_/b_)
 
-## \crit — critical points and extrema with the higher-derivative test, one variable (Thm 6.50)
+## \crit — critical points and extrema, one variable (Sec 6.3.6, Sec 6.4)
 ### all critical points
 @uses sympy
 @in f expr
@@ -895,7 +891,7 @@ def classify(c):
     while sp.simplify(dk.subs($SYM, c)) == 0 and k_ < 12:
         k_, dk = k_ + 1, sp.diff(dk, $SYM)
     v = sp.simplify(dk.subs($SYM, c))
-    if v == 0: return k_, v, "test inconclusive"
+    if v == 0: return k_, v, "no conclusion"
     if k_ % 2: return k_, v, f"neither (first nonzero derivative has odd order {k_})"
     return k_, v, "local min" if v.is_positive else "local max" if v.is_negative else "depends on parameters"
 try:
@@ -923,7 +919,7 @@ else:
     v = sp.simplify(dk.subs($SYM, c))
     print(f"first nonzero derivative: order {k_}, value {v} ->", "neither" if k_ % 2 else "local min" if v > 0 else "local max")
 
-## \annuity — loan with yearly payments: the real interest rate (Ex 6.35)
+## \loan — loan with yearly payments: the real interest rate (Ex 6.35)
 @uses sympy
 @ex loan := 1000000
 @ex payment per year := 45000
@@ -945,9 +941,9 @@ print(f"payment at the claimed rate: {float(fair):.2f} per year;  saved over {n_
 a, n = {{point a}}, {{degree n}}
 T = sum(sp.diff(f, $SYM, k).subs($SYM, a)/sp.factorial(k)*($SYM - a)**k for k in range(n + 1))
 print("T_n(x) =", sp.expand(T))
-print("sympy series:", sp.series(f, $SYM, a, n + 1))
+print("check with sympy:", sp.series(f, $SYM, a, n + 1))
 
-## \monotone — where f is increasing / decreasing (Def 6.41)
+## \increasing — where f is increasing / decreasing (Def 6.41)
 @uses sympy
 @in f expr
 @sym x
@@ -965,7 +961,7 @@ print("decreasing where f' < 0:", sp.solveset(d < 0, $SYM, sp.S.Reals))
 a, b = {{a}}, {{b}}
 slope = (f.subs($SYM, b) - f.subs($SYM, a))/(b - a)
 cs = [c for c in sp.solve(sp.Eq(sp.diff(f, $SYM), slope), $SYM) if c.is_real and a < c < b]
-print("secant slope:", slope, "  c in (a, b):", cs)
+print("(f(b) - f(a))/(b - a) =", slope, "  c in (a, b):", cs)
 
 ## \lhopital — limit by l'Hôpital: f/g at a
 @uses sympy
@@ -977,18 +973,15 @@ a = {{point}}
 print("f(a), g(a) =", f.subs($SYM, a), g.subs($SYM, a))
 print("f'/g' at a ->", sp.limit(sp.diff(f, $SYM)/sp.diff(g, $SYM), $SYM, a), "  direct:", sp.limit(f/g, $SYM, a))
 
-## \gradient — partial derivatives, gradient, directional derivative (Def 7.4)
+## \gradient — partial derivatives and the gradient (Def 7.4, Sec 7.5)
 @uses sympy
 @in f expr
 @sym x y
 @ex point := [1, 1]
-@ex direction := [1, 0]
 grad = sp.Matrix([sp.diff(f, s) for s in $SYMS])
 pt = dict(zip($SYMS, {{point}}))
 print("gradf =", list(grad))
 print("gradf(point) =", list(grad.subs(pt)))
-d = sp.Matrix({{direction}})
-print("directional derivative along d/|d|:", sp.simplify((grad.subs(pt).T*d)[0]/d.norm()))
 
 ## \compgraph — computational graph of f, forward + backward pass, gradient by backpropagation
 ### sympy: graph, forward pass, backward pass (by hand, every step printed)
@@ -1022,7 +1015,7 @@ for e in order:
 print("f =", name[f], "=", f.subs(pt))
 adj = {e: sp.Integer(0) for e in order}
 adj[f] = sp.Integer(1)
-print("Backward pass, adjoint adj[v] = df/dv, chain rule from f down to the inputs:")
+print("Backward pass (backpropagation): adj[v] = df/dv for every node v, chain rule from f down to the inputs:")
 for e in reversed(order):
     if e.is_Symbol:
         continue
@@ -1066,14 +1059,12 @@ pt = dict(zip($SYMS, {{point}}))
 z = f.subs(pt) + sum(sp.diff(f, s).subs(pt)*(s - pt[s]) for s in $SYMS)
 print("z =", sp.expand(z))
 
-## \jacobian — Jacobian matrix of a vector function (Prop 7.9)
+## \matrixderivative — matrix derivative of a vector function (Def 7.3, Prop 7.9)
 @uses sympy
 @in F vector
 @sym x y
-J = F.jacobian($SYMS)
-print("J =", J.tolist())
-if J.is_square:
-    print("det J =", sp.simplify(J.det()))
+C = F.jacobian($SYMS)
+print("matrix derivative F' =", C.tolist(), " (entry i, j is dF_i/dx_j)")
 
 ## \chainrule — chain rule: D(F∘G) = DF(G)·DG, and (g∘f)'(t) (Thm 7.23)
 ### F, G : R^n -> R^n, D(F o G) = DF(G) DG
@@ -1112,38 +1103,39 @@ for p in solve_all(grad, $SYMS):
     if Hp.is_positive_definite: kind = "local min (H positive definite)"
     elif Hp.is_negative_definite: kind = "local max (H negative definite)"
     elif Hp.is_indefinite: kind = "saddle point (H indefinite)"
-    else: kind = "inconclusive (H semidefinite)"
+    else: kind = "no conclusion (H semidefinite)"
     print(p, " f =", sp.simplify(f.subs(p)), " H =", Hp.tolist(), "->", kind)
 
-## \hessian — Hessian matrix, at a point, definiteness, mixed partials (Def 8.2)
+## \hessian — Hessian matrix, at a point, definiteness, second order partial derivatives (Def 8.2)
 ### at a point
-@uses sympy
+@uses sympy symred
 @in f expr
 @sym x y
 @ex point := [0, 0]
 H = sp.hessian(f, $SYMS)
 print("H =", H.tolist())
 Hp = H.subs(dict(zip($SYMS, {{point}})))
-print("H(point) =", Hp.tolist(), " eigenvalues:", Hp.eigenvals())
-print("positive definite:", Hp.is_positive_definite, " positive semidefinite:", Hp.is_positive_semidefinite)
-print("negative definite:", Hp.is_negative_definite, " indefinite:", Hp.is_indefinite)
+print("H(point) =", Hp.tolist())
+D, B = symmetric_reduction(Hp)
+print("symmetric reduction B^T H B = D (Sec 8.6): D = diag", D, "->", definiteness(D))
 ### for all x: positive (semi)definite everywhere?
-@uses sympy
+@uses sympy symred
 @in f expr
 @sym x y
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
-minors = [sp.factor(H[:k, :k].det()) for k in range(1, H.rows + 1)]
-print("leading principal minors:", minors)
-def where_nonpositive(m_):
+D, B = symmetric_reduction(H)
+d_ = [sp.factor(d) for d in D]
+print("symmetric reduction B^T H B = D (Sec 8.6): D = diag", d_)
+def where_not_positive(m_):
     if not m_.free_symbols:
         return sp.S.EmptySet if m_ > 0 else sp.S.Reals
     if len(m_.free_symbols) == 1:
         return sp.solveset(m_ <= 0, m_.free_symbols.pop(), sp.S.Reals)
     return f"check {m_} <= 0 by hand"
-print("where each minor is <= 0 (empty = always > 0):", [where_nonpositive(m_) for m_ in minors])
+print("where each diagonal entry of D is <= 0 (empty = always > 0):", [where_not_positive(m_) for m_ in d_])
 print("positive definite everywhere:", H.is_positive_definite, " positive semidefinite everywhere:", H.is_positive_semidefinite)
-### mixed partials: is f_xy = f_yx? (Clairaut, Thm 7.11)
+### second order partial derivatives: is f_xy = f_yx? (Clairaut's theorem, Thm 7.11)
 @uses sympy
 @in f expr
 @sym x y
@@ -1209,7 +1201,7 @@ vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
 for v in vals: print(*v)
 print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
 
-## \kkt — KKT: minimize f subject to g_i <= 0, try every active set (Thm 9.37)
+## \kkt — KKT conditions: minimize f subject to g_i <= 0, try every subset of the constraints with equality (Thm 9.37)
 @uses sympy itertools solve
 @in f expr
 @in gs list
@@ -1269,7 +1261,7 @@ for epoch in range(100):
     if errors == 0: break
 print("w =", w, " b =", b, " epochs:", epoch + 1)
 
-## \svm — maximal margin separating hyperplane (Ch9)
+## \svm — optimal separating hyperplane, support vector machine (Sec 9.1, 9.2)
 @uses numpy scipy
 @ex points X := [[2, 1], [3, 2], [-1, -1], [-2, 0]]
 @ex labels +-1 := [1, 1, -1, -1]
@@ -1323,7 +1315,7 @@ print("intersections:", pts)
 area = sum(sp.Abs(sp.integrate(f - g, ($SYM, a_, b_))) for a_, b_ in zip(pts, pts[1:]))
 print("area between them:", sp.simplify(area), "~", sp.N(area))
 
-## \sum — sums and series
+## \sum — sums
 @uses sympy
 @ex term with k := 1/k**2
 @ex upper limit := sp.oo
@@ -1340,14 +1332,13 @@ print("f = 0:", sp.solveset(sp.Eq(f, 0), $SYM, sp.S.Reals))
 print("f > 0:", sp.solveset(f > 0, $SYM, sp.S.Reals))
 print("f <= 0:", sp.solveset(f <= 0, $SYM, sp.S.Reals))
 
-## \simplify — simplify, expand, factor, partial fractions
+## \simplify — simplify, expand, factor
 @uses sympy
 @in f expr
 @sym x
 print("simplify:", sp.simplify(f))
 print("expand:", sp.expand(f))
 print("factor:", sp.factor(f))
-print("partial fractions:", sp.apart(sp.together(f), $SYM) if f.is_rational_function($SYM) else "not rational")
 
 ## \subs — evaluate an expression at a point (exact and decimal)
 @uses sympy
@@ -1371,7 +1362,7 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-## \contour — contour plot of f(x, y)
+## \levelcurves — level curves of f(x, y)
 @uses sympy numpy plt
 @in f expr
 @sym x y

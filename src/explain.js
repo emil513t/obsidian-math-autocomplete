@@ -47,7 +47,7 @@ export const PY_REFS = {
   "convexfn|several variables: Hessian positive semidefinite everywhere": "Def 4.26 Thm 8.25",
   lp: "Def 4.6 Remark 4.8",
   dot: "Def 5.1 Thm 5.24",
-  projection: "Def 5.1 Prop 5.15",
+  orthogonal: "Def 5.1",
   gramschmidt: "Def 5.1",
   derivative: "Def 6.17 Remark 6.19",
   implicit: "Def 7.4 Thm 7.23",

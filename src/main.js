@@ -30,6 +30,7 @@ import { envOf, isMatrixEnv } from "./variants.js";
 import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS, fnExpr } from "./vars.js";
 import { parseGraph, drawScene, GRAPH_KEYWORDS, graphQuery, graphOptions } from "./graph.js";
 import { graphToPython } from "./graphpy.js";
+import { isHidden } from "./curriculum.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
@@ -305,6 +306,7 @@ const DEFAULT_SETTINGS = {
   explainRefs: true,
   textEvidence: true,
   graphOutput: "python",
+  offBook: false,
   showWork: true,
 };
 
@@ -1203,11 +1205,12 @@ export default class MathAutocompletePlugin extends Plugin {
   rankPySnippets(query) {
     const picks = Object.fromEntries(Object.entries(this.settings.templatePicks)
       .filter(([k]) => k.startsWith("py:")).map(([k, n]) => [k.slice(3), n]));
-    return rankPySnippets(query, PY_SNIPPETS, picks);
+    // Only the IMO26 book's topics unless "Show material outside the book" is on.
+    return rankPySnippets(query, PY_SNIPPETS, picks).filter((s) => !isHidden("py", s.name, this.settings));
   }
 
   rankTemplates(query) {
-    return rankTemplates(query, this.templates, this.settings.templatePicks);
+    return rankTemplates(query, this.templates, this.settings.templatePicks).filter((t) => t.source === "user" || !isHidden("templates", t.name, this.settings));
   }
 
   // Everything the plain-text popup offers for `raw` (text after the \).
@@ -1256,6 +1259,7 @@ export default class MathAutocompletePlugin extends Plugin {
     const builtins = this.suggest(query, limit);
     if (!this.settings.objectsEnabled) return builtins;
     const objs = rankObjects(query, this.settings.fillPicks)
+      .filter((o) => !isHidden("objects", o.name, this.settings))
       .filter((o) => where === "vars" || !o.varsOnly)
       .map((o) => ({ kind: "object", obj: o, name: o.name, insert: "\\" + o.name, uses: 0 }));
     if (!objs.length) return builtins;
@@ -1406,7 +1410,7 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Build objects from your variables")
-      .setDesc("\\hessian, \\gradient, \\jacobian, \\inverse, \\determinant, \\rref, \\eigenvalues, \\taylor, \\set, \\union, \\interval, \\matrix (any m×n), ... in math or in a vars block: pick what to build it from (your f, A, p, ...) or type sizes and inputs. Computed offline, no AI.")
+      .setDesc("\\hessian, \\gradient, \\matrixderivative, \\inverse, \\gauss, \\definiteness, \\taylor, \\set, \\union, \\interval, \\matrix (any m×n), ... in math or in a vars block: pick what to build it from (your f, A, p, ...) or type sizes and inputs. Computed offline, no AI.")
       .addToggle((t) => t.setValue(s.objectsEnabled).onChange(async (v) => { s.objectsEnabled = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
@@ -1443,7 +1447,7 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Worked solutions in math")
-      .setDesc("When you build something in math mode (\\hessian, \\gradient, \\inverse, \\determinant, \\eigenvalues, \\taylor, ...), the answer goes where you typed and the full worked solution, every intermediate step with a sentence explaining it and the book reference, goes under the math block.")
+      .setDesc("When you build something in math mode (\\hessian, \\gradient, \\inverse, \\gauss, \\taylor, ...), the answer goes where you typed and the full worked solution, every intermediate step with a sentence explaining it and the book reference, goes under the math block.")
       .addToggle((t) => t.setValue(s.showWork).onChange(async (v) => { s.showWork = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
@@ -1455,6 +1459,11 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
       .setName("\\graph inserts Python")
       .setDesc("On: \\graph inserts a short Plotly block (only what the graph needs) that Code Suite runs as an interactive plot (zoom, pan, hover). Off: it inserts the plugin's own ```graph block (offline, no Python).")
       .addToggle((t) => t.setValue(s.graphOutput !== "graph").onChange(async (v) => { s.graphOutput = v ? "python" : "graph"; await this.plugin.saveSettings(); }));
+
+    new Setting(containerEl)
+      .setName("Show material outside the book")
+      .setDesc("Off (default): only commands and wording from the IMO26 book are offered. On: also commands for topics the book does not cover.")
+      .addToggle((t) => t.setValue(!!s.offBook).onChange(async (v) => { s.offBook = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName("Proof and question templates").setHeading();
 

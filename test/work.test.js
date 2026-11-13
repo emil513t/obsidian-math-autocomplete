@@ -26,11 +26,14 @@ test("worked solution: Hessian at a point plugs in, checks the gradient and clas
   assert.match(md, /not a critical point/);
 });
 
-test("worked solution: inverse via Gauss-Jordan with readable row operations", () => {
+test("worked solution: inverse the book's way (D = ad - bc for 2x2, AB_j = I_j by Gauss elimination)", () => {
   const md = workFor("inverse", "A:A", ctx);
-  assert.match(md, /\\det A = 2 \\cdot 3 - 1 \\cdot 1 = 5/);
-  assert.match(md, /R_\{2\} \\to R_\{2\} - R_\{1\}/);
-  assert.match(md, /R_\{2\} \\to \\frac\{2\}\{5\} R_\{2\}/);
+  assert.match(md, /D = 2 \\cdot 3 - 1 \\cdot 1 = 5/);
+  assert.match(md, /Exercise 3\.26/);
+  const md3 = workFor("inverse", "A:B", ctx);
+  assert.match(md3, /AB_j = I_j/);
+  assert.match(md3, /R_\{3\} \\to R_\{3\} - R_\{1\}/);
+  assert.doesNotMatch(md + md3, /det|determinant|cofactor|pivot|echelon/i);
 });
 
 test("worked solution: 3x3 determinant by cofactor expansion; 2x2 eigenvalues by the quadratic formula", () => {
@@ -68,7 +71,7 @@ test("every command: every option builds (variable names typed in fields) and ev
   assert.ok(ids("gauss").includes("gs:eq:e1, e2, e3"), ids("gauss").join());
   assert.ok(ids("fouriermotzkin").includes("fm1:x"), ids("fouriermotzkin").join());
   assert.ok(ids("induction").includes("ind:P"), ids("induction").join());
-  const FN = ["hessian", "gradient", "partial", "laplacian", "tangentplane", "directional", "critical", "derivative", "taylor", "evaluate", "jacobian", "quadform"];
+  const FN = ["hessian", "gradient", "partial", "laplacian", "tangentplane", "directional", "critical", "derivative", "taylor", "evaluate", "matrixderivative", "quadform"];
   const MAT = ["inverse", "transpose", "rref", "adjugate", "symmetricpart", "determinant", "trace", "rank", "charpoly", "eigenvalues", "matpower", "quadform", "interpolate"];
   const expect = { h: FN, f: FN, A: FN, k: FN, S2: MAT, S3: MAT, B: MAT };
   const seen = {};
