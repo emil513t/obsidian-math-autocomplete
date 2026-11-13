@@ -100,7 +100,7 @@ $f$ is **not injective** (Definition 1.106): $f({{x1}}) = {{value}} = f({{x2}})$
 This $x$ lies in ${{domain}}$ because {{reason}}, and $f(x) = {{check}} = y$.
 So $f$ is surjective (Definition 1.106). $\blacksquare$
 ### continuous and unbounded both ways, by Bolzano (Thm 5.81, Def 1.106)
-**Proof.** $f$ is continuous (Remark 5.77) with $f(x) \to -\infty$ for $x \to -\infty$ and $f(x) \to \infty$ for $x \to \infty$. For $y \in \mathbb{R}$ pick $a < b$ with $f(a) < y < f(b)$; then $g(x) = f(x) - y$ has $g(a) < 0 < g(b)$, so by Theorem 5.81 there is $x_0$ with $f(x_0) = y$. Hence $f$ is surjective (Definition 1.106). $\blacksquare$
+**Proof.** $f$ is continuous (Remark 5.77). For $y \in \mathbb{R}$ pick $a < b$ with $f(a) < y < f(b)$ ({{why such a and b exist}}); then $g(x) = f(x) - y$ has $g(a) < 0 < g(b)$, so by Theorem 5.81 there is $x_0$ with $f(x_0) = y$. Hence $f$ is surjective (Definition 1.106). $\blacksquare$
 ### NOT surjective: a value that is never hit (Def 1.106)
 $f$ is **not surjective** (Definition 1.106): $y = {{y}} \in {{codomain}}$ has no preimage, since $f(x) = {{y}}$ would require {{impossible condition}}.
 
@@ -121,8 +121,8 @@ So $f$ is bijective (Definition 1.106). $\blacksquare$
 $f\colon {{A}} \to {{B}}$, $f(x) = {{formula}}$, is bijective (Definition 1.106). Solve $y = {{formula}}$ for $x$:
 {{solve}}
 So $f^{-1}\colon {{B}} \to {{A}}$, $f^{-1}(y) = {{inverse formula}}$. Check: $f(f^{-1}(y)) = {{check}} = y$.
-### derivative of the inverse (chain rule, Thm 7.23)
-Differentiating $f(g(x)) = x$ with the chain rule (Theorem 7.23): $f'(g(x))\,g'(x) = 1$, so
+### derivative of the inverse (chain rule, Sec 6.3.4)
+Differentiating $f(g(x)) = x$ with the one variable chain rule (Section 6.3.4): $f'(g(x))\,g'(x) = 1$, so
 $$g'(x) = \frac{1}{f'(g(x))} = {{result}}.$$
 
 ## \composition — Ch1: compute a composition of functions
@@ -140,7 +140,7 @@ $(f \circ g)(x) = f(g(x)) = f({{g(x)}}) = {{result}}$, defined for $x \in {{doma
 By Definition 1.115, $f^{-1}({{C}}) = \{ x \in {{A}} \mid f(x) \in {{C}} \} = \{ x \in {{A}} \mid {{inequality/equation}} \}$.
 {{solve}}
 So $f^{-1}({{C}}) = {{answer}}$.
-### factor and use a sign chart (Def 1.115)
+### factor and check the sign of each factor (Def 1.115)
 $f(x) = {{f}} = ({{factor 1}})({{factor 2}})$, so by Definition 1.115:
 
 | $x$ | ${{factor 1}}$ | ${{factor 2}}$ | $f(x)$ |
@@ -154,8 +154,6 @@ Hence $f^{-1}({{C}}) = {{answer}}$.
 **Proof by contradiction.** Assume $\xi = \frac{a}{b} \in \mathbb{Q}$ with ${{equation in xi}}$, where $a \in \mathbb{Z}$, $b \in \mathbb{N}$ have no common divisor (Definition 1.54).
 Then ${{equation in a, b}}$, so ${{p}}$ divides $a$. Write $a = {{p}}k$. Then {{substitute}}, so ${{p}}$ divides $b$ too.
 So ${{p}}$ divides both $a$ and $b$ — a contradiction. $\blacksquare$
-### rational root test on a polynomial
-**Proof.** If $\frac{a}{b}$ in lowest terms (Definition 1.54) is a root of $f(x) = {{f}}$, then $a$ divides the constant term ${{constant}}$ and $b$ divides the leading coefficient ${{leading}}$. The candidates ${{candidates}}$ give $f \neq 0$ ({{check}}). So $f$ has no rational root. $\blacksquare$
 
 ## \inequality — Ch1/5: prove an inequality
 ### chain of steps
@@ -248,11 +246,11 @@ Dividing by $x - {{alpha}}$ gives remainder $r = f({{alpha}}) = {{value}}$ (Theo
 **Roots:** $x = {{roots}}$ (at most $\deg f$ of them, Theorem 2.25).
 ### substitution t = x^2 (quartic without odd powers)
 Put $t = x^2$: ${{quadratic in t}} = 0$ gives $t = {{t values}}$. Then $x = \pm\sqrt{t}$ for each $t \ge 0$: **roots** $x = {{roots}}$.
-### quadratic formula
-$a = {{a}}$, $b = {{b}}$, $c = {{c}}$: $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} = {{roots}}$ (discriminant ${{discriminant}}$).
+### roots of a quadratic: formula (2.12) (Sec 2.4.2)
+$a = {{a}}$, $b = {{b}}$, $c = {{c}}$, discriminant $b^2 - 4ac = {{discriminant}}$ ({{≥ 0 / < 0: no roots}}). By (2.12) (Section 2.4.2): $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} = {{roots}}$.
 ### a root exists: odd degree (Thm 2.28 / Prop 5.83)
 $f$ has odd degree ${{n}}$, so it has a real root (Theorem 2.28, proved in Proposition 5.83 via Bolzano, Theorem 5.81).
-### vieta: roots determine the coefficients (Prop 2.23)
+### roots determine the coefficients (Prop 2.23)
 If $\alpha, \beta$ are the roots of $x^2 + bx + c$, then $x^2 + bx + c = (x - \alpha)(x - \beta)$ (Proposition 2.23), so $b = -(\alpha + \beta)$ and $c = \alpha\beta$.
 
 ## \interpolate — Ch2: polynomial through given points (Sec 2.5)
@@ -305,12 +303,13 @@ $${{LHS}} = {{step}} = {{RHS}}.$$ $\blacksquare$
 **Proof.** $({{M}})^\top = {{transpose using Proposition 3.35}} = {{M}}$, so ${{M}}$ is symmetric. $\blacksquare$
 
 ## \posdef — Ch3/8: decide (semi-)definiteness of a symmetric matrix
-### symmetric reduction to a diagonal matrix (Prop 3.43, Prop 8.11)
-**Is** $A = {{A}}$ positive definite? Symmetric reduction (Section 3.7.3): each row operation followed by the same column operation.
+### symmetric reduction to a diagonal matrix (Sec 8.6, Thm 8.31, Prop 3.43)
+**Is** $A = {{A}}$ positive definite? Symmetric reduction (Section 8.6, Theorem 8.31): write $I$ on top of $A$; every column operation is done on the whole extended matrix, and the same row operation on the lower half.
 {{row op + column op}}
 This gives $B^\top A B = D = {{diagonal matrix}}$ with $B$ invertible.
 By Proposition 3.43 / 8.11 $A$ is {{positive definite / positive semi-definite / indefinite}}, since the diagonal entries of $D$ are {{all > 0 / all ≥ 0 / of both signs}}.
-### complete the square in u^T A u
+### complete the square in u^T A u (as for (2.12), Sec 2.4.2)
+Completing the square (as in deriving (2.12), Section 2.4.2):
 $$u^\top A u = {{quadratic form}} = {{a}}\left(x + {{shift}}\,y\right)^2 + {{c}}\,y^2$$
 This is $> 0$ for $u \neq 0$ iff ${{a}} > 0$ and ${{c}} > 0$, so $A$ is {{positive definite / not}}.
 ### NOT positive definite: one bad vector (Ex 3.41)
@@ -423,8 +422,8 @@ With $u = {{u}}$, $v = {{v}}$: $\lambda v = {{lambda v}}$, and by Pythagoras (Pr
 $u \cdot v = {{dot}}$, $|u| = {{norm u}}$, $|v| = {{norm v}}$, so $\cos\theta = \frac{u \cdot v}{|u||v|} = {{cos}}$ (Definition 5.1), which lies in $[-1, 1]$ by Theorem 5.24.
 ### orthogonal vectors (Def 5.1)
 $u \cdot v = {{written out}} = 0$, so $u \perp v$ (Definition 5.1), and $|u + v|^2 = |u|^2 + |v|^2$ (Proposition 5.15).
-### distance from a point to a hyperplane (Def 4.40, Ex 9.7)
-For $H = \{ v \mid a^\top v + b = 0 \}$ (Definition 4.40), the closest point to $u$ is $u - \frac{a^\top u + b}{|a|^2}\,a = {{point}}$ and the distance is $\frac{|a^\top u + b|}{|a|} = {{distance}}$.
+### distance from a point to a hyperplane (Def 4.40, Ex 9.7, Thm 7.39)
+For $H = \{ v \mid \alpha^\top v + \beta = 0 \}$ (Definition 4.40) and $u = {{u}}$, the closest point solves $\min_{v \in H} |v - u|^2$ (Exercise 9.7). Theorem 7.39 gives the equations $-2(u - v) + \lambda\alpha = 0$ and $\alpha^\top v + \beta = 0$. The first gives $v = u - \frac{\lambda}{2}\alpha$; inserting in the second: $\lambda = {{lambda}}$, so the closest point is $v = {{point}}$ and the distance is $|v - u| = {{distance}}$.
 ### prove a dot-product rule from the definition (Def 5.1)
 **Proof.** Writing $u = (x_1, \dots, x_d)$ etc., Definition 5.1 gives ${{LHS}} = \sum_i {{expand}} = {{RHS}}$. $\blacksquare$
 
@@ -440,7 +439,7 @@ Gauss elimination on $Av = b$ (Section 2.3) gives the contradictory row $0 = {{n
 ### best quadratic / circle fit (linear in the unknown coefficients)
 The model ${{model}}$ is linear in the unknowns ${{unknowns}}$, so each data point gives one row of $Av = b$:
 $$A = {{A}},\quad b = {{b}}$$
-and Theorem 5.16 applies as before: $v = (A^\top A)^{-1}A^\top b = {{solution}}$.
+and Theorem 5.16 applies as before: solving $(A^\top A)v = A^\top b$ gives $v = {{solution}}$.
 
 ## \bounded — Ch5: bounded subsets (Def 5.33)
 ### find a radius R (Def 5.33)
@@ -496,8 +495,8 @@ The simplification is valid for $x \neq {{a}}$, which is all the limit looks at 
 **Proof.** Let $\varepsilon > 0$. Choose $\delta = {{delta}}$. If $0 < |x - {{a}}| < \delta$, then
 $$|{{f(x)}} - {{L}}| = {{rewrite}} \le {{bound}} < \varepsilon.$$
 Hence $\lim_{x \to {{a}}} {{f(x)}} = {{L}}$ (Definition 5.62). $\blacksquare$
-### limit does NOT exist: two different one-sided values (Def 5.62)
-For $x \to {{a}}$ from the right $f(x) \to {{right value}}$, from the left $f(x) \to {{left value}}$. If the limit were $L$, taking $\varepsilon = {{epsilon}}$ in Definition 5.62 forces $L$ close to both values — impossible. So the limit does not exist.
+### limit does NOT exist: different values on the two sides of a (Def 5.62)
+For $x$ close to ${{a}}$ with $x > {{a}}$, $f(x)$ is close to ${{value for x > a}}$; with $x < {{a}}$, $f(x)$ is close to ${{value for x < a}}$. If the limit were $L$, taking $\varepsilon = {{epsilon}}$ in Definition 5.62 forces $L$ close to both values — impossible. So the limit does not exist.
 ### continuity: plug in (Def 5.65)
 ${{f}}$ is continuous at ${{a}}$ ({{reason}}), so $\lim_{x \to {{a}}} {{f}} = f({{a}}) = {{value}}$ (Definition 5.65).
 
@@ -535,8 +534,6 @@ Each step keeps a sign change (Theorem 5.81), so the root is $\approx {{root}}$.
 ### compact + continuous (Thm 5.84)
 $C = {{C}}$ is compact ({{closed and bounded}}, Definition 5.53) and $f = {{f}}$ is continuous on $C$ ({{reason}}).
 By Theorem 5.84, $f$ attains a minimum and a maximum on $C$.
-### reduce to a compact set first
-$f$ is defined on the non-compact ${{S}}$, but $f(v) > f({{v0}})$ outside the compact set $K = {{K}}$. So $\min_S f = \min_K f$, which exists by Theorem 5.84.
 ### Theorem 5.84 fails without compactness (Ex 5.85)
 Without {{boundedness / closedness}} it can fail: $f(x) = {{f}}$ on ${{set}}$ is continuous but has no {{max / min}}, since {{reason}}.
 
@@ -565,8 +562,8 @@ $f' = {{f'}}$, $f'' = {{f''}}$, $f''' = {{f'''}}$, $f^{(4)} = {{f''''}}$, so the
 | 3 | {{_}} | {{_}} |
 
 So the root is $x \approx {{root}}$.
-### several variables: v - Hessian^-1 grad (Def 8.2)
-To find a critical point of $F$: $v_{n+1} = v_n - \nabla^2 F(v_n)^{-1}\,\nabla F(v_n)^\top$ (Definition 8.2), with $\nabla F = {{gradient}}$, $\nabla^2 F = {{Hessian}}$.
+### several variables: v - Hessian^-1 grad (Sec 8.3, (8.6))
+To find a critical point of $F$, Newton's method (8.6) (Section 8.3): $v_{n+1} = v_n - \nabla^2 F(v_n)^{-1}\,\nabla F(v_n)$, with the Hessian from Definition 8.2, $\nabla F = {{gradient}}$, $\nabla^2 F = {{Hessian}}$.
 From $v_0 = {{v0}}$: $v_1 = {{v1}}$, $v_2 = {{v2}}$, ... $\to {{limit}}$.
 ### it fails: cycle or f' = 0
 Starting at $x_0 = {{x0}}$: $x_1 = {{x1}}$, $x_2 = {{x0}}$, so the iterates cycle and never converge. (Or: $f'(x_n) = 0$, so the step is undefined.)
@@ -577,7 +574,7 @@ $f(x) = {{f}}$, $f'(x) = {{f'}}$. Critical points (Definition 6.36): $f'(x) = 0 
 $f''(x) = {{f''}}$:
 - $x = {{x1}}$: $f''({{x1}}) = {{value}}$ $\Rightarrow$ {{local min (> 0) / local max (< 0)}}
 ### higher derivative test when f'' = 0 (Thm 6.50)
-At ${{x0}}$: $f'({{x0}}) = \dots = f^{(n)}({{x0}}) = 0$ and $f^{(n+1)}({{x0}}) = {{value}} \neq 0$ with $n + 1 = {{n+1}}$. By Theorem 6.50: {{n+1 even → local min (>0) / max (<0); n+1 odd → no extremum}}.
+At the critical point ${{x0}}$: $f''({{x0}}) = \dots = f^{(n-1)}({{x0}}) = 0$ and $f^{(n)}({{x0}}) = {{value}} \neq 0$ with $n = {{n}}$. By Theorem 6.50: {{n even → local minimum if f^(n)(x0) > 0, local maximum if < 0; n odd → not a local extremum}}.
 ### sign of f' around the point (Prop 6.43)
 $f' < 0$ on $({{a}}, {{x0}})$ and $f' > 0$ on $({{x0}}, {{b}})$, so $f$ decreases then increases (Proposition 6.43) and ${{x0}}$ is a local minimum.
 ### convex function: critical point is the global min (Thm 6.13)
@@ -597,8 +594,8 @@ $f(x) = {{f}}$ has $f'({{x0}}) = 0$ but takes values both above and below $f({{x
 
 ## \taylor — Ch6: Taylor polynomials (Sec 6.4)
 ### compute the Taylor polynomial
-Taylor polynomial of $f(x) = {{f}}$ at $x_0 = {{x0}}$ up to degree ${{n}}$: $f({{x0}}) = {{_}}$, $f'({{x0}}) = {{_}}$, $f''({{x0}}) = {{_}}$, ...
-$$P_{ {{n}} }(x) = \sum_{k=0}^{ {{n}} } \frac{f^{(k)}({{x0}})}{k!}(x - {{x0}})^k = {{polynomial}}$$
+Taylor polynomial of order ${{n}}$ of $f(x) = {{f}}$ about the point $a = {{x0}}$ (Section 6.4): $f(a) = {{_}}$, $f'(a) = {{_}}$, $f''(a) = {{_}}$, ...
+$$f(a) + f'(a)(x - a) + \frac{f''(a)}{2}(x - a)^2 + \dots + \frac{f^{(n)}(a)}{n!}(x - a)^n = {{polynomial}}$$
 ### pattern in the derivatives (e.g. sin, cos, e^x)
 The derivatives at ${{x0}}$ repeat as ${{pattern}}$, so only the {{even / odd}} terms survive: $P(x) = {{polynomial}}$.
 
@@ -723,7 +720,7 @@ $v_0 = {{v0}}$ is optimal iff $\nabla f(v_0)(v - v_0) \ge 0$ for all $v \in C$ (
 ### guess the solution, then verify (Prop 9.28)
 Guess: $v_0 = {{guess}}$ ({{geometric reason}}). Check with Proposition 9.28: $\nabla f(v_0)(v - v_0) = {{expression}} \ge 0$ for all $v \in C$ because {{reason}}. So $v_0$ is optimal.
 ### barrier method (Thm 9.21)
-Replace the constraints by the barrier $f_\varepsilon(v) = f(v) - \varepsilon \sum_i \log(-g_i(v))$ (convex, Exercise 9.20). By Theorem 9.21 its minimizer $v_\varepsilon$ satisfies $0 \le f(v_\varepsilon) - f^* \le {{bound}}$, so $v_\varepsilon \to$ the optimum as $\varepsilon \to 0$.
+Replace the constraints by the logarithmic barrier $B(v) = -\log(-g_1(v)) - \dots - \log(-g_m(v))$ and minimize $f_\varepsilon(v) = f(v) + \varepsilon B(v)$ (9.23) (convex, Exercise 9.20). By Theorem 9.21 its minimizer $v_\varepsilon$ satisfies $0 \le f(v_\varepsilon) - f^* \le \varepsilon m$ with $m = {{m}}$ constraints, so $v_\varepsilon \to$ the optimum as $\varepsilon \to 0$.
 
 ## \kkt — Ch9: solve with the KKT conditions (Thm 9.37)
 ### KKT with case analysis on active constraints (Def 9.36, Thm 9.37)
@@ -754,7 +751,9 @@ $$\min \ \alpha_1^2 + \alpha_2^2 \quad \text{s.t.} \quad {{constraints}}$$
 {{solve (KKT, Theorem 9.37)}}
 Optimal hyperplane: $H = \{ v \mid {{alpha}}^\top v + {{beta}} = 0 \}$, margin $\frac{1}{|\alpha|} = {{margin}}$.
 ### perceptron algorithm by hand (Sec 5.3.2, Prop 5.14)
-| step | misclassified $v_i$ | update $\alpha \leftarrow \alpha + y_i \hat v_i$ |
+With $\hat v_i = (\ell_i x_i, \ell_i y_i, \ell_i)$ (5.7), start with $\alpha = 0$ and add $\hat v_i$ to $\alpha$ whenever $\alpha \cdot \hat v_i \le 0$:
+
+| step | $\hat v_i$ with $\alpha \cdot \hat v_i \le 0$ | update $\alpha \leftarrow \alpha + \hat v_i$ |
 |---|---|---|
 | 1 | {{_}} | {{_}} |
 | 2 | {{_}} | {{_}} |

@@ -65,7 +65,7 @@ const CASES = [
   ["7.41", "lagrange", "", { f: "(x - 1)^2 + (y - 1)^2", g: "y - x - 1" }, ["1/2"]],
   ["7.48", "compactopt", "polygon", { f: "x^2 - 2xy + 2y", gs: "[-x, x - 3, -y, y - 2]" }, ["max: ('vertex', {x: 3, y: 0}, 9)"]],
   ["7.49", "compactopt", "polygon", { f: "1 + 4x - 5y", gs: "[-x, -y, 3x + 2y - 6]" }, ["{x: 2, y: 0}, 9)", "{x: 0, y: 3}, -14)"]],
-  ["8.37", "posdef", "parameters", { "matrix with parameters": "[[2, 1, a], [1, 1, 1], [a, 1, b]]" }, ["positive definite  <=> (2) > 0 and (1) > 0"]],
+  ["8.37", "posdef", "parameters", { "matrix with parameters": "[[2, 1, a], [1, 1, 1], [a, 1, b]]" }, ["D = diag [2, 1/2, -a**2 + 2*a + b - 2]", "positive definite  <=> (2) > 0 and (1/2) > 0 and (-a**2 + 2*a + b - 2) > 0"]],
   ["9.19", "kernelperceptron", "", {}, ["predicted: [-1, -1, -1, 1, 1]"]],
   ["9.49", "kkt", "", { f: "-x - 4y", gs: "[-x - y, 2x - y - 1, -x + 2y - 1]" }, ["KKT point: {x: 1, y: 1}", "f = -5"]],
 ];

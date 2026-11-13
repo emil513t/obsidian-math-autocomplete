@@ -627,7 +627,8 @@ H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 print("symmetric reduction B^T H B = D (Sec 8.6), D = diag", [sp.factor(d) for d in D])
-print("positive semidefinite for all x:", H.is_positive_semidefinite)
+if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
+print("every diagonal entry of D >= 0 everywhere, so H is positive semidefinite and f convex (Prop 3.43, Thm 8.25):", holds_everywhere(D, strict=False))
 
 ## \strictconvex — strictly convex: f'' > 0 / Hessian positive definite (Def 6.1)
 @uses sympy symred
@@ -637,7 +638,8 @@ H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 print("symmetric reduction B^T H B = D (Sec 8.6), D = diag", [sp.factor(d) for d in D])
-print("positive definite for all x:", H.is_positive_definite)
+if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
+print("every diagonal entry of D > 0 everywhere, so H is positive definite and f strictly convex (Prop 8.11, Thm 8.25):", holds_everywhere(D, strict=True))
 
 ## \fm — Fourier–Motzkin elimination of a variable (Sec 4.5)
 @uses sympy
@@ -740,23 +742,22 @@ for b_ in sorted({0.0, 1.0, 10.0, 100.0, float({{beta}})}):
 if len(s_) == 2:
     print("two classes: sigma(s1 - s2) =", 1/(1 + np.exp(-(s_[0] - s_[1]))))
 
-## \limit — limits, from the right and left and along lines (Def 5.62)
+## \limit — limits, for x > a and x < a, and restricted to lines (Def 5.62)
 ### one variable
 @uses sympy
 @in f expr
 @sym x
 @ex point := 0
 a = {{point}}
-print("limit:", sp.limit(f, $SYM, a), "  from right:", sp.limit(f, $SYM, a, '+'), "  from left:", sp.limit(f, $SYM, a, '-'))
-### two variables at (0, 0): along lines y = m x and parabolas
+print("limit:", sp.limit(f, $SYM, a), "  only x > a:", sp.limit(f, $SYM, a, '+'), "  only x < a:", sp.limit(f, $SYM, a, '-'))
+### two variables at (0, 0): restrict to the lines y = m x and the parabola y = x^2 (Def 5.62 on a subset)
 @uses sympy
 @in f expr
 @sym x y
 s1, s2 = $SYMS
-m, r, th = sp.symbols('m r th')
+m = sp.symbols('m')
 print("along y = m x:", sp.simplify(sp.limit(f.subs(s2, m*s1), s1, 0)))
 print("along y = x^2:", sp.limit(f.subs(s2, s1**2), s1, 0))
-print("in polar coordinates (r -> 0):", sp.simplify(f.subs({s1: r*sp.cos(th), s2: r*sp.sin(th)}, simultaneous=True)))
 ### sequence as n -> ∞
 @uses sympy
 @ex a_n := (1 + 1/n)**n
@@ -1096,17 +1097,24 @@ print("direct      d/dt g(f(t))         =", sp.expand(direct))
 print("agree:", sp.simplify(chain - direct) == 0)
 
 ## \critxy — critical points + classification with the Hessian (Ch7/8)
-@uses sympy solve
+@uses sympy solve symred
 @in f expr
 @sym x y
 grad = [sp.diff(f, s) for s in $SYMS]
 H = sp.hessian(f, $SYMS)
 for p in solve_all(grad, $SYMS):
+    if not all(sp.im(v) == 0 for v in p.values()):
+        print(p, " (not a point in R^d: complex coordinates, skipped)")
+        continue
     Hp = H.subs(p)
-    if Hp.is_positive_definite: kind = "local min (H positive definite)"
-    elif Hp.is_negative_definite: kind = "local max (H negative definite)"
-    elif Hp.is_indefinite: kind = "saddle point (H indefinite)"
-    else: kind = "no conclusion (H semidefinite)"
+    D, B = symmetric_reduction(Hp)
+    if Hp.free_symbols:  # a whole curve of critical points: decide along it
+        dfn = ("positive definite" if holds_everywhere(D, True) else "negative definite" if holds_everywhere([-d for d in D], True)
+               else f"depends on {sorted(Hp.free_symbols, key=str)}: classify the points one at a time")
+    else:
+        dfn = definiteness(D)
+    kind = {"positive definite": "local min", "negative definite": "local max", "indefinite": "saddle point"}.get(dfn, "no conclusion")
+    kind = f"{kind} (H(p) {dfn}: symmetric reduction D = diag {D}, Theorem 8.12)"
     print(p, " f =", sp.simplify(f.subs(p)), " H =", Hp.tolist(), "->", kind)
 
 ## \hessian — Hessian matrix, at a point, definiteness, second order partial derivatives (Def 8.2)
@@ -1137,7 +1145,8 @@ def where_not_positive(m_):
         return sp.solveset(m_ <= 0, m_.free_symbols.pop(), sp.S.Reals)
     return f"check {m_} <= 0 by hand"
 print("where each diagonal entry of D is <= 0 (empty = always > 0):", [where_not_positive(m_) for m_ in d_])
-print("positive definite everywhere:", H.is_positive_definite, " positive semidefinite everywhere:", H.is_positive_semidefinite)
+if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
+print("positive definite everywhere (all > 0):", holds_everywhere(D, strict=True), "  positive semidefinite everywhere (all >= 0):", holds_everywhere(D, strict=False), "  (Propositions 3.43, 8.11; None = check by hand)")
 ### second order partial derivatives: is f_xy = f_yx? (Clairaut's theorem, Thm 7.11)
 @uses sympy
 @in f expr

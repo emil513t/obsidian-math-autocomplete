@@ -52,3 +52,31 @@ export const DEFINITENESS = `def definiteness(D):
     if all(d >= 0 for d in D):
         return "positive semidefinite"
     return "negative semidefinite"`;
+
+// For a Hessian with variables in it: does every diagonal entry of D satisfy
+// d > 0 (strict) or d >= 0 at every point? True / False / None (undecided:
+// check by hand). Same test as Proposition 3.43 / 8.11, point by point.
+export const EVERYWHERE = `def holds_everywhere(D, strict):
+    """Every diagonal entry of D > 0 (strict) or >= 0 at every point (Propositions 3.43, 8.11)."""
+    result = True
+    for d in D:
+        d = sp.simplify(d)
+        bad = (d <= 0) if strict else (d < 0)
+        if not d.free_symbols:
+            if bool(bad):
+                return False
+        elif len(d.free_symbols) == 1:
+            if sp.solveset(bad, list(d.free_symbols)[0], sp.S.Reals) != sp.S.EmptySet:
+                return False
+        else:
+            r = sp.ask(sp.Q.positive(d) if strict else sp.Q.nonnegative(d))
+            if r is False:
+                return False
+            if r is None:
+                result = None
+    return result
+
+def divided_by(D):
+    """Diagonal entries with variables in them that the reduction divided by: the result assumes they are not 0."""
+    never_zero = lambda d: holds_everywhere([d], True) is True or holds_everywhere([-d], True) is True
+    return [d for d in D[:-1] if sp.simplify(d).free_symbols and not never_zero(d)]`;

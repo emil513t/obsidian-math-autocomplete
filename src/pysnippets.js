@@ -14,7 +14,7 @@
 
 import { parseTemplates } from "./templates.js";
 import { toPython, parseValue, splitTop, latexToPy } from "./vars.js";
-import { SYMRED, DEFINITENESS } from "./pyhelpers.js";
+import { SYMRED, DEFINITENESS, EVERYWHERE } from "./pyhelpers.js";
 import { asciiMath } from "./cas.js";
 
 const IMPORTS = {
@@ -22,7 +22,9 @@ const IMPORTS = {
   // definiteness read off D (Section 8.6, Theorem 8.31).
   symred: `${SYMRED}
 
-${DEFINITENESS}`,
+${DEFINITENESS}
+
+${EVERYWHERE}`,
   sympy: "import sympy as sp",
   numpy: "import numpy as np",
   plt: "import matplotlib.pyplot as plt",
