@@ -440,9 +440,9 @@ print("stable distribution (P v = v, entries sum to 1):", solve_all(list(P*v - v
 @uses sympy
 @in A matrix
 @in B matrix
-print("A*B =", (A*B).tolist() if A.cols == B.rows else "undefined")
-print("B*A =", (B*A).tolist() if B.cols == A.rows else "undefined")
-print("A + B =", (A + B).tolist() if A.shape == B.shape else "undefined")
+print("A*B =", (A*B).tolist() if A.cols == B.rows else "does not make sense")
+print("B*A =", (B*A).tolist() if B.cols == A.rows else "does not make sense")
+print("A + B =", (A + B).tolist() if A.shape == B.shape else "does not make sense")
 print("A^T =", A.T.tolist())
 if A.is_square:
     print("A^2 =", (A**2).tolist())
@@ -823,7 +823,7 @@ print("f^(n) =", sp.simplify(sp.diff(f, $SYM, {{order n}})))
 @sym x
 h = sp.symbols('h')
 q = sp.simplify((f.subs($SYM, $SYM + h) - f)/h)
-print("difference quotient (f(x+h) - f(x))/h =", q)
+print("slope (f(x+h) - f(x))/h =", q)
 print("limit h -> 0:", sp.limit(q, h, 0))
 
 ## \implicit — implicit differentiation dy/dx of F(x, y) = 0

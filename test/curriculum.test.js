@@ -35,7 +35,10 @@ c1 = x + 2y \le 6
 c2 = x \ge 0
 X = {1, 2, 3}
 Y = {2, 3}
-T(n) = \sum_{k=1}^{n} k = \frac{n(n+1)}{2}` + "\n```\n";
+T(n) = \sum_{k=1}^{n} k = \frac{n(n+1)}{2}
+g(x) = \frac{x^2 - 3x + 2}{x^2 - 4x + 3}
+r(x,y) = \frac{x y}{x^2 + y^2}
+J = \begin{cases} 0 & \text{if } x > 0 \\ 1 & \text{if } x \le 0 \end{cases}` + "\n```\n";
 
 // In Python only what is read counts as wording: string literals (prints,
 // labels) and comments, not library names like add_contour or .det().
@@ -48,7 +51,7 @@ const check = (where, text) => { for (const hit of offBook(text)) problems.push(
 
 test("math commands: names, descriptions, labels and worked solutions use only book wording", () => {
   const ctx = objectContext(parseVars(NOTE));
-  const answers = { n: "3", a: "0", k: "3", x0: "1", f: "x^2 y", A: "[[1, 2], [3, 4]]", B: "[[0, 1], [1, 0]]", F: "x^2 y; x + y", p: "(1, 0)", e: "x + y = 1; x - y = 0", x: "x", s: "\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}" };
+  const answers = { n: "3", a: "1", k: "3", x0: "1", f: "x^2 y", A: "[[1, 2], [3, 4]]", B: "[[0, 1], [1, 0]]", F: "x^2 y; x + y", p: "(1, 0)", e: "x + y = 1; x - y = 0", x: "x", s: "\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}" };
   let n = 0;
   for (const obj of OBJECTS) {
     if (HIDDEN.objects.has(obj.name)) continue;

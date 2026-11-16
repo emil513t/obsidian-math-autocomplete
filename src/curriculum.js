@@ -62,6 +62,12 @@ export const BANNED = [
   [/partial fraction|geometric series/i, "not in the book"],
   [/log-likelihood|maximal margin|active set|\bendpoints?\b|higher-derivative/i, "not in the book's wording"],
   [/\bADS\b/, "another course"],
+  // Limits (Section 5.7): words the book never uses for them.
+  [/indeterminate|removable|asymptot|diverg|squeeze|sandwich|\bpolar\b/i, "not in the book (cancel x − a, Example 5.63; unbounded, Exercise 5.80)"],
+  [/rational function/i, "quotient of polynomials (Remark 5.77)"],
+  [/difference quotient/i, "limit of slopes (Section 6.3.1, (7.4))"],
+  [/one[- ]sided limit|left[- ]hand limit|right[- ]hand limit/i, "not in the book (different formulas for x < a and x > a, like (5.19))"],
+  [/\bundefined\b/i, "\"does not make sense\" / \"the formula breaks down\" (Example 5.63)"],
 ];
 
 // Every banned term found in a piece of user-facing text.

@@ -8,6 +8,7 @@ import * as cas from "./cas.js";
 import { fnExpr, casOf, parseValue, toLatex, latexName, findRelation, derivedValue, pointError } from "./vars.js";
 import { gauss, parseSystem, parseIneqs, fmStep, ineqTex } from "./elim.js";
 import { convexityProof } from "./convex.js";
+import { limitOf, limitAnswer, parsePointText, derivativeLimit, parseCases, limitCases, fraction } from "./limit.js";
 import { symmetricReduction, definiteness } from "./textlink.js";
 
 const r = String.raw;
@@ -546,6 +547,10 @@ export const OBJECTS = [
     },
   },
   {
+    name: "limit", words: "limit lim approaches continuous continuity epsilon delta game skeptic jump slope derivative", desc: "limit of f at a point, decided and proved (Def 5.62, Def 5.65, Ex 5.63, Ex 5.64)", varName: "L",
+    options: (ctx) => limitOptions(ctx),
+  },
+  {
     name: "convexity", words: "convex strictly convex convexity positive definite second derivative", desc: "is f convex / strictly convex? decided and proved (Cor 6.55, Thm 6.54, Thm 8.25)", varName: "c",
     options: (ctx) => ctx.fns.map((f) => computed(`f:${f.v.name}`, `Is ${fname(f)} (strictly) convex?`, () => ({ value: convexityProof(f, []) })))
       .concat([askFunction("own", "A function you type (or a variable name)", ({ x, vars }) => ({ value: convexityProof({ v: { name: "f" }, x, vars }, []) }))]),
@@ -735,6 +740,92 @@ function notSquare(ctx, what) {
 
 // Linear systems in the note: the equations among the vars, [A | b] from a
 // matrix and a vector, and the rows of an augmented matrix.
+// ---------- \limit (Section 5.7, limit.js) ----------
+
+const pointAsk = (n, vars) => (n === 1
+  ? { key: "a", label: `Point: ${vars[0] || "x"} → (a number, \\infty or -\\infty)`, hint: "1" }
+  : { key: "p", label: `Point (${vars.join(", ")})`, hint: `(${vars.map(() => "0").join(", ")})` });
+const casesVars = (ctx) => [...ctx.vars.values()].filter((v) => v.kind === "piecewise" && !v.error);
+const casesVar = (v) => (v.params && v.params[0]) || "x";
+
+function limitOptions(ctx) {
+  const out = [];
+  for (const f of ctx.fns) {
+    const n = f.vars.length;
+    out.push({ id: `lf:${f.v.name}`, label: `lim ${fname(f)} as (${f.vars.join(", ")}) → a point you type`, ask: [pointAsk(n, f.vars)], build: (a) => ({ value: runLimit(`lf:${f.v.name}`, ctx, a).value }) });
+  }
+  for (const f of ctx.fns) {
+    if (f.vars.length === 1) {
+      out.push({ id: `dq:${f.v.name}`, label: `${latexName(f.v.name)}'(x_0) as a limit of slopes (Def 6.17, (6.4))`, ask: [{ key: "x0", label: "Point x_0 (a number, or a letter for a general point)", hint: "1" }], build: (a) => ({ value: runLimit(`dq:${f.v.name}`, ctx, a).value }) });
+    } else {
+      for (const v of f.vars) {
+        out.push({ id: `dp:${f.v.name}:${v}`, label: `∂${latexName(f.v.name)}/∂${v} as a limit (Def 7.4, Ex 7.6)`, ask: [{ key: "p", label: `Point (${f.vars.join(", ")})`, value: `(${f.vars.join(", ")})` }], build: (a) => ({ value: runLimit(`dp:${f.v.name}:${v}`, ctx, a).value }) });
+      }
+    }
+  }
+  for (const v of casesVars(ctx)) {
+    out.push({ id: `lc:${v.name}`, label: `lim ${latexName(v.name)}(${casesVar(v)}) (different formulas, like (5.19)) as ${casesVar(v)} → a point you type`, ask: [pointAsk(1, [casesVar(v)])], build: (a) => ({ value: runLimit(`lc:${v.name}`, ctx, a).value }) });
+  }
+  out.push({
+    id: "own", label: "A function you type (or a variable name) at a point you type",
+    ask: [{ key: "f", label: "Function (or the name of one of your variables)", hint: "\\frac{x^2 - 1}{x - 1}" }, { key: "vars", label: "Variables (empty: found in f)", hint: "x" }, { key: "p", label: "Point (x, y) for two variables; a number, \\infty or -\\infty for one", hint: "1" }],
+    build: (a) => ({ value: runLimit("own", ctx, a).value }),
+  });
+  return out;
+}
+
+// The answer line and the worked solution steps for a \limit option.
+export function runLimit(id, ctx, a = {}, steps = []) {
+  const [kind, name, wrt] = id.split(":");
+  if (kind === "lc") {
+    const v = ctx.vars.get(name);
+    if (!v) throw new Error(`no variable ${name}`);
+    const x = casesVar(v);
+    const rows = parseCases(v.value, x);
+    const pt = parsePointText(a.a ?? a.p, 1);
+    const r = limitCases(latexName(name), x, rows, pt, steps);
+    return { value: limitAnswer({ vars: [x] }, pt, r, `${latexName(name)}(${x})`), r, title: `the limit of $${latexName(name)}$` };
+  }
+  let F;
+  if (kind === "own") {
+    const t = typedFunction(a.f, ctx.fns);
+    const vars = a.vars?.trim() ? a.vars.split(",").map((s) => s.trim()).filter(Boolean) : t.vars;
+    F = { name: t.name ? latexName(t.name) : "f", x: t.x, vars: vars.length ? vars : ["x"], body: t.name ? null : t.x };
+  } else {
+    const f = ctx.fns.find((g) => g.v.name === name);
+    if (!f) throw new Error(`no function ${name}`);
+    F = { name: latexName(f.v.name), x: f.x, vars: f.vars };
+  }
+  const bodyOf = (x) => {
+    const fr = fraction(x);
+    if (!cas.equal(fr.D, cas.ONE)) return `\\frac{${cas.tex(fr.N, F.vars)}}{${cas.tex(fr.D, F.vars)}}`;
+    return x.terms.size > 1 ? `\\left(${cas.tex(x, F.vars)}\\right)` : cas.tex(x, F.vars);
+  };
+  const body = F.body ? bodyOf(F.body) : `${F.name}(${F.vars.join(", ")})`;
+  if (F.body) {
+    const fr = fraction(F.body);
+    steps.push({ text: `The function:`, tex: `${F.name}(${F.vars.join(", ")}) = ${cas.equal(fr.D, cas.ONE) ? cas.tex(F.body, F.vars) : `\\frac{${cas.tex(fr.N, F.vars)}}{${cas.tex(fr.D, F.vars)}}`}` });
+  } else if (kind === "lf") steps.push({ text: `The function:`, tex: `${F.name}(${F.vars.join(", ")}) = ${cas.tex(F.x, F.vars)}` });
+  if (kind === "dq" || kind === "dp") {
+    const text = kind === "dq" ? a.x0 : a.p;
+    const pt = kind === "dq" ? [cas.parse(String(text ?? "").trim() || "1")] : parsePointText(text || `(${F.vars.join(", ")})`, F.vars.length).xs;
+    const r = derivativeLimit(F, pt, steps, kind === "dp" ? wrt : null);
+    const ptT = pt.map((x) => cas.tex(x)).join(", ");
+    const lhs = kind === "dq" ? `${F.name}'(${ptT})` : `\\frac{\\partial ${F.name}}{\\partial ${wrt}}(${ptT})`;
+    return { value: r.kind === "value" ? `${lhs} = ${cas.tex(r.w)}` : `${lhs} = \\ ?`, r, title: kind === "dq" ? `$${F.name}'$ as a limit of slopes` : `$\\partial ${F.name}/\\partial ${wrt}$ as a limit` };
+  }
+  const n = F.vars.length;
+  const tries = (n === 1 ? (kind === "own" ? [a.p, a.a] : [a.a, a.p]) : [a.p]).filter((s) => String(s ?? "").trim());
+  let pt = null;
+  for (const s of tries) { try { pt = parsePointText(s, n); break; } catch (_) { /* next */ } }
+  if (!pt) {
+    if (tries.length) throw new Error(n === 1 ? "type a number, \\infty or -\\infty" : `type a point with ${n} coordinates`);
+    pt = parsePointText(n === 1 ? "0" : `(${F.vars.map(() => "0").join(", ")})`, n);
+  }
+  const r = limitOf(F, pt, steps);
+  return { value: limitAnswer(F, pt, r, body), r, title: `the limit of $${F.name}$` };
+}
+
 export function gaussSources(ctx) {
   const out = [];
   for (const s of systems(ctx)) out.push({ id: `eq:${s.name}`, label: `the equations ${s.name}`, rows: s.A.map((r, i) => [...r, s.b[i][0]]), vars: s.vars });

@@ -5,7 +5,7 @@
 import * as cas from "./cas.js";
 import { latexName } from "./vars.js";
 import { symmetricReduction, definiteness, definitenessWhy, CONCLUSION } from "./textlink.js";
-import { typedFunction, numericRoots, fmtC, taylor2, gaussSources, fmSystem } from "./objects.js";
+import { typedFunction, numericRoots, fmtC, taylor2, gaussSources, fmSystem, runLimit } from "./objects.js";
 import { gauss, parseSystem, systemTex, parseIneqs, fmStep, ineqTex, inductionSteps } from "./elim.js";
 import { findRelation } from "./vars.js";
 import { convexityProof } from "./convex.js";
@@ -802,6 +802,9 @@ HANDLERS.convexity = (id, ctx, a, steps) => {
   convexityProof(F, steps);
   return `is $${latexName(F.v.name)}$ convex?`;
 };
+
+// ----- limits (Section 5.7, limit.js) -----
+HANDLERS.limit = (id, ctx, a, steps) => runLimit(id, ctx, a, steps).title;
 
 HANDLERS.induction = (id, ctx, a, steps) => {
   let stmt, p, n0;

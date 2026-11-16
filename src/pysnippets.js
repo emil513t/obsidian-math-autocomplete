@@ -262,7 +262,7 @@ export const KEYWORDS = {
   hessian: "second derivatives second order partial derivatives definiteness at a point clairaut symmetric f_xy",
   matrixderivative: "matrix derivative vector function differentiable partial derivatives",
   chainrule: "composite composition derivative g of f t vector function",
-  derivative: "differentiate diff slope tangent line rate of change nth derivative definition difference quotient limit",
+  derivative: "differentiate diff slope tangent line rate of change nth derivative definition limit of slopes limit",
   tangentplane: "tangent plane surface differentiable",
   critxy: "critical points saddle point local minimum maximum extrema extremum two variables",
   crit: "critical points local minimum maximum extrema extremum local max min at a point",

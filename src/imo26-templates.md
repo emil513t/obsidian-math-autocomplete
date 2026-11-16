@@ -566,7 +566,7 @@ So the root is $x \approx {{root}}$.
 To find a critical point of $F$, Newton's method (8.6) (Section 8.3): $v_{n+1} = v_n - \nabla^2 F(v_n)^{-1}\,\nabla F(v_n)$, with the Hessian from Definition 8.2, $\nabla F = {{gradient}}$, $\nabla^2 F = {{Hessian}}$.
 From $v_0 = {{v0}}$: $v_1 = {{v1}}$, $v_2 = {{v2}}$, ... $\to {{limit}}$.
 ### it fails: cycle or f' = 0
-Starting at $x_0 = {{x0}}$: $x_1 = {{x1}}$, $x_2 = {{x0}}$, so the iterates cycle and never converge. (Or: $f'(x_n) = 0$, so the step is undefined.)
+Starting at $x_0 = {{x0}}$: $x_1 = {{x1}}$, $x_2 = {{x0}}$, so the iterates cycle and never converge. (Or: $f'(x_n) = 0$, so we cannot divide by $f'(x_n)$ and the step does not make sense.)
 
 ## \crit — Ch6: critical points and extrema, one variable
 ### find critical points + second derivative (Def 6.36, Lemma 6.37)
