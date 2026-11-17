@@ -8,6 +8,7 @@ import { explainItems, textExplain, citations } from "../src/explain.js";
 import { citeFromResult } from "../src/resultrefs.js";
 import { routeFit } from "../src/witness.js";
 import { offBook, isHidden } from "../src/curriculum.js";
+import { parseOutcomes, outcomeOf } from "../src/outcomes.js";
 import INDEX from "../src/exercise-index.json" with { type: "json" };
 import REFS1 from "../src/refs/imo26.json" with { type: "json" };
 import REFS2 from "../src/refs/imo26-extra.json" with { type: "json" };
@@ -17,12 +18,14 @@ const src = (f) => fs.readFileSync(new URL(`../src/${f}`, import.meta.url), "utf
 const TEMPLATES = [...parseTemplates(src("default-templates.md")), ...parseTemplates(src("imo26-templates.md"))]
   .filter((t) => !isHidden("templates", t.name));
 const TIPS = parseTips(src("tips.md"));
+const OUTCOMES = parseOutcomes(src("outcomes.md"));
 const card = (text, verdict = false) => studyCard({
   text, index: INDEX, tips: TIPS, templates: TEMPLATES, refs: REFS, verdict,
   items: (s) => explainItems(s, REFS),
   cite: (name, s, v) => citeFromResult(name, s, REFS, v),
   fit: (r, name, v) => routeFit(r, v, { command: name }),
   explain: (items) => textExplain(items),
+  outcomes: OUTCOMES, outcomeOf,
 });
 
 test("tips: every IMO26 command has a section; every reference exists in the book", () => {
@@ -106,4 +109,15 @@ test("audit: all 289 book exercises by number", () => {
     n++;
   }
   assert.equal(n, 289);
+});
+
+test("possible endings are listed; yours only inside the spoiler", () => {
+  const q = "Find the critical points of $f(x) = x^3 - 3x$ and classify them.";
+  const off = card(q);
+  assert.ok(off.markdown.includes("**Possible endings**"));
+  assert.ok(off.markdown.includes("- **local minimum**: f'(x0) = 0, f''(x0) > 0"));
+  assert.ok(!off.markdown.includes("Your values end as"));
+  const on = card(q, true).markdown;
+  const spoiler = on.slice(on.indexOf("> [!warning]- Verdict"));
+  assert.ok(spoiler.includes("**Your values end as:** **local maximum** (x = -1: f'' < 0); **local minimum** (x = 1: f'' > 0)"), spoiler.slice(0, 300));
 });

@@ -25,6 +25,8 @@ import IMO26_EXTRA from "./refs/imo26-extra.json";
 import EXERCISE_INDEX from "./exercise-index.json";
 import TIPS_MD from "./tips.md";
 import { studyCard, parseTips } from "./studycard.js";
+import OUTCOMES_MD from "./outcomes.md";
+import { parseOutcomes, outcomeOf } from "./outcomes.js";
 // Numbered items (Definition 4.26, ...), plus sections and the definitions the
 // book makes in running text ("positive definite", Section 3.7.1).
 const IMO26_REFS = [...IMO26_NUMBERED, ...IMO26_EXTRA];
@@ -1296,6 +1298,7 @@ export default class MathAutocompletePlugin extends Plugin {
       return;
     }
     this.tips ??= parseTips(TIPS_MD);
+    this.outcomes ??= parseOutcomes(OUTCOMES_MD);
     const vars = this.settings.varsEnabled ? parseVars(editor.getValue()) : new Map();
     const card = studyCard({
       text,
@@ -1309,6 +1312,8 @@ export default class MathAutocompletePlugin extends Plugin {
       cite: (name, s, v) => citeFromResult(name, s, IMO26_REFS, v),
       fit: (route, name, v) => routeFit(route, v, { command: name }),
       explain: (items) => textExplain(items),
+      outcomes: this.outcomes,
+      outcomeOf: (name, v) => outcomeOf(name, v),
     });
     const pre = editor.getLine(start.line).slice(0, start.ch).trim() ? "\n\n" : "";
     // Plain text (no Tab stops): the card is read, not filled in.

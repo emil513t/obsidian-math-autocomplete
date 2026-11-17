@@ -232,6 +232,14 @@ export function studyCard(opts) {
       if (dis) { c(); p(); } else { p(); c(); }
     }
 
+    // Every way this kind of exercise can end, for any values.
+    const ends = opts.outcomes?.get(main.name) || [];
+    if (ends.length) {
+      q();
+      q("**Possible endings** (what you see → what you conclude)");
+      for (const e of ends) q(`- **${e.name}**: ${e.see} → ${e.conclude}${e.route ? ` _(route: ${e.route})_` : ""}`);
+    }
+
     // Tricks: the command's, the engine's (for "not" tasks) and the strategy's.
     const tricks = [...T.trick];
     const eng = C.exercise?.engine || ((dis || decide) && ENGINE_FOR[main.name]);
@@ -263,10 +271,19 @@ export function studyCard(opts) {
       const best = fits.find((x) => x.f.best) || null;
       L.push("");
       L.push("> [!warning]- Verdict (spoiler: click to open)");
+      const got = opts.outcomeOf ? opts.outcomeOf(main.name, vars) : null;
+      if (got && got.length) {
+        const name = (k) => ends.find((e) => e.key === k)?.name || k;
+        L.push(`> **Your values end as:** ${got.map((g) => `**${name(g.key)}** (${g.why})`).join("; ")}.`);
+        L.push(">");
+      }
       if (best) {
         L.push(`> ${best.f.why ? best.f.why.charAt(0).toUpperCase() + best.f.why.slice(1) + "." : ""} Take the route **${best.v.label}**.`);
       } else if (fits.length) {
         L.push(`> ${fits[0].f.why ? fits[0].f.why + "." : ""} No single route stands out: use the steps above.`);
+      } else if (got && got.length) {
+        const r = ends.find((e) => e.key === got[0].key)?.route;
+        L.push(r ? `> Route: **${r}**.` : "> No route for this ending: use the steps above.");
       } else {
         L.push("> Not decided from the note: put the exercise's objects in a vars block (f, A, S, ...) so the plugin can compute it.");
       }
