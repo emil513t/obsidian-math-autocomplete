@@ -33,7 +33,7 @@ import { graphToPython } from "./graphpy.js";
 import { isHidden } from "./curriculum.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainMarkdown, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
-import { resultRefs, dropRefs, notApplied, pyItems, fromVars } from "./resultrefs.js";
+import { citeFromResult, pyItems, fromVars } from "./resultrefs.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
 import { aboutA, resolveAny, resolveMatrixLabel, routeFit } from "./witness.js";
 import { evidencePy } from "./evidence.js";
@@ -1208,9 +1208,8 @@ export default class MathAutocompletePlugin extends Plugin {
     // uses (\posdef positive definite: Prop 3.43, not Def 8.9).
     const notesFor = (text, ctx = {}) => {
       if (!this.settings.explainRefs) return "";
-      const r = this.settings.imo26 ? resultRefs(name, vars, ctx) : { add: "", drop: "" };
-      const items = explainItems([desc, route.label, text, extra, r.add], this.settings.imo26 ? IMO26_REFS : []);
-      return textExplain(dropRefs(items, [r.drop, notApplied(text)].join(" ")));
+      const refs = this.settings.imo26 ? IMO26_REFS : [];
+      return textExplain(citeFromResult(name, [desc, route.label, text, extra], refs, vars, ctx, text, route.label));
     };
     if (!questions.length) return insertTemplate(editor, start, end, route.body + notesFor(route.body));
     new TextInputsModal(this, name, route, questions, (answers, qs, ctx) => {
