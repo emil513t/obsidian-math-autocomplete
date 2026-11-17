@@ -9,6 +9,7 @@ import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
 import { setVerdict, limitVerdict, kktVerdict, svmVerdict } from "./verdicts.js";
 import { paramCases, caseName } from "./cases.js";
+import { firstFailure, inequalityFailure, gradZeroPoints, infeasible } from "./endings.js";
 const PARAM_COMMANDS = new Set(["posdef", "matinv", "critxy", "hessian", "convexfn", "roots"]);
 
 // "## \name" sections of "- [key] ending :: how you see it :: conclusion :: route".
@@ -184,7 +185,16 @@ export function outcomeOf(command, vars, ctx = {}) {
       const key = L.kind === "continuous" ? "cont" : L.kind === "cancel" ? "cancel" : L.oneVar ? "none" : "paths";
       return one(key, { cont: "continuous at the point", cancel: "0/0 that cancels", none: "the limit does not exist", paths: "the value depends on how you approach the point" }[key]);
     }
+    if (command === "sumind") {
+      const f = firstFailure(vars);
+      return f ? one("wrong", `the two sides differ at n = ${f.n}`) : null;
+    }
+    if (command === "inequality") {
+      const f = inequalityFailure(vars);
+      return f ? one("fails", `it fails at ${f.x} = ${cas.tex(f.value)}`) : null;
+    }
     if (command === "kkt") {
+      if (infeasible(vars, ctx)) return one("none", "the constraints contradict each other");
       const K = kktVerdict(vars, ctx);
       if (!K) return null;
       if (!K.strictlyFeasible) return one("notsf", "no point has all g_i < 0");
@@ -204,6 +214,8 @@ export function outcomeOf(command, vars, ctx = {}) {
         if (S.center && /positive/.test(S.d)) out.push({ key: "distance", why: `${fg.F.v.name} = |v − p|²` });
         return out;
       }
+      const gz = gradZeroPoints(vars, ctx);
+      if (gz && /add it/.test(gz)) return one("gradzero", "∇g = 0 at a point of g = 0");
       const HG = cas.hessian(fg.G.x, S.xs);
       if (isConstM(HG) && /^positive definite/.test(definitenessWitness(HG)?.d || "")) return one("compact", `${fg.G.v.name} = 0 is a closed and bounded curve`);
       return null;

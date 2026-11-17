@@ -225,6 +225,15 @@ export function kktVerdict(vars, ctx = {}) {
     if (st.contradictions.length) { strictlyFeasible = false; break; }
     cur = st.next;
   }
+  // Feasible at all: all g_i <= 0 has a solution.
+  let feasible = true;
+  cur = G.map((g) => ({ e: g.x, strict: false }));
+  for (const x of xs) {
+    const st = fmStep(cur, xs, x);
+    if (st.contradictions.length) { feasible = false; break; }
+    cur = st.next;
+  }
+  if (!feasible) return { xs, point: null, strictlyFeasible: false, feasible, convex };
   const mus = G.map((_, i) => `mu${i + 1}`);
   const n = G.length;
   for (let mask = 0; mask < 1 << n; mask++) {
@@ -335,7 +344,9 @@ export function verdictFit(command, label, vars, ctx = {}) {
     if (command === "kkt") {
       const K = kktVerdict(vars, ctx);
       if (!K) return null;
+      if (K.feasible === false) return /^no feasible point/.test(label) ? fit(true, "the constraints contradict each other", true) : fit(false, "no point satisfies all the constraints");
       if (/not strictly feasible/.test(label)) return fit(!K.strictlyFeasible, K.strictlyFeasible ? "strictly feasible" : "no point has all g_i < 0", !K.strictlyFeasible);
+      if (/^no feasible point/.test(label)) return fit(false, "a feasible point exists");
       if (!K.point) return null;
       const at = `optimum (${K.point.map((x) => cas.tex(x)).join(", ")})`;
       if (/all λ = 0/.test(label)) return fit(K.allZero, K.allZero ? `${at}, all λ = 0` : `${at} has an active constraint`, K.allZero && K.strictlyFeasible);
@@ -387,6 +398,7 @@ export function verdictRefs(command, vars, ctx = {}) {
     if (command === "kkt") {
       const K = kktVerdict(vars, ctx);
       if (!K) return null;
+      if (K.feasible === false) return R("Sec 4.5", "Thm 9.37 Def 9.36 Ex 9.40 Ex 9.43");
       if (!K.strictlyFeasible) return R("Def 9.36 Ex 9.40");
       if (!K.point) return R("Def 9.36 Thm 9.37", "Ex 9.40");
       return R(`Def 9.36 Thm 9.37${K.allZero ? " Ex 9.43" : ""}`, `Ex 9.40${K.allZero ? "" : " Ex 9.43"}`);

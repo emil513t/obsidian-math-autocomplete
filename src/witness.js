@@ -17,6 +17,8 @@ import { symmetricReduction, definiteness, resolveLabel } from "./textlink.js";
 import { resolveLagrangeLabel, noteFG, lagrangeSolve } from "./lagrange.js";
 import { verdictFit } from "./verdicts.js";
 import { resolveCasesLabel, paramCases, commandOfBody } from "./cases.js";
+import { resolveEndingLabel } from "./endings.js";
+import { outcomeOf } from "./outcomes.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -417,6 +419,8 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
 export function resolveAny(label, vars, ctx = {}) {
   const c = vars instanceof Map ? resolveCasesLabel(label, vars, ctx) : undefined;
   if (c !== undefined) return c;
+  const e = vars instanceof Map ? resolveEndingLabel(label, vars, ctx) : undefined;
+  if (e !== undefined) return e;
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;
   if (r !== undefined) return r;
   const g = vars instanceof Map ? resolveLagrangeLabel(label, vars, ctx) : undefined;
@@ -438,6 +442,27 @@ function lagrangeFit(label, vars, ctx) {
 
 // Does this route fit the note's matrix? { ok, why } or null (no opinion).
 export function routeFit(route, vars, ctx = {}) {
+  const r = routeFitCore(route, vars, ctx);
+  if (r || !ctx.endings || !ctx.command || !(vars instanceof Map)) return r;
+  return endingFit(route, vars, ctx);
+}
+
+// Any command: the ending the note's values give (outcomes.js) stars the
+// route that src/outcomes.md names for it; a route named only for other
+// endings doesn't fit. ctx.endings: that command's endings.
+function endingFit(route, vars, ctx) {
+  let got;
+  try { got = outcomeOf(ctx.command, vars, ctx); } catch (_) { return null; }
+  if (!got?.length) return null;
+  const label = route.label || "";
+  const mine = ctx.endings.filter((e) => e.route && label.startsWith(e.route));
+  if (!mine.length) return null;
+  const name = (k) => ctx.endings.find((e) => e.key === k)?.name || k;
+  const say = got.map((g) => name(g.key)).join(", ");
+  return mine.some((e) => got.some((g) => g.key === e.key)) ? { ok: true, best: true, why: say } : { ok: false, why: `your values: ${say}` };
+}
+
+function routeFitCore(route, vars, ctx = {}) {
   const body = route.body || "";
   const label = route.label || "";
   // A parameter in the note: the "with a parameter" route lists every case.
@@ -456,6 +481,8 @@ export function routeFit(route, vars, ctx = {}) {
   const A = m.M;
   const name = m.name;
   try {
+    if (/^not square/i.test(label)) return { ok: !isSquare(A), best: !isSquare(A), why: isSquare(A) ? `${name} is square` : `${name} is ${A.length}×${A[0].length}` };
+    if (/^not symmetric/i.test(label)) return isSquare(A) ? { ok: !isSym(A), why: isSym(A) ? `${name} is symmetric` : `${name}^T ≠ ${name}`, best: !isSym(A) } : null;
     const defRoute = /positive definite|semi-definite|indefinite|symmetric reduction|complete the square/i.test(label);
     if (defRoute && !/A\^T A/.test(label)) {
       if (!isSym(A)) return { ok: false, why: `${name} is not symmetric` };

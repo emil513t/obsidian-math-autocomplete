@@ -14,7 +14,7 @@
 
 import { parseTemplates } from "./templates.js";
 import { toPython, parseValue, splitTop, latexToPy } from "./vars.js";
-import { SYMRED, DEFINITENESS, EVERYWHERE } from "./pyhelpers.js";
+import { SYMRED, DEFINITENESS, EVERYWHERE, CASES } from "./pyhelpers.js";
 import { asciiMath } from "./cas.js";
 
 const IMPORTS = {
@@ -24,7 +24,9 @@ const IMPORTS = {
 
 ${DEFINITENESS}
 
-${EVERYWHERE}`,
+${EVERYWHERE}
+
+${CASES}`,
   sympy: "import sympy as sp",
   numpy: "import numpy as np",
   plt: "import matplotlib.pyplot as plt",
@@ -199,6 +201,7 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {},
   const taken = new Set();
   const defs = [];
   let syms = [];
+  let declaredSyms = null;
   let anyUnresolved = false;
 
   for (const u of s.uses) {
@@ -229,6 +232,8 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {},
     if (pick) {
       taken.add(pick.name);
       used.push({ input: inp.name, var: pick.name });
+      // f(x, y) = x^2 + a y^2: $SYMS is [x, y]; a is a parameter (still a symbol).
+      if (pick.declared && !declaredSyms) declaredSyms = pick.declared;
       // The snippet keeps its own names; a differently named variable is
       // copied in (A = b), so its printed labels stay right.
       if (defined.has(pick.name)) {
@@ -268,8 +273,9 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {},
     if (other.length) header.push(`# assumed in the vars block (sympy can't hold these, so check the answers): ${other.map((x) => `${x.name} ${x.op} ${x.value}`).join(", ")}`);
   }
 
-  const symList = `[${syms.join(", ")}]`;
-  body = body.replace(/\$SYMS\b/g, symList).replace(/\$SYM\b/g, syms[0] || "x");
+  const vs = declaredSyms && declaredSyms.every((n) => syms.includes(n)) ? declaredSyms : syms;
+  const symList = `[${vs.join(", ")}]`;
+  body = body.replace(/\$SYMS\b/g, symList).replace(/\$SYM\b/g, vs[0] || "x");
   body = body.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (m, label) => {
     const typed = (answers[label] ?? "").trim();
     return typed ? answerToPy(typed, style, label) : m;

@@ -516,7 +516,7 @@ class TemplateSuggest extends EditorSuggest {
       // Like the matrix fills: second step picks the solution route.
       // Routes that fit the note's own matrix (definite? invertible?) come first.
       const vars = this.plugin.settings.varsEnabled ? parseVars(editor.getValue()) : null;
-      const fit = vars instanceof Map ? (v) => routeFit(v, vars, { command: t.name }) : null;
+      const fit = vars instanceof Map ? (v) => routeFit(v, vars, { command: t.name, endings: this.plugin.endingsOf(t.name) }) : null;
       new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v, t.desc), fit).open();
       return;
     }
@@ -1291,6 +1291,12 @@ export default class MathAutocompletePlugin extends Plugin {
     return out.join("\n").trim();
   }
 
+  // The possible endings of a command (src/outcomes.md).
+  endingsOf(name) {
+    this.outcomes ??= parseOutcomes(OUTCOMES_MD);
+    return this.outcomes.get(name) || [];
+  }
+
   insertStudyCard(editor, start, end, typed = "") {
     const text = this.exerciseTextAt(editor, start.line, typed);
     if (!text) {
@@ -1310,7 +1316,7 @@ export default class MathAutocompletePlugin extends Plugin {
       verdict: !!this.settings.cardVerdict,
       items: (s) => explainItems(s, IMO26_REFS),
       cite: (name, s, v) => citeFromResult(name, s, IMO26_REFS, v),
-      fit: (route, name, v) => routeFit(route, v, { command: name }),
+      fit: (route, name, v) => routeFit(route, v, { command: name, endings: this.endingsOf(name) }),
       explain: (items) => textExplain(items),
       outcomes: this.outcomes,
       outcomeOf: (name, v) => outcomeOf(name, v),

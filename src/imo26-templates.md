@@ -154,6 +154,8 @@ Hence $f^{-1}({{C}}) = {{answer}}$.
 **Proof by contradiction.** Assume $\xi = \frac{a}{b} \in \mathbb{Q}$ with ${{equation in xi}}$, where $a \in \mathbb{Z}$, $b \in \mathbb{N}$ have no common divisor (Definition 1.54).
 Then ${{equation in a, b}}$, so ${{p}}$ divides $a$. Write $a = {{p}}k$. Then {{substitute}}, so ${{p}}$ divides $b$ too.
 So ${{p}}$ divides both $a$ and $b$ — a contradiction. $\blacksquare$
+### it is rational after all: write it as a fraction (Def 1.54)
+${{number}} = {{simplify}} = \frac{{{a}}}{{{b}}}$ with integers ${{a}}$ and ${{b}} \neq 0$, so it is rational (Definition 1.54).
 
 ## \inequality — Ch1/5: prove an inequality
 ### chain of steps
@@ -170,6 +172,8 @@ where the first step uses {{rule}} and the second uses {{rule}}. $\blacksquare$
 **Proof.** By Corollary 5.27, $|u + v| \le |u| + |v|$; with $u = {{u}}$, $v = {{v}}$ this is ${{written out}}$. $\blacksquare$
 ### by induction (Thm 1.86)
 **Proof by induction** (Theorem 1.86) on $n \ge {{n0}}$. Base case: {{check}}. Step: assume ${{inequality for n}}$; then ${{inequality for n+1 side}} = {{rewrite}} \ge {{use the hypothesis}} \ge {{other side}}$. $\blacksquare$
+### NOT true for all values: one value where it fails
+For ${{variable}} = {{value}}$ the left side is ${{left}}$ and the right side is ${{right}}$, and ${{left}} {{> / <}} {{right}}$. So the inequality does not hold for every value.
 
 ## \sumind — Ch1: prove a formula by induction (Thm 1.86)
 ### sum formula
@@ -193,6 +197,8 @@ So $p(n)$ holds for all $n \ge {{n0}}$. $\blacksquare$
 **Proof by induction on ${{m}}$** (Theorem 1.86). Let $p({{m}})$: {{statement}}.
 **Base case:** {{check}}.
 **Step:** assume $p({{m}})$. {{reduce the case m+1 to the case m}}. $\blacksquare$
+### the formula is wrong: a small n where it fails (Thm 1.86)
+For $n = {{n}}$ the left side is ${{left}}$ and the right side is ${{right}}$: they differ, so the formula is false, and no induction (Theorem 1.86) can prove it.
 
 ## \fakeproof — Ch1/2: find the mistake in an argument
 ### invalid step
@@ -265,6 +271,8 @@ Then $f(x) = y_1 L_1(x) + y_2 L_2(x) + y_3 L_3(x) = {{simplified}}$ (Remark 2.34
 Write $f(x) = a_0 + a_1 x + a_2 x^2 + \dots$. Each point gives a linear equation in $a_0, a_1, \dots$:
 $${{system}}$$
 Gauss elimination (Section 2.3) gives ${{coefficients}}$, so $f(x) = {{polynomial}}$. It is unique by Theorem 2.25 (Remark 2.26).
+### two points with the same x: no polynomial passes through both (Def 1.95)
+The points $({{x}}, {{y1}})$ and $({{x}}, {{y2}})$ have the same first coordinate but ${{y1}} \neq {{y2}}$. A function has one value at each input (Definition 1.95), so no polynomial passes through both points.
 
 ## \matmul — Ch3: matrix products and arithmetic
 ### compute AB entry by entry (Def 3.4)
@@ -277,6 +285,8 @@ The two agree, as Theorem 3.19 says.
 $A^2 = {{A^2}}$, $A^3 = {{A^3}}$, so (by induction, Theorem 1.86) $A^k = {{A^k}}$.
 ### does (A+B)^2 = A^2 + 2AB + B^2? (Prop 3.17)
 By Proposition 3.17, $(A + B)^2 = A^2 + AB + BA + B^2$. This equals $A^2 + 2AB + B^2$ iff $AB = BA$; for $A = {{A}}$, $B = {{B}}$: $AB = {{AB}} \neq {{BA}} = BA$.
+### NOT defined: the sizes don't match (Def 3.4)
+$A$ is ${{size of A}}$ and $B$ is ${{size of B}}$. Entry $(i, j)$ of $AB$ is row $i$ of $A$ times column $j$ of $B$ (Definition 3.4), which needs as many columns in $A$ as rows in $B$. So $AB$ is not defined.
 
 ## \matinv — Ch3: inverse matrices
 ### Gauss elimination on (A | I) (Def 3.24, Sec 3.5.1)
@@ -297,6 +307,8 @@ $A\,{{B}} = {{product 1}} = I$ and ${{B}}\,A = {{product 2}} = I$, so ${{B}} = A
 $A$ is **not invertible**: {{A has a zero row / A v = 0 for v = ... ≠ 0}}. If $B$ were an inverse, then {{contradiction, e.g. v = BAv = B0 = 0}} (Definition 3.24).
 ### inverse of a product (Prop 3.29)
 $(AB)^{-1} = B^{-1}A^{-1}$ (Proposition 3.29), since $(AB)(B^{-1}A^{-1}) = A(BB^{-1})A^{-1} = AA^{-1} = I$ (Theorem 3.19).
+### not square: no inverse (Def 3.24)
+$A = {{A}}$ is ${{size of A}}$, not square. Definition 3.24 asks for $B$ with $AB = BA = I_n$, which only makes sense for $n \times n$ matrices, so $A$ has no inverse.
 
 ## \matrixproof — Ch3: prove a matrix identity
 ### entry by entry (Def 3.4)
@@ -309,6 +321,8 @@ These agree for all $i, j$, so ${{LHS}} = {{RHS}}$. $\blacksquare$
 $${{LHS}} = {{step}} = {{RHS}}.$$ $\blacksquare$
 ### symmetric matrix: (·)^T equals itself (Prop 3.35)
 **Proof.** $({{M}})^\top = {{transpose using Proposition 3.35}} = {{M}}$, so ${{M}}$ is symmetric. $\blacksquare$
+### NOT true in general: one pair of matrices (Def 3.4)
+With $A = {{A}}$ and $B = {{B}}$: the left side is ${{left}}$ and the right side is ${{right}}$ (Definition 3.4). They differ, so the identity does not hold for all matrices.
 
 ## \posdef — Ch3/8: decide (semi-)definiteness of a symmetric matrix
 ### symmetric reduction to a diagonal matrix (Sec 8.7, Thm 8.31, Prop 3.43)
@@ -329,6 +343,8 @@ $A$ is **not positive definite**: $u = {{u}}$ gives $u^\top A u = {{value}} \le 
 $u = {{u}}$: $u^\top A u = {{positive}} > 0$; $v = {{v}}$: $v^\top A v = {{negative}} < 0$. So $A$ is indefinite (Definition 8.9).
 ### A^T A is positive semi-definite (Ex 8.35)
 $u^\top (A^\top A) u = (Au)^\top (Au) = |Au|^2 \ge 0$ (Definition 5.1), so $A^\top A$ is positive semi-definite.
+### not symmetric: decide the symmetric matrix with the same u^T A u (Sec 3.7.1)
+$A = {{A}}$ has $A^\top \neq A$, and the definitions in Section 3.7.1 are for symmetric matrices. Since $u^\top A u$ is a number, $u^\top A u = u^\top A^\top u$, so $u^\top A u = u^\top S u$ with $S = \frac{1}{2}(A + A^\top) = {{S}}$, which is symmetric: decide $S$ instead.
 
 ## \formulate — Ch4: write a problem as an optimization problem (Def 4.6)
 ### general form min f over C (Def 4.6, Remark 4.8)
@@ -352,6 +368,8 @@ $(x, y) = {{p}} + t\,{{v}}$ gives $x = {{x(t)}}$, $y = {{y(t)}}$. Eliminating $t
 ### do three points lie on one line?
 Is ${{r}}$ on the line $\{ {{p}} + t({{q - p}}) \}$? Solve ${{p}} + t({{q - p}}) = {{r}}$ coordinate by coordinate: {{solve for t}}.
 {{one t works for all coordinates → collinear / contradiction → not collinear}}.
+### the two points coincide: no unique line (Def 4.12)
+$p = q = {{p}}$ gives $u = q - p = 0$, but Definition 4.12 needs a direction $u \neq 0$. Every line through ${{p}}$ contains both points, so there is no unique line.
 
 ## \convexset — Ch4: show a subset is convex (Def 4.21)
 ### by definition (Def 4.21)
@@ -543,6 +561,8 @@ $f$ has odd degree, so it has a root by Proposition 5.83.
 | {{_}} | {{_}} | {{_}} |
 
 Each step keeps a sign change (Theorem 5.81), so the root is $\approx {{root}}$.
+### no sign change at a and b: look at a point in between (Thm 5.81)
+$f({{a}}) = {{f(a)}}$ and $f({{b}}) = {{f(b)}}$ have the same sign, so Theorem 5.81 gives nothing on $[{{a}}, {{b}}]$. At $c = {{c}}$: $f(c) = {{f(c)}}$. If its sign is the other one, use $[{{a}}, c]$ or $[c, {{b}}]$; if not, try another $c$.
 
 ## \evt — Ch5: a max/min exists (Thm 5.84)
 ### compact + continuous (Thm 5.84)
@@ -550,6 +570,8 @@ $C = {{C}}$ is compact ({{closed and bounded}}, Definition 5.53) and $f = {{f}}$
 By Theorem 5.84, $f$ attains a minimum and a maximum on $C$.
 ### Theorem 5.84 fails without compactness (Ex 5.85)
 Without {{boundedness / closedness}} it can fail: $f(x) = {{f}}$ on ${{set}}$ is continuous but has no {{max / min}}, since {{reason}}.
+### not compact, but convex: a critical point is the minimum (Thm 6.13)
+$C = {{C}}$ is not compact, so Theorem 5.84 does not apply. But $f = {{f}}$ is convex on the convex set $C$ ({{reason}}), and $\nabla f(v_0) = 0$ at $v_0 = {{v0}}$, so $v_0$ is a local and hence global minimum (Theorem 6.13). A maximum need not exist.
 
 ## \derivative — Ch6: derivatives
 ### from the definition (Def 6.17)
@@ -707,6 +729,8 @@ Regarding $\lambda$ as a constant, the equations ${{f_x}} + \lambda\,({{g_x}}) =
 **Variables:** ${{variables}}$. **Objective:** ${{f}}$. **Constraint:** ${{g}} = 0$.
 Theorem 7.39: the critical points of $L = f + \lambda g$ give {{equations}}; solving: ${{solution}}$.
 **Answer:** {{answer in words}}.
+### ∇g = 0 somewhere on g = 0: check those points too (Thm 7.39)
+Points of $g = 0$ where $\nabla g = 0$: solving $\nabla g = 0$, $g = 0$ gives ${{points}}$. The equations $\nabla f + \lambda \nabla g = 0$ can miss such points (Theorem 7.39 says nothing about them), so add them to the candidates and compare the values of $f$.
 
 ## \compactopt — Ch7: max/min on a compact set: interior + boundary (Prop 7.46)
 ### interior critical points + each edge + corners (Prop 7.46)
@@ -767,6 +791,8 @@ At $v = {{v}}$ the active constraints are ${{active}}$. With $\lambda = {{lambda
 If all $\lambda_i = 0$, the KKT conditions say $\nabla f(v) = 0$: $v = {{critical point}}$. It is feasible ($g_i(v) \le 0$: {{check}}), so it is the optimum.
 ### not strictly feasible: KKT may fail (Ex 9.40)
 No $z_0$ has all $g_i(z_0) < 0$ ({{reason}}), so the problem is not strictly feasible (Definition 9.36) and Theorem 9.37 (i) does not apply: {{the optimum ... violates KKT}}.
+### no feasible point: the constraints contradict each other (Sec 4.5)
+Fourier–Motzkin elimination (Section 4.5) on $g_1 \le 0, \dots$ ends in a contradiction: {{elimination}}. No point satisfies all the constraints, so the problem has no optimum.
 
 ## \svm — Ch9: separating hyperplanes, perceptron and SVM
 ### optimal separating hyperplane (Thm 9.8)

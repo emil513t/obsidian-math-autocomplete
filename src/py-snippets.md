@@ -402,6 +402,7 @@ print("quotient:", k_, "  remainder:", r_)
 print("check q*k + r - p =", sp.expand(q*k_ + r_ - p))
 
 ## \roots — roots and factorization of a polynomial
+### factor and find all roots
 @uses sympy
 @in p expr
 @sym x
@@ -409,6 +410,18 @@ print("factored:", sp.factor(p))
 print("roots (with multiplicity):", sp.roots(sp.Poly(p, $SYM)))
 print("real roots:", sp.real_roots(sp.Poly(p, $SYM)))
 print("numeric:", sp.Poly(p, $SYM).nroots())
+### with one parameter: the number of real roots (Sec 2.4.2)
+@uses sympy symred
+@in f expr
+@sym x
+p_ = sorted(f.free_symbols - {$SYM}, key=str)
+P_ = sp.Poly(f, $SYM)
+if P_.degree() > 2 or len(p_) != 1:
+    print("this is for degree at most 2 with exactly one parameter; found degree", P_.degree(), "and", p_)
+else:
+    c2, c1, c0 = [P_.coeff_monomial($SYM**k) for k in (2, 1, 0)]
+    print("b^2 - 4ac =", sp.factor(c1**2 - 4*c2*c0), "  coefficient of x^2:", c2)
+    cases_in(p_[0], [c2, c1**2 - 4*c2*c0], lambda v: f"{len(sp.solveset(f.subs(p_[0], v), $SYM, sp.S.Reals))} real root(s)")
 
 ## \interpolate — polynomial through given points, Shamir secret sharing (Sec 2.5)
 ### the interpolating polynomial
@@ -572,6 +585,16 @@ print("positive semidefinite  <=>", " and ".join(f"({x}) >= 0" for x in D))
 free = sorted(A.free_symbols, key=str)
 if len(free) == 1:
     print("solved:", sp.reduce_inequalities([x > 0 for x in D], free))
+### with one parameter: every case (Sec 8.7, Prop 3.43)
+@uses sympy symred
+@in A matrix
+p_ = sorted(A.free_symbols, key=str)
+if len(p_) != 1:
+    print("this needs exactly one parameter; found:", p_)
+else:
+    D_, B_ = symmetric_reduction(A)
+    print("D = diag", [sp.factor(d) for d in D_], " -- the case can only change where an entry is 0")
+    cases_in(p_[0], D_, lambda v: definiteness(symmetric_reduction(A.subs(p_[0], v))[0]))
 
 ## \kernelperceptron — kernel perceptron on labeled points (Ex 9.19)
 @uses numpy
@@ -646,6 +669,21 @@ D, B = symmetric_reduction(H)
 print("symmetric reduction B^T H B = D, D = diag", [sp.factor(d) for d in D])
 if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
 print("every diagonal entry of D >= 0 everywhere, so H is positive semidefinite and f convex:", holds_everywhere(D, strict=False))
+### with one parameter: for which values is f convex? (Thm 8.25)
+@uses sympy symred
+@in f expr
+@sym x y
+H_ = sp.hessian(f, $SYMS)
+p_ = sorted(H_.free_symbols - set($SYMS), key=str)
+END_ = {"positive definite": "strictly convex", "positive semidefinite": "convex, not strictly", "positive semidefinite and negative semidefinite": "convex, not strictly"}
+if any(H_.has(s) for s in $SYMS):
+    print("the Hessian depends on the point: use the route 'several variables: Hessian positive semi-definite'")
+elif len(p_) != 1:
+    print("this needs exactly one parameter; found:", p_)
+else:
+    print("Hessian:", H_.tolist())
+    D_, B_ = symmetric_reduction(H_)
+    cases_in(p_[0], D_, lambda v: END_.get(definiteness(symmetric_reduction(H_.subs(p_[0], v))[0]), "not convex"))
 
 ## \strictconvex — strictly convex: f'' > 0 / Hessian positive definite (Def 6.1)
 @uses sympy symred
@@ -1114,6 +1152,7 @@ print("direct      d/dt g(f(t))         =", sp.expand(direct))
 print("agree:", sp.simplify(chain - direct) == 0)
 
 ## \critxy — critical points + classification with the Hessian (Ch7/8)
+### all critical points, then the Hessian test
 @uses sympy solve symred
 @in f expr
 @sym x y
@@ -1133,6 +1172,21 @@ for p in solve_all(grad, $SYMS):
     kind = {"positive definite": "local min", "negative definite": "local max", "indefinite": "saddle point"}.get(dfn, "no conclusion")
     kind = f"{kind} (H(p) {dfn}: symmetric reduction D = diag {D}, Theorem 8.12)"
     print(p, " f =", sp.simplify(f.subs(p)), " H =", Hp.tolist(), "->", kind)
+### with one parameter: min / max / saddle for each value (Thm 8.12)
+@uses sympy symred
+@in f expr
+@sym x y
+H_ = sp.hessian(f, $SYMS)
+p_ = sorted(H_.free_symbols - set($SYMS), key=str)
+END_ = {"positive definite": "local minimum", "negative definite": "local maximum", "indefinite": "saddle point"}
+if any(H_.has(s) for s in $SYMS):
+    print("the Hessian depends on the point: classify each critical point on its own")
+elif len(p_) != 1:
+    print("this needs exactly one parameter; found:", p_)
+else:
+    print("Hessian:", H_.tolist())
+    D_, B_ = symmetric_reduction(H_)
+    cases_in(p_[0], D_, lambda v: END_.get(definiteness(symmetric_reduction(H_.subs(p_[0], v))[0]), "only semi-definite: the Hessian test says nothing"))
 
 ## \hessian — Hessian matrix, at a point, definiteness, second order partial derivatives (Def 8.2)
 ### at a point

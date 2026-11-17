@@ -55,18 +55,18 @@ start of the matching route's label ("-" for none). Book wording only.
 
 ## \irrational
 - [irr] irrational :: lowest terms a/b lead to a common factor :: the number is not rational (Definition 1.54) :: lowest terms
-- [rat] rational after all :: it simplifies to a fraction :: give the fraction :: -
+- [rat] rational after all :: it simplifies to a fraction :: give the fraction :: it is rational after all
 
 ## \inequality
 - [holds] holds for all values :: the difference is a square or a sum of squares :: the inequality holds :: difference is a square
 - [from] holds from some n0 on :: it fails for small n, the induction step works after n0 :: holds for n ≥ n0 (Theorem 1.86) :: by induction
-- [fails] fails for some values :: one value makes it false :: that value is the example :: -
+- [fails] fails for some values :: one value makes it false :: that value is the example :: NOT true for all values
 - [equality] equality case :: the square is 0 exactly when ... :: say when equality holds :: difference is a square
 
 ## \sumind
 - [ok] the formula holds for all n :: base case and step both work :: proved by induction (Theorem 1.86) :: sum formula
 - [late] holds from n0 on :: the base case fails for small n :: start the induction at n0 :: inequality from some n0 on
-- [wrong] the formula is wrong :: the base case or a small n fails :: that n shows it :: -
+- [wrong] the formula is wrong :: the base case or a small n fails :: that n shows it :: the formula is wrong
 
 ## \fakeproof
 - [div0] division by zero :: a step divides by something that can be 0 :: that step is not allowed :: division by zero
@@ -96,11 +96,11 @@ start of the matching route's label ("-" for none). Book wording only.
 ## \interpolate
 - [unique] n points, degree < n :: the x-values are different :: exactly one polynomial :: linear system in the coefficients
 - [lower] the polynomial has lower degree :: the top coefficient comes out 0 :: the points lie on a lower degree curve :: linear system in the coefficients
-- [clash] two points with the same x :: same x, different y :: no polynomial passes through both :: -
+- [clash] two points with the same x :: same x, different y :: no polynomial passes through both :: two points with the same x
 
 ## \matmul
 - [ok] defined :: columns of A = rows of B :: AB entry by entry (Definition 3.4) :: compute AB entry by entry
-- [undef] not defined :: the sizes don't match :: AB does not make sense :: -
+- [undef] not defined :: the sizes don't match :: AB does not make sense :: NOT defined
 - [noncomm] AB ≠ BA :: one entry differs :: the matrices don't commute :: does (A+B)^2
 - [comm] AB = BA :: same product both ways :: (A + B)² = A² + 2AB + B² holds :: does (A+B)^2
 
@@ -108,11 +108,11 @@ start of the matching route's label ("-" for none). Book wording only.
 - [inv] invertible :: Gauss on (A | I) reaches (I | B); for 2 × 2: D = ad − bc ≠ 0 :: A^{-1} = B (Definition 3.24) :: Gauss elimination on (A | I)
 - [sing] not invertible :: a zero row appears, or Av = 0 for some v ≠ 0 :: no inverse: v = BAv = 0 would follow :: NOT invertible
 - [param] depends on a parameter :: D contains a :: invertible exactly when D ≠ 0; check each a with D = 0 separately :: with parameters
-- [notsq] not square :: A is m × n with m ≠ n :: no inverse in the sense of Definition 3.24 :: -
+- [notsq] not square :: A is m × n with m ≠ n :: no inverse in the sense of Definition 3.24 :: not square
 
 ## \matrixproof
 - [holds] the identity holds :: entries agree, or the rules transform one side into the other :: proved :: entry by entry
-- [fails] it fails :: one pair of matrices gives different sides :: that pair is the example :: -
+- [fails] it fails :: one pair of matrices gives different sides :: that pair is the example :: NOT true in general
 
 ## \posdef
 - [pd] positive definite :: every diagonal entry of D is > 0 :: u^T A u > 0 for u ≠ 0 (Proposition 3.43) :: symmetric reduction
@@ -121,7 +121,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [nsd] negative semi-definite, not definite :: entries of D are ≤ 0, at least one is 0 :: u^T A u ≤ 0 :: symmetric reduction
 - [ind] indefinite :: D has a positive and a negative entry :: one u with u^T A u > 0, one v with v^T A v < 0 (Definition 8.9) :: indefinite
 - [param] depends on a parameter :: D contains a :: one case per range of a, and each value where an entry of D is 0 on its own :: with a parameter
-- [notsym] not symmetric :: A^T ≠ A :: the definitions are for symmetric matrices :: -
+- [notsym] not symmetric :: A^T ≠ A :: the definitions are for symmetric matrices :: not symmetric
 
 ## \formulate
 - [lin] linear optimization problem :: objective and constraints are linear :: optimum at a corner (Section 4.4) :: linear optimization problem
@@ -130,7 +130,7 @@ start of the matching route's label ("-" for none). Book wording only.
 
 ## \line
 - [line] a line :: two different points or a point and a direction u ≠ 0 :: { p + t u | t ∈ ℝ } (Definition 4.12) :: line through two points
-- [same] the points coincide :: u = 0 :: no unique line :: -
+- [same] the points coincide :: u = 0 :: no unique line :: the two points coincide
 - [on] three points on one line :: one t fits every coordinate :: collinear :: do three points lie on one line
 - [off] three points not on one line :: the coordinates need different t :: not collinear :: do three points lie on one line
 
@@ -207,12 +207,12 @@ start of the matching route's label ("-" for none). Book wording only.
 ## \ivt
 - [root] a root in [a, b] :: f(a) and f(b) have opposite signs :: some ξ with f(ξ) = 0 (Theorem 5.81) :: sign change on [a, b]
 - [value] a value c in between :: f(a) < c < f(b) :: apply it to f − c :: hitting a value c
-- [nosign] no sign change found :: f(a), f(b) of the same sign :: no conclusion: try other points :: -
+- [nosign] no sign change found :: f(a), f(b) of the same sign :: no conclusion: try other points :: no sign change at a and b
 
 ## \evt
 - [both] max and min exist :: compact set, continuous f :: both are attained (Theorem 5.84) :: compact + continuous
 - [fail] may fail :: the set is not bounded or not closed :: the theorem does not apply; look for an example with no max or min :: Theorem 5.84 fails
-- [convex] not compact, but convex :: a line or plane with f convex along it :: a critical point is the minimum (Theorem 6.13) :: -
+- [convex] not compact, but convex :: a line or plane with f convex along it :: a critical point is the minimum (Theorem 6.13) :: not compact, but convex
 
 ## \derivative
 - [diff] differentiable :: the rules apply everywhere :: f'(x) by product / chain rule :: with the rules
@@ -284,7 +284,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [line] constraint a line or plane :: g is linear :: not compact: convexity of f along it gives the min (Theorem 6.13) :: linear constraint
 - [unbounded] no max (or no min) :: f grows without bound along the constraint :: only the other one exists :: linear constraint
 - [many] several candidates :: the system has several solutions :: compare the f-values :: one constraint
-- [gradzero] ∇g = 0 at a point of g = 0 :: Theorem 7.39 does not cover that point :: check it separately :: -
+- [gradzero] ∇g = 0 at a point of g = 0 :: Theorem 7.39 does not cover that point :: check it separately :: ∇g = 0 somewhere on g = 0
 - [distance] distance to a point :: f = |v − p|² :: the closest point; the distance is √(min f) (Definition 5.1) :: linear constraint
 
 ## \compactopt
@@ -301,7 +301,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [inner] all λ = 0 :: the unconstrained minimum is feasible :: it is the optimum (Exercise 9.43) :: all λ = 0
 - [active] some constraints active :: the case with λ ≥ 0 and all g ≤ 0 :: the KKT point is the optimum (Theorem 9.37) :: KKT with case analysis
 - [notsf] not strictly feasible :: no point has all g_i < 0 :: KKT may fail (Definition 9.36) :: not strictly feasible
-- [none] no feasible point :: the constraints contradict each other :: no optimum :: -
+- [none] no feasible point :: the constraints contradict each other :: no optimum :: no feasible point
 
 ## \svm
 - [sep] separable :: a line (hyperplane) with every point on its side :: the optimal hyperplane and its margin (Theorem 9.8) :: optimal separating hyperplane

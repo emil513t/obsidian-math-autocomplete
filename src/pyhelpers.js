@@ -39,6 +39,32 @@ export const SYMRED = `def symmetric_reduction(A, verbose=False):
     B = ext[:n, :]
     return [ext[n + i, i] for i in range(n)], B`;
 
+// One parameter p: cut its line where an expression in crit (or its
+// denominator) is 0; one test value per range and every cut value on its own.
+export const CASES = `def cases_in(p, crit, classify):
+    """Every case for the parameter p: the line of p is cut where an expression in crit is 0."""
+    cuts = set()
+    for e in crit:
+        e = sp.together(sp.sympify(e))
+        for part in (sp.numer(e), sp.denom(e)):
+            if part.has(p):
+                sol = sp.solveset(part, p, sp.S.Reals)
+                if isinstance(sol, sp.FiniteSet):
+                    cuts |= set(sol)
+    cuts = sorted(cuts, key=lambda r: float(r))
+    if not cuts:
+        rows = [(f"every {p}", classify(0))]
+    else:
+        rows = [(f"{p} < {cuts[0]}", classify(cuts[0] - 1))]
+        for i, c in enumerate(cuts):
+            rows.append((f"{p} = {c}", classify(c)))
+            if i + 1 < len(cuts):
+                rows.append((f"{c} < {p} < {cuts[i + 1]}", classify((c + cuts[i + 1]) / 2)))
+        rows.append((f"{p} > {cuts[-1]}", classify(cuts[-1] + 1)))
+    for w, r in rows:
+        print(f"{w}: {r}")
+    return rows`;
+
 export const DEFINITENESS = `def definiteness(D):
     """Definiteness of A from the diagonal of D = B^T A B (Propositions 3.43, 8.11)."""
     if all(d > 0 for d in D):

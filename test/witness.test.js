@@ -122,6 +122,7 @@ test("routes are ordered by the note's matrix: fitting first, with the reason", 
   assert.deepEqual(fits("posdef", "[[2, 1], [1, 3]]"), {
     "symmetric reduction to a diagonal matrix": true, "with a parameter: which values give which case": false, "complete the square in u^T A u": true,
     "NOT positive definite: one bad vector": false, "indefinite: one positive and one negative direction": false, "A^T A is positive semi-definite": undefined,
+    "not symmetric: decide the symmetric matrix with the same u^T A u": false,
   });
   const ind = fits("posdef", "[[1, 2], [2, 1]]");
   assert.equal(ind["NOT positive definite: one bad vector"], true);
