@@ -220,7 +220,7 @@ export function parseBlock(src, known = new Map()) {
         try {
           const used = fnExpr({ ...v, params: undefined }, scope).vars;
           const extra = used.filter((x) => !params.includes(x) && !defined.has(x) && !scope.has(x));
-          if (extra.length) v.params = [...params, ...extra];
+          if (extra.length) { v.params = [...params, ...extra]; v.declared = params; }
         } catch (_) { /* keep the declared variables */ }
       }
     }

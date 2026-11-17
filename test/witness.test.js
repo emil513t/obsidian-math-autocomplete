@@ -120,7 +120,7 @@ test("\\matinv: not invertible from a zero row, a zero column or Gauss eliminati
 test("routes are ordered by the note's matrix: fitting first, with the reason", () => {
   const fits = (name, A) => Object.fromEntries(TEMPLATES.find((t) => t.name === name).variants.map((v) => [v.label.split(" (")[0], routeFit(v, note(A))?.ok]));
   assert.deepEqual(fits("posdef", "[[2, 1], [1, 3]]"), {
-    "symmetric reduction to a diagonal matrix": true, "complete the square in u^T A u": true,
+    "symmetric reduction to a diagonal matrix": true, "with a parameter: which values give which case": false, "complete the square in u^T A u": true,
     "NOT positive definite: one bad vector": false, "indefinite: one positive and one negative direction": false, "A^T A is positive semi-definite": undefined,
   });
   const ind = fits("posdef", "[[1, 2], [2, 1]]");

@@ -16,6 +16,7 @@ import { casOf, satisfies, assumptionsTex } from "./vars.js";
 import { symmetricReduction, definiteness, resolveLabel } from "./textlink.js";
 import { resolveLagrangeLabel, noteFG, lagrangeSolve } from "./lagrange.js";
 import { verdictFit } from "./verdicts.js";
+import { resolveCasesLabel, paramCases, commandOfBody } from "./cases.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -414,6 +415,8 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
 
 // Matrix blanks first (they depend on the route text), then everything else.
 export function resolveAny(label, vars, ctx = {}) {
+  const c = vars instanceof Map ? resolveCasesLabel(label, vars, ctx) : undefined;
+  if (c !== undefined) return c;
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;
   if (r !== undefined) return r;
   const g = vars instanceof Map ? resolveLagrangeLabel(label, vars, ctx) : undefined;
@@ -437,6 +440,13 @@ function lagrangeFit(label, vars, ctx) {
 export function routeFit(route, vars, ctx = {}) {
   const body = route.body || "";
   const label = route.label || "";
+  // A parameter in the note: the "with a parameter" route lists every case.
+  if (/^(with a parameter|depends on a parameter)/i.test(label) && vars instanceof Map) {
+    const pc = paramCases(ctx.command || commandOfBody(`${label}\n${body}`), vars, ctx);
+    if (pc?.cases) return { ok: true, best: true, why: `depends on ${pc.p}: ${pc.cases.length} cases` };
+    if (pc?.many) return { ok: true, why: `depends on ${pc.many.join(", ")}` };
+    return { ok: false, why: "no parameter in the note" };
+  }
   // Sets, limits, KKT, SVM: decided in verdicts.js (ctx.command: the template's name).
   if (ctx.command && VERDICT_COMMANDS.has(ctx.command)) return vars instanceof Map ? verdictFit(ctx.command, label, vars, ctx) : null;
   if (/Theorem 7\.39/.test(body) && /^(one constraint|linear constraint)/.test(label)) return lagrangeFit(label, vars, ctx);
@@ -449,7 +459,8 @@ export function routeFit(route, vars, ctx = {}) {
     const defRoute = /positive definite|semi-definite|indefinite|symmetric reduction|complete the square/i.test(label);
     if (defRoute && !/A\^T A/.test(label)) {
       if (!isSym(A)) return { ok: false, why: `${name} is not symmetric` };
-      if (!isConst(A)) return /symmetric reduction/i.test(label) ? { ok: true, why: `${name} has parameters: gives the inequalities`, best: true } : null;
+      // Parameters: the "with a parameter" route (above) is the one to use.
+      if (!isConst(A)) return /symmetric reduction/i.test(label) ? { ok: true, why: `${name} has parameters: gives the inequalities` } : null;
       const W = definitenessWitness(A);
       if (!W) return null;
       const is = `${name} is ${W.d}`;

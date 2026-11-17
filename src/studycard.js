@@ -276,6 +276,12 @@ export function studyCard(opts) {
         const name = (k) => ends.find((e) => e.key === k)?.name || k;
         L.push(`> **Your values end as:** ${got.map((g) => `**${name(g.key)}** (${g.why})`).join("; ")}.`);
         L.push(">");
+        // A parameter: one row per case.
+        for (const g of got.filter((x) => x.cases)) {
+          L.push(`> | $${g.p}$ | ending |`, "> |---|---|");
+          for (const c of g.cases) L.push(`> | $${c.where}$ | ${c.name} |`);
+          L.push(">");
+        }
       }
       if (best) {
         L.push(`> ${best.f.why ? best.f.why.charAt(0).toUpperCase() + best.f.why.slice(1) + "." : ""} Take the route **${best.v.label}**.`);

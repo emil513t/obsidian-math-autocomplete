@@ -1210,7 +1210,7 @@ export default class MathAutocompletePlugin extends Plugin {
     const isMap = vars instanceof Map;
     // ctx: the function and point picked in the form (default: f, the first point).
     // Matrix blanks (verdicts, witness vectors) depend on the route's text.
-    const resolve = (label, ctx) => resolveAny(label, vars, { ...ctx, body: route.body });
+    const resolve = (label, ctx) => resolveAny(label, vars, { ...ctx, body: route.body, command: name });
     const ask = (ctx = {}) => textQuestions(route.body, vars, (v) => toLatex(v), isMap ? (label) => resolve(label, ctx) : null);
     const questions = this.settings.askInputs ? ask() : [];
     const pickers = isMap ? { fns: noteFunctions(vars).map((v) => v.name), points: notePoints(vars).map((v) => v.name), ask } : null;

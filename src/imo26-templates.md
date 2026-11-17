@@ -248,6 +248,9 @@ Dividing by $x - {{alpha}}$ gives remainder $r = f({{alpha}}) = {{value}}$ (Theo
 Put $t = x^2$: ${{quadratic in t}} = 0$ gives $t = {{t values}}$. Then $x = \pm\sqrt{t}$ for each $t \ge 0$: **roots** $x = {{roots}}$.
 ### roots of a quadratic: formula (2.12) (Sec 2.4.2)
 $a = {{a}}$, $b = {{b}}$, $c = {{c}}$, discriminant $b^2 - 4ac = {{discriminant}}$ ({{≥ 0 / < 0: no roots}}). By (2.12) (Section 2.4.2): $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} = {{roots}}$.
+### with a parameter: the number of roots (Sec 2.4.2)
+$f(x) = {{f}}$ has degree at most 2, with a parameter in its coefficients. The number of real roots is decided by the sign of $b^2 - 4ac$ (formula (2.12), Section 2.4.2); the values where the coefficient of $x^2$ is $0$ (then the equation is linear) and where $b^2 - 4ac = 0$ are checked on their own:
+{{cases in the parameter}}
 ### a root exists: odd degree (Thm 2.28 / Prop 5.83)
 $f$ has odd degree ${{n}}$, so it has a real root (Theorem 2.28, proved in Proposition 5.83 via Bolzano, Theorem 5.81).
 ### roots determine the coefficients (Prop 2.23)
@@ -313,6 +316,9 @@ $${{LHS}} = {{step}} = {{RHS}}.$$ $\blacksquare$
 {{row op + column op}}
 This gives $B^\top A B = D = {{diagonal matrix}}$ with $B$ invertible.
 By Proposition 3.43 / 8.11 $A$ is {{positive definite / positive semi-definite / indefinite}}, since the diagonal entries of $D$ are {{all > 0 / all ≥ 0 / of both signs}}.
+### with a parameter: which values give which case (Sec 8.7, Prop 3.43, Def 8.9)
+$A = {{A}}$ contains a parameter. Symmetric reduction (Section 8.7, Theorem 8.31) gives $B^\top A B = D$ with $B$ invertible, and by Proposition 3.43 / 8.11 the signs of the diagonal entries of $D$ decide the case (indefinite: Definition 8.9). The case can only change at the values of the parameter where an entry of $D$ becomes $0$; between them one test value decides, and each of those values is checked on its own:
+{{cases in the parameter}}
 ### complete the square in u^T A u (as for (2.12), Sec 2.4.2)
 Completing the square (as in deriving (2.12), Section 2.4.2):
 $$u^\top A u = {{quadratic form}} = {{a}}\left(x + {{shift}}\,y\right)^2 + {{c}}\,y^2$$
@@ -375,6 +381,9 @@ So $f$ is convex. $\blacksquare$
 **Proof.** For all $x, y$: $f(y) - f(x) - \nabla f(x)(y - x) = {{simplify}} \ge 0$. By Theorem 6.61 (one variable) / Theorem 8.23 (several variables), $f$ is convex. $\blacksquare$
 ### several variables: Hessian positive semi-definite (Thm 8.25)
 **Proof.** $\nabla^2 f({{x, y}}) = {{Hessian}}$, which is positive semi-definite at every point of the open convex set ${{U}}$ ({{symmetric reduction gives diagonal entries ≥ 0, Proposition 3.43}}). By Theorem 8.25, $f$ is convex. $\blacksquare$
+### with a parameter: for which values is f convex? (Thm 8.25, Prop 3.43)
+The Hessian of $f = {{f}}$ does not depend on the point, only on the parameter. $f$ is convex exactly when it is positive semi-definite, and strictly convex when it is positive definite (Theorem 8.25); symmetric reduction (Section 8.7, Proposition 3.43) gives the cases:
+{{cases in the parameter}}
 ### building blocks: sums, max, linear (Def 4.26)
 **Proof.** $f = {{f}}$ is a sum of convex functions ({{list them, with reasons}}) with non-negative coefficients; such a sum is convex directly from Definition 4.26 (add the inequalities). $\blacksquare$
 ### NOT convex: one bad pair of points (Def 4.26)
@@ -658,6 +667,9 @@ $$\frac{\partial f}{\partial x} = {{f_x}} = 0, \quad \frac{\partial f}{\partial 
 Solving gives ${{critical points}}$. Hessian (Definition 8.2):
 $$\nabla^2 f(x, y) = {{Hessian}}$$
 - At ${{point}}$: $\nabla^2 f = {{Hessian at the point}}$ is {{positive definite / negative definite / indefinite}} $\Rightarrow$ {{local min / local max / saddle point}} (Theorem 8.12).
+### with a parameter: which values give min / max / saddle (Thm 8.12, Prop 8.11)
+The Hessian of $f = {{f}}$ does not depend on the point, only on the parameter. At a critical point, symmetric reduction (Proposition 8.11) and Theorem 8.12 give, case by case (the values where an entry of $D$ is $0$ are checked on their own):
+{{cases in the parameter}}
 ### saddle point: two directions (Def 8.8)
 At ${{v0}}$: along $u = {{u}}$, $t \mapsto f(v_0 + tu) = {{one-variable function}}$ has a local min at $t = 0$; along $v = {{v}}$, $t \mapsto f(v_0 + tv) = {{one-variable function}}$ has a local max. So ${{v0}}$ is a saddle point (Definition 8.8).
 ### Hessian test inconclusive: look at f directly (Thm 8.12)
@@ -673,7 +685,8 @@ $$\nabla^2 {{function name}}({{x, y}}) = {{Hessian entries}} = {{Hessian}}$$
 At the critical point $v_0 = {{v0}}$: $\nabla^2 {{function name}}(v_0) = {{Hessian at v0}}$. Symmetric reduction gives $D = {{diagonal}}$, so it is {{positive definite / negative definite / indefinite}} (Proposition 8.11).
 By Theorem 8.12, $v_0$ is a {{local minimum / local maximum / saddle point}}.
 ### depends on a parameter a (Prop 8.11)
-$\nabla^2 f = {{Hessian with a}}$. Symmetric reduction gives $D = {{diagonal with a}}$, which is positive definite iff ${{condition on a}}$ (Proposition 8.11).
+$\nabla^2 f = {{Hessian with a}}$. Symmetric reduction gives $D = {{diagonal with a}}$, which is positive definite iff ${{condition on a}}$ (Proposition 8.11). At a critical point this gives (Theorem 8.12):
+{{cases in the parameter}}
 
 ## \lagrange — Ch7: Lagrange multipliers (Thm 7.39)
 ### one constraint (Thm 7.39)

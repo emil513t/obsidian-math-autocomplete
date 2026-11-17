@@ -91,6 +91,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [none] no real roots :: b² − 4ac < 0, or f > 0 everywhere :: no roots in ℝ :: roots of a quadratic
 - [odd] odd degree :: degree is odd :: at least one root (Theorem 2.28) :: a root exists
 - [quartic] even powers only :: f(x) = g(x²) :: t = x², solve, then x = ±√t :: substitution t = x^2
+- [param] depends on a parameter :: the coefficients contain a :: the sign of b² − 4ac for each range of a :: with a parameter
 
 ## \interpolate
 - [unique] n points, degree < n :: the x-values are different :: exactly one polynomial :: linear system in the coefficients
@@ -119,7 +120,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [nd] negative definite :: every diagonal entry of D is < 0 :: u^T A u < 0 for u ≠ 0 :: symmetric reduction
 - [nsd] negative semi-definite, not definite :: entries of D are ≤ 0, at least one is 0 :: u^T A u ≤ 0 :: symmetric reduction
 - [ind] indefinite :: D has a positive and a negative entry :: one u with u^T A u > 0, one v with v^T A v < 0 (Definition 8.9) :: indefinite
-- [param] depends on a parameter :: D contains a :: inequalities in a decide each case :: symmetric reduction
+- [param] depends on a parameter :: D contains a :: one case per range of a, and each value where an entry of D is 0 on its own :: with a parameter
 - [notsym] not symmetric :: A^T ≠ A :: the definitions are for symmetric matrices :: -
 
 ## \formulate
@@ -144,6 +145,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [notconvex] not convex :: f'' < 0 somewhere / Hessian not positive semi-definite at one point :: one bad point or pair of points :: NOT convex
 - [region] convex only on part of the domain :: f'' ≥ 0 only for some x :: convex on that interval or open convex set :: one variable: f'' ≥ 0
 - [linear] linear :: f'' = 0 everywhere :: convex but not strictly convex :: building blocks
+- [param] depends on a parameter :: the Hessian contains a :: convex for the values of a where it is positive semi-definite :: with a parameter
 
 ## \strictconvex
 - [strict] strictly convex :: f'' > 0 / positive definite Hessian everywhere :: strictly convex :: one variable: f'' > 0
@@ -268,6 +270,7 @@ start of the matching route's label ("-" for none). Book wording only.
 - [global] f convex :: Hessian positive semi-definite everywhere :: a critical point is a global min (Theorem 6.13) :: convex function
 - [none] no critical point :: ∇f = 0 has no solution :: no local extrema :: gradient = 0, then Hessian test
 - [many] infinitely many critical points :: ∇f = 0 is a whole line :: classify along that line :: gradient = 0, then Hessian test
+- [param] depends on a parameter :: the Hessian contains a :: min / max / saddle for each range of a :: with a parameter
 
 ## \hessian
 - [pd] positive definite at v0 :: D > 0 :: local min :: classify one critical point

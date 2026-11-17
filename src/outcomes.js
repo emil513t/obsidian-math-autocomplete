@@ -8,6 +8,8 @@ import { mainFn, resolveLabel, notePoints } from "./textlink.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
 import { setVerdict, limitVerdict, kktVerdict, svmVerdict } from "./verdicts.js";
+import { paramCases, caseName } from "./cases.js";
+const PARAM_COMMANDS = new Set(["posdef", "matinv", "critxy", "hessian", "convexfn", "roots"]);
 
 // "## \name" sections of "- [key] ending :: how you see it :: conclusion :: route".
 export function parseOutcomes(md) {
@@ -159,6 +161,11 @@ function oneVarOutcome(command, vars, ctx) {
 export function outcomeOf(command, vars, ctx = {}) {
   if (!(vars instanceof Map)) return null;
   try {
+    // A parameter: every case, with the range of the parameter for each.
+    if (PARAM_COMMANDS.has(command)) {
+      const pc = paramCases(command, vars, ctx);
+      if (pc?.cases) return [{ key: "param", why: `depends on ${pc.p}`, p: pc.p, cases: pc.cases.map((c) => ({ ...c, name: caseName(command, c.key) })) }];
+    }
     const sets = ["bounded", "openset", "closedset", "compact", "evt"];
     if (sets.includes(command)) {
       const V = setVerdict(vars, ctx);
