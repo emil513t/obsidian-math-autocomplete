@@ -10,6 +10,7 @@ import { gauss, parseSystem, parseIneqs, fmStep, ineqTex } from "./elim.js";
 import { convexityProof } from "./convex.js";
 import { limitOf, limitAnswer, parsePointText, derivativeLimit, parseCases, limitCases, fraction } from "./limit.js";
 import { symmetricReduction, definiteness } from "./textlink.js";
+import { paramConditionsTex } from "./witness.js";
 
 const r = String.raw;
 
@@ -434,6 +435,12 @@ export const OBJECTS = [
       const defOf = (M) => {
         if (M.length !== M[0].length) throw new Error(`the matrix is ${M.length}×${M[0].length}; definiteness only exists for square symmetric matrices.`);
         if (!M.every((r, i) => r.every((x, j) => cas.equal(x, M[j][i])))) throw new Error("the matrix is not symmetric, and definiteness (Sec 3.7) is only defined for symmetric matrices.");
+        if (!M.every((r) => r.every((x) => cas.constValue(x) !== null))) {
+          // Parameters (Exercise 8.37): the inequalities on the diagonal of D.
+          const P = paramConditionsTex(M);
+          if (!P) throw new Error("a diagonal entry with parameters becomes 0; try the parameter values case by case.");
+          return { value: P };
+        }
         const R = symmetricReduction(M);
         if (!R) throw new Error("the entries must be numbers for symmetric reduction.");
         const d = definiteness(R.D);

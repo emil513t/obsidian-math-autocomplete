@@ -9,6 +9,7 @@ import { typedFunction, numericRoots, fmtC, taylor2, gaussSources, fmSystem, run
 import { gauss, parseSystem, systemTex, parseIneqs, fmStep, ineqTex, inductionSteps } from "./elim.js";
 import { findRelation } from "./vars.js";
 import { convexityProof } from "./convex.js";
+import { definitenessWitness, paramReduction, paramConditions } from "./witness.js";
 
 const T = (x, vars) => cas.tex(x, vars);
 const M = (A, vars) => `\\begin{pmatrix} ${A.map((r) => r.map((x) => T(x, vars)).join(" & ")).join(" \\\\ ")} \\end{pmatrix}`;
@@ -163,7 +164,40 @@ function symReductionSteps(A0, steps, { name = "A", pointName = null, hessian = 
       : `, so by the Hessian test (Theorem 8.12) $${pointName}$ is a **${CONCLUSION[d]}**`;
   }
   steps.push({ text: `$D$ has diagonal $${R.D.map((x) => T(x)).join(",\\ ")}$, so $D$ is ${d} because ${definitenessWhy(d)}. $B$ is invertible, so by ${prop} $${name}$ is **${d}** too${end}.` });
+  witnessStep(A0, d, name, steps);
   return d;
+}
+
+// The vectors that show it directly (Exercise 3.41, Definition 8.9): u = e_i
+// or column i of B, where u^T A u = d_i, computed again from A itself.
+function witnessStep(A, d, name, steps) {
+  if (/^(positive|negative) definite$|and negative/.test(d)) return;
+  const W = definitenessWitness(A);
+  if (!W) return;
+  const col = (u) => M(u.map((x) => [x]));
+  const how = (w) => (w.how === "unit" ? `the unit vector $e_${w.i + 1}$` : `column ${w.i + 1} of $B$`);
+  if (d === "indefinite") {
+    steps.push({ text: `Directly (Definition 8.9): $u$ = ${how(W.pos)} and $v$ = ${how(W.neg)} give`, tex: `u = ${col(W.pos.u)},\\ u^\\top ${name} u = ${T(W.pos.value)} > 0, \\qquad v = ${col(W.neg.u)},\\ v^\\top ${name} v = ${T(W.neg.value)} < 0` });
+    return;
+  }
+  if (!W.zero) return;
+  const other = d === "positive semidefinite" ? "positive definite" : "negative definite";
+  steps.push({ text: `It is not ${other}: $u$ = ${how(W.zero)} is $\\neq 0$ and gives $u^\\top ${name} u = ${T(W.zero.value)}$.`, tex: `u = ${col(W.zero.u)}` });
+}
+
+// A matrix with parameters (Exercise 8.37): symmetric reduction with the
+// parameters kept, then the inequalities on the diagonal of D.
+function paramSteps(A, steps, name) {
+  const R = paramReduction(A);
+  const P = paramConditions(A);
+  if (!R || !P) {
+    steps.push({ text: `A diagonal entry with parameters becomes $0$, so the reduction depends on the values of the parameters: try them case by case.` });
+    return null;
+  }
+  steps.push({ text: `Symmetric reduction (Section 8.7, Theorem 8.31) with the parameters kept: clearing below each diagonal entry gives $B^\\top ${name} B = D$ with diagonal`, tex: R.D.map((x, i) => `d_{${i + 1}} = ${T(x)}`).join(",\\quad ") });
+  const say = (x) => (x === "never" ? "never" : x || "always");
+  steps.push({ text: `By Proposition 3.43 (all $d_i > 0$, or all $d_i \\ge 0$) $${name}$ is **positive definite** exactly when ${say(P.pd)}, and **positive semi-definite** exactly when ${say(P.psd)}${P.note}.` });
+  return "params";
 }
 
 function classify(Hp, steps, pointName) {
@@ -546,6 +580,7 @@ const HANDLERS = {
     if (!A || A.length !== A[0].length || !isSym(A)) return null;
     const name = own ? "A" : latexName(id.split(":")[1]);
     steps.push({ text: `The matrix is symmetric, so its definiteness is defined (Section 3.7).`, tex: `${name} = ${M(A)}` });
+    if (!A.every((r) => r.every((x) => cas.constValue(x) !== null))) return paramSteps(A, steps, name) ? `definiteness of $${name}$ with parameters` : null;
     return symReductionSteps(A, steps, { name }) ? `definiteness of $${name}$ by symmetric reduction` : null;
   },
   rref(id, ctx, a, steps) {

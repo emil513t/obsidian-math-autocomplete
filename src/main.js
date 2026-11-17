@@ -34,6 +34,7 @@ import { isHidden } from "./curriculum.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
+import { resolveAny, resolveMatrixLabel, routeFit } from "./witness.js";
 import { evidencePy } from "./evidence.js";
 import { workFor } from "./work.js";
 import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, rankPySnippets, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
@@ -480,7 +481,10 @@ class TemplateSuggest extends EditorSuggest {
     this.plugin.saveSettings();
     if (t.variants.length > 1) {
       // Like the matrix fills: second step picks the solution route.
-      new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v, t.desc)).open();
+      // Routes that fit the note's own matrix (definite? invertible?) come first.
+      const vars = this.plugin.settings.varsEnabled ? parseVars(editor.getValue()) : null;
+      const fit = vars instanceof Map ? (v) => routeFit(v, vars) : null;
+      new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v, t.desc), fit).open();
       return;
     }
     this.plugin.insertTextTemplate(editor, start, end, t.name, { label: "", body: t.body }, t.desc);
@@ -589,11 +593,13 @@ class TextInputsModal extends Modal {
 // Pick how to solve it: each route of a template cites the definitions,
 // lemmas and theorems it uses by number.
 class RouteModal extends SuggestModal {
-  constructor(plugin, template, onPick) {
+  constructor(plugin, template, onPick, fit = null) {
     super(plugin.app);
     this.plugin = plugin;
     this.t = template;
     this.onPick = onPick;
+    // fit(route) -> { ok, why } | null: does the route fit the note's values?
+    this.fits = new Map(fit ? template.variants.map((v) => [v, fit(v)]) : []);
     this.setPlaceholder(`\\${template.name}: how do you want to solve it? (Esc keeps what you typed)`);
   }
 
@@ -601,16 +607,24 @@ class RouteModal extends SuggestModal {
     const q = query.toLowerCase();
     const picks = this.plugin.settings.routePicks;
     return this.t.variants
-      .map((v, i) => ({ v, i, n: picks[`${this.t.name}:${v.label}`] || 0 }))
+      .map((v, i) => ({ v, i, n: picks[`${this.t.name}:${v.label}`] || 0, f: this.fitRank(v) }))
       .filter((x) => x.v.label.toLowerCase().includes(q) || x.v.body.toLowerCase().includes(q))
-      .sort((a, b) => b.n - a.n || a.i - b.i)
+      .sort((a, b) => a.f - b.f || b.n - a.n || a.i - b.i)
       .map((x) => x.v);
+  }
+
+  fitRank(v) {
+    const f = this.fits.get(v);
+    return !f ? 1 : f.ok ? 0 : 2;
   }
 
   renderSuggestion(v, el) {
     el.addClass("mac-item", "mac-template");
     const left = el.createDiv({ cls: "mac-left mac-template-left" });
-    left.createDiv({ cls: "mac-template-top" }).createSpan({ text: v.label });
+    const top = left.createDiv({ cls: "mac-template-top" });
+    top.createSpan({ text: v.label });
+    const f = this.fits.get(v);
+    if (f) top.createSpan({ cls: "mac-tag", text: f.ok ? `fits: ${f.why}` : `doesn't fit: ${f.why}` });
     const first = v.body.split("\n").find((l) => l.trim()) || "";
     left.createDiv({ cls: "mac-template-snippet", text: first.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩") });
   }
@@ -1135,7 +1149,9 @@ export default class MathAutocompletePlugin extends Plugin {
     const vars = this.settings.varsEnabled ? parseVars(editor.getValue()) : [];
     const isMap = vars instanceof Map;
     // ctx: the function and point picked in the form (default: f, the first point).
-    const ask = (ctx = {}) => textQuestions(route.body, vars, (v) => toLatex(v), isMap ? (label) => resolveLabel(label, vars, ctx) : null);
+    // Matrix blanks (verdicts, witness vectors) depend on the route's text.
+    const resolve = (label, ctx) => resolveAny(label, vars, { ...ctx, body: route.body });
+    const ask = (ctx = {}) => textQuestions(route.body, vars, (v) => toLatex(v), isMap ? (label) => resolve(label, ctx) : null);
     const questions = this.settings.askInputs ? ask() : [];
     const pickers = isMap ? { fns: noteFunctions(vars).map((v) => v.name), points: notePoints(vars).map((v) => v.name), ask } : null;
     // Typing a variable's name (g, @A) in a field inserts its value, or what
@@ -1146,6 +1162,11 @@ export default class MathAutocompletePlugin extends Plugin {
       if (!v || v.error) return answer;
       const isFn = noteFunctions(vars).includes(v);
       const isPt = notePoints(vars).includes(v);
+      if (v.kind === "matrix") {
+        // Another matrix typed in: matrix blanks are recomputed for it.
+        const r = resolveMatrixLabel(q.label, vars, { ...ctx, body: route.body, matrix: v.name });
+        return r ? r.value : toLatex(v);
+      }
       const r = isFn || isPt ? resolveLabel(q.label, vars, { ...ctx, ...(isFn ? { fn: v.name } : { point: v.name }) }) : null;
       return r && r.value !== q.label ? r.value : toLatex(v);
     };
@@ -1160,13 +1181,15 @@ export default class MathAutocompletePlugin extends Plugin {
       const typed = (q) => answers[q.key] && answers[q.key] !== q.value && answers[q.key].trim().replace(/^@/, "");
       const fnPick = qs.map((q) => q.desc && typed(q)).find((n) => n && noteFunctions(vars).some((v) => v.name === n));
       const ptPick = qs.map((q) => q.desc && typed(q)).find((n) => n && notePoints(vars).some((v) => v.name === n));
-      if (fnPick || ptPick) {
-        ctx = { ...ctx, ...(fnPick ? { fn: fnPick } : {}), ...(ptPick ? { point: ptPick } : {}) };
+      // A matrix typed into any field (B in the A field) switches the matrix too.
+      const matPick = qs.map((q) => typed(q)).find((n) => n && vars.get(n)?.kind === "matrix");
+      if (fnPick || ptPick || matPick) {
+        ctx = { ...ctx, ...(fnPick ? { fn: fnPick } : {}), ...(ptPick ? { point: ptPick } : {}), ...(matPick ? { matrix: matPick } : {}) };
         const fresh = new Map(ask(ctx).map((q) => [q.key, q]));
         answers = { ...answers };
         for (const q of qs) {
           const n = fresh.get(q.key);
-          if (q.desc && n && n.desc && (answers[q.key] === q.value || typed(q) === fnPick || typed(q) === ptPick)) answers[q.key] = n.value;
+          if (q.desc && n && n.desc && (answers[q.key] === q.value || typed(q) === fnPick || typed(q) === ptPick || typed(q) === matPick)) answers[q.key] = n.value;
         }
       }
       const done = Object.fromEntries(qs.map((q) => [q.key, answers[q.key] ? byName(q, answers[q.key], ctx) : answers[q.key]]));
