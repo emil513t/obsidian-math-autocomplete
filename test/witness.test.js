@@ -133,6 +133,14 @@ test("routes are ordered by the note's matrix: fitting first, with the reason", 
   assert.equal(sing["Gauss elimination on"], false);
   assert.equal(fits("matinv", "[[1, 2], [3, 4]]")["NOT invertible: zero row/column or AB = 0"], false);
   assert.equal(routeFit(route("posdef", /^NOT/), note("[[2, 1], [1, 3]]")).why, "A is positive definite");
+  // Exactly one ★ route per matrix.
+  const best = (name, A) => TEMPLATES.find((t) => t.name === name).variants.filter((v) => routeFit(v, note(A))?.best).map((v) => v.label.split(" (")[0]);
+  assert.deepEqual(best("posdef", "[[2, 1], [1, 3]]"), ["symmetric reduction to a diagonal matrix"]);
+  assert.deepEqual(best("posdef", "[[1, 2], [2, 1]]"), ["indefinite: one positive and one negative direction"]);
+  assert.deepEqual(best("posdef", "[[1, 1], [1, 1]]"), ["symmetric reduction to a diagonal matrix"]);
+  assert.deepEqual(best("matinv", "[[1, 2], [2, 4]]"), ["NOT invertible: zero row/column or AB = 0"]);
+  assert.deepEqual(best("matinv", "[[1, 2], [3, 4]]"), ["2x2 formula"]);
+  assert.deepEqual(best("matinv", "[[1, 1, 1], [1, 2, 1], [1, 1, 3]]"), ["Gauss elimination on"]);
   // (A+B)^2 with the note's B.
   const mm = route("matmul", /\(A\+B\)/);
   const out = fill(mm, note("[[1, 2], [3, 4]]", "B = [[0, 1], [1, 0]]\n"));

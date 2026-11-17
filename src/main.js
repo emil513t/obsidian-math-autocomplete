@@ -34,7 +34,7 @@ import { isHidden } from "./curriculum.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
-import { resolveAny, resolveMatrixLabel, routeFit } from "./witness.js";
+import { aboutA, resolveAny, resolveMatrixLabel, routeFit } from "./witness.js";
 import { evidencePy } from "./evidence.js";
 import { workFor } from "./work.js";
 import { parsePySnippets, buildPySnippet, snippetQuestions, checkAnswers, sizeDefault, rankPySnippets, codeBlockBefore, scanPython, mergeCounts, rankMembers } from "./pysnippets.js";
@@ -600,7 +600,20 @@ class RouteModal extends SuggestModal {
     this.onPick = onPick;
     // fit(route) -> { ok, why } | null: does the route fit the note's values?
     this.fits = new Map(fit ? template.variants.map((v) => [v, fit(v)]) : []);
-    this.setPlaceholder(`\\${template.name}: how do you want to solve it? (Esc keeps what you typed)`);
+    this.best = template.variants.find((v) => this.fits.get(v)?.best) || null;
+    // A matrix template with no matrix in the note: say how to get a pick.
+    const noFits = [...this.fits.values()].every((f) => !f);
+    const noMatrix = noFits && template.variants.some((v) => aboutA(v.body));
+    this.setPlaceholder(this.best
+      ? `\\${template.name}: press Enter for ★ ${this.best.label.split(" (")[0]}`
+      : `\\${template.name}: how do you want to solve it? (Esc keeps what you typed)`);
+    if (this.setInstructions) {
+      this.setInstructions(this.best
+        ? [{ command: "↵", purpose: "use ★ (picked from your matrix)" }, { command: "type", purpose: "to also see routes that don't fit" }]
+        : noMatrix
+          ? [{ command: "tip", purpose: "put A = [[1, 2], [2, 1]] in a ```vars block and it picks the route for you" }]
+          : []);
+    }
   }
 
   getSuggestions(query) {
@@ -609,13 +622,15 @@ class RouteModal extends SuggestModal {
     return this.t.variants
       .map((v, i) => ({ v, i, n: picks[`${this.t.name}:${v.label}`] || 0, f: this.fitRank(v) }))
       .filter((x) => x.v.label.toLowerCase().includes(q) || x.v.body.toLowerCase().includes(q))
+      // Routes that can't work for the note's matrix only show when searched for.
+      .filter((x) => q || x.f < 2)
       .sort((a, b) => a.f - b.f || b.n - a.n || a.i - b.i)
       .map((x) => x.v);
   }
 
   fitRank(v) {
     const f = this.fits.get(v);
-    return !f ? 1 : f.ok ? 0 : 2;
+    return v === this.best ? -1 : !f ? 1 : f.ok ? 0 : 2;
   }
 
   renderSuggestion(v, el) {
@@ -624,7 +639,7 @@ class RouteModal extends SuggestModal {
     const top = left.createDiv({ cls: "mac-template-top" });
     top.createSpan({ text: v.label });
     const f = this.fits.get(v);
-    if (f) top.createSpan({ cls: "mac-tag", text: f.ok ? `fits: ${f.why}` : `doesn't fit: ${f.why}` });
+    if (f) top.createSpan({ cls: "mac-tag", text: v === this.best ? `★ use this: ${f.why}` : f.ok ? `also works: ${f.why}` : `doesn't fit: ${f.why}` });
     const first = v.body.split("\n").find((l) => l.trim()) || "";
     left.createDiv({ cls: "mac-template-snippet", text: first.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, "⟨$1⟩") });
   }

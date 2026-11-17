@@ -196,7 +196,7 @@ const DEF_WORDS = /^(not( positive definite)?|indefinite|(positive|negative) (se
 const isDefChoice = (l) => l.includes(" / ") && l.split(" / ").every((o) => DEF_WORDS.test(o.trim()));
 
 // Is the template text about a matrix A (not about f's Hessian)?
-const aboutA = (body) => /(^|[^\\\w])A(\s*=\s*\{\{A\}\}|\$|\s*u\b|\^\\top|\\,|\s*v\b)/.test(body) && !/\\nabla\^2|Hessian/.test(body);
+export const aboutA = (body) => /(^|[^\\\w])A(\s*=\s*\{\{A\}\}|\$|\s*u\b|\^\\top|\\,|\s*v\b)/.test(body) && !/\\nabla\^2|Hessian/.test(body);
 
 // Blanks of the matrix templates, computed from the note's matrix.
 // undefined: not a matrix blank here; null: a matrix blank, nothing to compute from.
@@ -318,14 +318,16 @@ export function routeFit(route, vars, ctx = {}) {
     const defRoute = /positive definite|semi-definite|indefinite|symmetric reduction|complete the square/i.test(label);
     if (defRoute && !/A\^T A/.test(label)) {
       if (!isSym(A)) return { ok: false, why: `${name} is not symmetric` };
-      if (!isConst(A)) return /symmetric reduction/i.test(label) ? { ok: true, why: `${name} has parameters: gives the inequalities` } : null;
+      if (!isConst(A)) return /symmetric reduction/i.test(label) ? { ok: true, why: `${name} has parameters: gives the inequalities`, best: true } : null;
       const W = definitenessWitness(A);
       if (!W) return null;
       const is = `${name} is ${W.d}`;
+      // best: the one route to use. Indefinite: the two vectors are the
+      // shortest full answer; otherwise symmetric reduction decides everything.
       if (/^NOT positive definite/i.test(label)) return { ok: W.d !== "positive definite", why: is };
-      if (/^indefinite/i.test(label)) return { ok: W.d === "indefinite", why: is };
+      if (/^indefinite/i.test(label)) return { ok: W.d === "indefinite", why: is, best: W.d === "indefinite" };
       if (/complete the square/i.test(label)) return A.length === 2 && !cas.isZero(A[0][0]) ? { ok: true, why: is } : { ok: false, why: A.length === 2 ? `${name}₁₁ = 0` : `only for 2×2, ${name} is ${A.length}×${A.length}` };
-      if (/symmetric reduction/i.test(label)) return { ok: true, why: is };
+      if (/symmetric reduction/i.test(label)) return { ok: true, why: is, best: W.d !== "indefinite" };
       return null;
     }
     if (/invertible|inverse|2x2 formula|\(A \| I\)/i.test(label) && !/of a product|transpose/i.test(label)) {
@@ -333,13 +335,13 @@ export function routeFit(route, vars, ctx = {}) {
       if (!isConst(A)) return null;
       const singular = !!zeroSolution(A);
       const is = singular ? `${name} is not invertible` : `${name} is invertible`;
-      if (/NOT invertible/i.test(label)) return { ok: singular, why: is };
-      if (/2x2 formula/i.test(label)) return A.length === 2 ? { ok: !singular, why: is } : { ok: false, why: `${name} is ${A.length}×${A.length}` };
-      return { ok: !singular, why: is };
+      if (/NOT invertible/i.test(label)) return { ok: singular, why: is, best: singular };
+      if (/2x2 formula/i.test(label)) return A.length === 2 ? { ok: !singular, why: is, best: !singular } : { ok: false, why: `${name} is ${A.length}×${A.length}` };
+      return { ok: !singular, why: is, best: !singular && A.length > 2 && /Gauss/i.test(label) };
     }
     if (/\(A\+B\)\^2/.test(label)) {
       const N = nonCommuting(A, noteMatrices(vars).filter((x) => x.name !== name));
-      return N ? { ok: true, why: N.name ? `${name}${N.name} ≠ ${N.name}${name}` : `found B with ${name}B ≠ B${name}` } : { ok: false, why: `${name} = aI, so ${name}B = B${name} for every B` };
+      return N ? { ok: true, best: true, why: N.name ? `${name}${N.name} ≠ ${N.name}${name}` : `found B with ${name}B ≠ B${name}` } : { ok: false, why: `${name} = aI, so ${name}B = B${name} for every B` };
     }
   } catch (_) {
     return null;
