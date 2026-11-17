@@ -85,7 +85,7 @@ test("python: a > 0 becomes positive=True; explanation is Markdown, not prints",
   const md = pyExplainMarkdown({ name: "matinv", title: "inverse matrix", label: s.label, items: [{ label: "Definition 3.24", title: "Inverse", text: "AB = BA = I" }], inputs: used.map((u) => ({ name: u.input, tex: toLatex(vars.get(u.var)) })), assumptions: "a > 0" });
   assert.match(md, /^\*\*\\matinv\*\* · inverse matrix/);
   assert.match(md, /Using \$A = \\begin\{pmatrix\} 1 & a \\\\ a & 4 \\end\{pmatrix\}\$, \$a > 0\$\./);
-  assert.match(md, /> \[!note\]- Definitions and results used/);
+  assert.match(md, /> \[!note\] Definitions and results used/);
   // Runs, and a > 0 drops the root a = -2.
   const py = spawnSync("python", ["-I", "-c", text], { encoding: "utf8", timeout: 120000 });
   if (py.error || /No module named/.test(py.stderr)) return;

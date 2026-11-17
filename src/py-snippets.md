@@ -462,7 +462,7 @@ print("always equal:", D_ == sp.zeros(2, 2))
 @in A matrix
 if A.shape == (2, 2):
     D_ = A[0, 0]*A[1, 1] - A[0, 1]*A[1, 0]
-    print("D = ad - bc =", D_)
+    print("D = ad - bc =", D_, "(A is invertible when D != 0)")
 try:
     Ainv = A.inv()
     print("A^-1 =", Ainv.tolist())
@@ -548,7 +548,7 @@ D, B = symmetric_reduction(A, verbose=True)
 print("B =", B.tolist())
 print("D = diag", D)
 print("check B^T A B = D:", B.T * A * B == sp.diag(*D))
-print("A is", definiteness(D))
+print("A is", definiteness(D), "(B is invertible, so A has the same definiteness as D)")
 ### numbers: only the answer (symmetric reduction, Sec 8.7)
 @uses sympy symred
 @in A matrix
@@ -566,7 +566,7 @@ D = [sp.factor(sp.simplify(x)) for x in D]
 print("D = diag", D, "  check B^T A B = D:", sp.simplify(B.T * A * B - sp.diag(*D)) == sp.zeros(A.rows))
 used = [x for x in D[:-1] if x.free_symbols]
 if used:
-    print("divided by (redo where 0):", used)
+    print("the reduction divided by", used, "-- assuming these are not 0; put the values making them 0 into A and reduce again")
 print("positive definite  <=>", " and ".join(f"({x}) > 0" for x in D))
 print("positive semidefinite  <=>", " and ".join(f"({x}) >= 0" for x in D))
 free = sorted(A.free_symbols, key=str)
@@ -643,9 +643,9 @@ print("where f'' < 0:", sp.solveset(f2 < 0, $SYM, sp.S.Reals), " (empty set mean
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
-print("D = diag", [sp.factor(d) for d in D])
-if divided_by(D): print("divided by (redo where 0):", divided_by(D))
-print("convex (all of D >= 0 everywhere):", holds_everywhere(D, strict=False))
+print("symmetric reduction B^T H B = D, D = diag", [sp.factor(d) for d in D])
+if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
+print("every diagonal entry of D >= 0 everywhere, so H is positive semidefinite and f convex:", holds_everywhere(D, strict=False))
 
 ## \strictconvex — strictly convex: f'' > 0 / Hessian positive definite (Def 6.1)
 @uses sympy symred
@@ -654,9 +654,9 @@ print("convex (all of D >= 0 everywhere):", holds_everywhere(D, strict=False))
 H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
-print("D = diag", [sp.factor(d) for d in D])
-if divided_by(D): print("divided by (redo where 0):", divided_by(D))
-print("strictly convex (all of D > 0 everywhere):", holds_everywhere(D, strict=True))
+print("symmetric reduction B^T H B = D, D = diag", [sp.factor(d) for d in D])
+if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
+print("every diagonal entry of D > 0 everywhere, so H is positive definite and f strictly convex:", holds_everywhere(D, strict=True))
 
 ## \fm — Fourier–Motzkin elimination of a variable (Sec 4.5)
 @uses sympy
@@ -919,7 +919,7 @@ try:
     cs = sp.solve(sp.diff(f, $SYM), $SYM)
 except NotImplementedError:
     cs = []
-    print("no exact solution of f' = 0: use the 'at a given point' route")
+    print("sympy cannot solve f' = 0 exactly; use the 'at a given point' route")
 for c in cs:
     k_, v, kind = classify(c)
     print("x =", c, "  f =", sp.simplify(f.subs($SYM, c)), f"  f^({k_}) =", v, "->", kind)
@@ -1036,7 +1036,7 @@ for e in order:
 print("f =", name[f], "=", f.subs(pt))
 adj = {e: sp.Integer(0) for e in order}
 adj[f] = sp.Integer(1)
-print("backward pass, adj[v] = df/dv:")
+print("Backward pass (backpropagation): adj[v] = df/dv for every node v, chain rule from f down to the inputs:")
 for e in reversed(order):
     if e.is_Symbol:
         continue
@@ -1050,7 +1050,7 @@ for e in reversed(order):
 print("gradf(point) by backpropagation =", [adj.get(s, 0) for s in syms])
 print("check: gradf =", [sp.diff(f, s) for s in syms], "->", [sp.diff(f, s).subs(pt) for s in syms])
 print()
-print("mermaid graph:")
+print("Drawn graph: copy the lines below into a mermaid code block in the note")
 print("graph LR")
 for e in order:
     label = str(e) if e.is_Symbol else f"{name[e]} = {e.func(*[show(a) for a in e.args], evaluate=False)}"
@@ -1145,7 +1145,7 @@ print("H =", H.tolist())
 Hp = H.subs(dict(zip($SYMS, {{point}})))
 print("H(point) =", Hp.tolist())
 D, B = symmetric_reduction(Hp)
-print("D = diag", D, "->", definiteness(D))
+print("symmetric reduction B^T H B = D: D = diag", D, "->", definiteness(D))
 ### for all x: positive (semi)definite everywhere?
 @uses sympy symred
 @in f expr
@@ -1154,16 +1154,16 @@ H = sp.simplify(sp.hessian(f, $SYMS))
 print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 d_ = [sp.factor(d) for d in D]
-print("D = diag", d_)
+print("symmetric reduction B^T H B = D: D = diag", d_)
 def where_not_positive(m_):
     if not m_.free_symbols:
         return sp.S.EmptySet if m_ > 0 else sp.S.Reals
     if len(m_.free_symbols) == 1:
         return sp.solveset(m_ <= 0, m_.free_symbols.pop(), sp.S.Reals)
     return f"check {m_} <= 0 by hand"
-print("where D_i <= 0:", [where_not_positive(m_) for m_ in d_])
-if divided_by(D): print("divided by (redo where 0):", divided_by(D))
-print("positive definite everywhere:", holds_everywhere(D, strict=True), "  positive semidefinite everywhere:", holds_everywhere(D, strict=False))
+print("where each diagonal entry of D is <= 0 (empty = always > 0):", [where_not_positive(m_) for m_ in d_])
+if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
+print("positive definite everywhere (all > 0):", holds_everywhere(D, strict=True), "  positive semidefinite everywhere (all >= 0):", holds_everywhere(D, strict=False), "  (None = check by hand)")
 ### second order partial derivatives: is f_xy = f_yx? (Clairaut's theorem, Thm 7.11)
 @uses sympy
 @in f expr

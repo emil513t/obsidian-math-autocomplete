@@ -161,6 +161,7 @@ export function pyExplainMarkdown({ name, title, label, items, inputs = [], assu
   if (assumptions) vals.push(`$${assumptions}$`);
   const lines = [head];
   if (vals.length) lines.push(`Using ${vals.join(", ")}.`);
-  const refs = textExplain(items).trim();
+  // Open (not folded): it replaces what the python used to print, so it stays visible.
+  const refs = textExplain(items).trim().replace("> [!note]- ", "> [!note] ");
   return lines.join("\n") + (refs ? `\n\n${refs}` : "") + "\n";
 }
