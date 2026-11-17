@@ -15,6 +15,8 @@ import * as cas from "./cas.js";
 import { casOf, satisfies, assumptionsTex } from "./vars.js";
 import { symmetricReduction, definiteness, resolveLabel } from "./textlink.js";
 import { resolveLagrangeLabel, noteFG, lagrangeSolve } from "./lagrange.js";
+import { verdictFit } from "./verdicts.js";
+const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
 export const texM = (A) => `\\begin{pmatrix} ${A.map((r) => r.map((x) => T(x)).join(" & ")).join(" \\\\ ")} \\end{pmatrix}`;
@@ -435,6 +437,8 @@ function lagrangeFit(label, vars, ctx) {
 export function routeFit(route, vars, ctx = {}) {
   const body = route.body || "";
   const label = route.label || "";
+  // Sets, limits, KKT, SVM: decided in verdicts.js (ctx.command: the template's name).
+  if (ctx.command && VERDICT_COMMANDS.has(ctx.command)) return vars instanceof Map ? verdictFit(ctx.command, label, vars, ctx) : null;
   if (/Theorem 7\.39/.test(body) && /^(one constraint|linear constraint)/.test(label)) return lagrangeFit(label, vars, ctx);
   if (!aboutA(body)) return null;
   const m = noteMatrix(vars, ctx);

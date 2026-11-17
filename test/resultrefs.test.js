@@ -110,6 +110,9 @@ test("audit: every command and route cites from the result without errors", () =
   const notes = [
     "", "f(x) = x^2 - 3x + 2", "f(x, y) = x^2 - y^2", "f(x, y) = (x-1)^2 + (y-1)^2\ng = y - x - 1",
     "A = [[2, 1], [1, 3]]", "A = [[1, 2], [2, 4]]", "A = [[1, a], [a, 4]]\na > 0", "f(x) = \\sin(x)\np = (0)",
+    "S = \\{(x, y) \\mid x^2 + y^2 \\le 1\\}", "U = \\{(x, y) \\mid 0 < x \\le 1\\}", "I = (0, \\infty)",
+    "f(x) = \\frac{x^2 - 1}{x - 1}\na = 1", "f(x, y) = x^2 + y^2\ng1(x, y) = 1 - x - y\ng2(x, y) = x - 3",
+    "X = [[0, 0], [1, 1], [0, 1], [1, 0]]\nl = (1, 1, -1, -1)",
   ].map(note);
   const T = parseTemplates(fs.readFileSync(new URL("../src/imo26-templates.md", import.meta.url), "utf8"));
   const S = parsePySnippets(fs.readFileSync(new URL("../src/py-snippets.md", import.meta.url), "utf8"));
@@ -117,7 +120,7 @@ test("audit: every command and route cites from the result without errors", () =
   let n = 0;
   for (const vars of notes) {
     for (const t of T) for (const v of t.variants) {
-      const general = new Set(labels(explainItems([t.desc, v.label, v.body], REFS)));
+      const general = new Set(labels(explainItems([t.desc, v.label, v.body, resultRefs(t.name, vars).add], REFS)));
       for (const l of labels(citeFromResult(t.name, [t.desc, v.label, v.body], REFS, vars, {}, v.body))) {
         assert.ok(general.has(l) || ADDS.has(l), `${t.name} / ${v.label}: ${l}`);
       }

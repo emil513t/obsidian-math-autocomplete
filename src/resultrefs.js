@@ -16,6 +16,7 @@ import { noteMatrix, definitenessWitness, isSym } from "./witness.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { mainFn, resolveLabel } from "./textlink.js";
 import { citations, explainItems, pyRefs } from "./explain.js";
+import { verdictRefs } from "./verdicts.js";
 
 const NONE = { add: "", drop: "" };
 const join = (...rs) => ({ add: rs.map((r) => r.add).filter(Boolean).join(" "), drop: rs.map((r) => r.drop).filter(Boolean).join(" ") });
@@ -130,6 +131,8 @@ function functionRefs(name, vars, ctx) {
 
 export function resultRefs(name, vars, ctx = {}) {
   if (!(vars instanceof Map)) return NONE;
+  const v = safe(() => verdictRefs(name, vars, ctx));
+  if (v.add || v.drop) return v;
   if (name === "lagrange") return safe(() => lagrangeRefs(vars, ctx));
   if (name === "critxy" || name === "hessian") return safe(() => hessianRefs(vars, ctx));
   return join(safe(() => matrixRefs(name, vars, ctx)), safe(() => functionRefs(name, vars, ctx)));
@@ -177,5 +180,7 @@ export function fromVars(u, answers = {}, vars = new Map()) {
 export function pyItems(t, route, used, answers, vars, refs) {
   const sources = [t.desc, route.label, pyRefs(t.name, route.label)];
   const own = used.every((u) => fromVars(u, answers, vars));
-  return own ? citeFromResult(t.name, sources, refs, vars, {}, "", route.label) : explainItems(sources, refs);
+  // The python form's own fields (the limit point, the SVM points) count too.
+  const ctx = { answers, at: answers?.point };
+  return own ? citeFromResult(t.name, sources, refs, vars, ctx, "", route.label) : explainItems(sources, refs);
 }

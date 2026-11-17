@@ -499,7 +499,7 @@ class TemplateSuggest extends EditorSuggest {
       // Like the matrix fills: second step picks the solution route.
       // Routes that fit the note's own matrix (definite? invertible?) come first.
       const vars = this.plugin.settings.varsEnabled ? parseVars(editor.getValue()) : null;
-      const fit = vars instanceof Map ? (v) => routeFit(v, vars) : null;
+      const fit = vars instanceof Map ? (v) => routeFit(v, vars, { command: t.name }) : null;
       new RouteModal(this.plugin, t, (v) => this.plugin.insertTextTemplate(editor, start, end, t.name, v, t.desc), fit).open();
       return;
     }
