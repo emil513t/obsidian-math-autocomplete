@@ -36,7 +36,28 @@ export function lagrangeSolve(F, G) {
   const linearG = !!linear(G.x, xs);
   const H = cas.hessian(F.x, xs);
   const d = isConstM(H) ? definitenessWitness(H)?.d || null : null;
-  return { xs, eqs, kind: "unique", point, lambda: sol.values[xs.length], value, linearG, H, d };
+  return { xs, eqs, kind: "unique", point, lambda: sol.values[xs.length], value, linearG, H, d, center: squaredDistanceCenter(F.x, xs) };
+}
+
+// f = (x - p_1)^2 + ... + (x_d - p_d)^2, i.e. f(v) = |v - p|^2: the point p, else null.
+export function squaredDistanceCenter(f, xs) {
+  const lin = xs.map((v) => linear(cas.diff(f, v), xs));
+  if (lin.some((l) => !l)) return null;
+  const S = gauss(lin.map((l) => [...l.coef, cas.neg(l.c0)]), xs);
+  if (S.kind !== "unique") return null;
+  const sq = cas.add(...xs.map((v, i) => cas.pow(cas.sub(cas.sym(v), S.values[i]), 2)));
+  return cas.isZero(cas.sub(f, sq)) ? S.values : null;
+}
+
+// "The smallest distance from (1, 1) to the line is \sqrt{1/2} = ...", or "".
+export function distanceSentence(S) {
+  if (!S.center || !/positive/.test(S.d || "")) return "";
+  const p = `(${S.center.map((x) => T(x)).join(", ")})`;
+  const root = cas.pow(S.value, cas.Q(1, 2));
+  const exact = T(root);
+  const approx = Math.sqrt(cas.evaluate(S.value));
+  const set = S.xs.length === 2 ? "line" : "plane";
+  return ` Since $f(v) = |v - p|^2$ with $p = ${p}$ is the squared distance to $p$ (Definition 5.1), the point of the ${set} closest to $${p}$ is $${pt(S)}$, and the smallest distance is $\\sqrt{${T(S.value)}} = ${exact}${Number.isFinite(approx) && !Number.isInteger(approx) ? ` \\approx ${approx.toFixed(3)}` : ""}$.`;
 }
 
 const pt = (S) => `(${S.point.map((x) => T(x)).join(", ")})`;
@@ -74,7 +95,7 @@ export function resolveLagrangeLabel(label, vars, ctx = {}) {
   const ff = min ? `$${f}$` : `$-${f}$`;
   const hh = min ? "$h$" : "$-h$";
   return {
-    value: `The constraint set $g = 0$ is ${set} ($g$ is linear), which is not bounded, so Theorem 5.84 does not apply. Instead: $\\nabla^2 ${f} = ${texM(S.H)}$ is ${S.d} (symmetric reduction, Section 8.7), in particular ${sd}, so ${ff} is convex (Theorem 8.25). Take any $w$ with $g(w) = 0$, put $u = w - v_0$ and $h(t) = ${f}(v_0 + tu)$. Then ${hh} is convex, and $h'(0) = \\nabla ${f}(v_0) \\cdot u = -\\lambda\\, \\nabla g \\cdot u = 0$ (chain rule, Theorem 7.23; $\\nabla ${f}(v_0) = -\\lambda \\nabla g$ by the system, and $\\nabla g \\cdot u = g(w) - g(v_0) = 0$ as $g$ is linear). By Theorem 6.13, $t = 0$ is the global ${min ? "minimum of $h$" : "minimum of $-h$"}, so $${f}(w) = h(1) ${min ? "\\ge" : "\\le"} h(0) = ${f}(v_0)$. So $v_0 = ${pt(S)}$ is the ${word}: $${f}${pt(S)} = ${T(S.value)}$.`,
+    value: `The constraint set $g = 0$ is ${set} ($g$ is linear), which is not bounded, so Theorem 5.84 does not apply. Instead: $\\nabla^2 ${f} = ${texM(S.H)}$ is ${S.d} (symmetric reduction, Section 8.7), in particular ${sd}, so ${ff} is convex (Theorem 8.25). Take any $w$ with $g(w) = 0$, put $u = w - v_0$ and $h(t) = ${f}(v_0 + tu)$. Then ${hh} is convex, and $h'(0) = \\nabla ${f}(v_0) \\cdot u = -\\lambda\\, \\nabla g \\cdot u = 0$ (chain rule, Theorem 7.23; $\\nabla ${f}(v_0) = -\\lambda \\nabla g$ by the system, and $\\nabla g \\cdot u = g(w) - g(v_0) = 0$ as $g$ is linear). By Theorem 6.13, $t = 0$ is the global ${min ? "minimum of $h$" : "minimum of $-h$"}, so $${f}(w) = h(1) ${min ? "\\ge" : "\\le"} h(0) = ${f}(v_0)$. So $v_0 = ${pt(S)}$ is the ${word}: $${f}${pt(S)} = ${T(S.value)}$.${distanceSentence(S)}`,
     prose: true,
     from,
   };

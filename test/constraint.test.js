@@ -53,4 +53,6 @@ test("\\lagrange text on that note: Exercise 7.41 solved", () => {
   const out = fillTextAnswers(r.body, Object.fromEntries(qs.map((q) => [q.key, q.value])), qs);
   assert.match(out, /x = \\frac\{1\}\{2\},\\ y = \\frac\{3\}\{2\}/);
   assert.match(out, /is the minimum/);
+  assert.match(out, /closest to \$\(1, 1\)\$ is \$\(\\frac\{1\}\{2\}, \\frac\{3\}\{2\}\)\$/);
+  assert.match(out, /smallest distance is \$\\sqrt\{\\frac\{1\}\{2\}\} = \\frac\{\\sqrt\{2\}\}\{2\} \\approx 0\.707\$/);
 });

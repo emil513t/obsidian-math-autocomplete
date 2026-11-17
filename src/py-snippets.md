@@ -1187,6 +1187,11 @@ for p in cands:
     print({k: sp.N(v, 6) for k, v in p.items()}, " f =", sp.N(f.subs(p), 6), "  exact:", p if len(str(p)) < 200 else "long")
 if cands:
     print("max f:", sp.N(max(f.subs(p) for p in cands), 6), "  min f:", sp.N(min(f.subs(p) for p in cands), 6))
+    c_ = sp.solve([sp.diff(f, s) for s in $SYMS], $SYMS, dict=True)
+    if len(c_) == 1 and sp.expand(f - sum((s - c_[0].get(s, s))**2 for s in $SYMS)) == 0:
+        p_ = tuple(c_[0].get(s, s) for s in $SYMS)
+        m_ = min(f.subs(p) for p in cands)
+        print("f = |v - p|^2 with p =", p_, "-> smallest distance from p:", sp.sqrt(m_), "=", sp.N(sp.sqrt(m_), 6))
 
 ## \compactopt — max/min on a compact set: interior + boundary (Prop 7.46)
 ### boundary is a curve g = 0
