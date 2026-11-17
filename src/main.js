@@ -33,6 +33,7 @@ import { graphToPython } from "./graphpy.js";
 import { isHidden } from "./curriculum.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
 import { explainItems, pyExplainMarkdown, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
+import { resultRefs, dropRefs, notApplied, pyItems, fromVars } from "./resultrefs.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
 import { aboutA, resolveAny, resolveMatrixLabel, routeFit } from "./witness.js";
 import { evidencePy } from "./evidence.js";
@@ -1203,8 +1204,15 @@ export default class MathAutocompletePlugin extends Plugin {
     // A folded callout with the definitions and theorems the template cites
     // (general templates like \induction get the book's matching ones).
     const extra = this.settings.imo26 ? TEMPLATE_REFS[name] || "" : "";
-    const notes = this.settings.explainRefs ? textExplain(explainItems([desc, route.label, route.body, extra], this.settings.imo26 ? IMO26_REFS : [])) : "";
-    if (!questions.length) return insertTemplate(editor, start, end, route.body + notes);
+    // Cited from the result: the filled text, plus what the computed verdict
+    // uses (\posdef positive definite: Prop 3.43, not Def 8.9).
+    const notesFor = (text, ctx = {}) => {
+      if (!this.settings.explainRefs) return "";
+      const r = this.settings.imo26 ? resultRefs(name, vars, ctx) : { add: "", drop: "" };
+      const items = explainItems([desc, route.label, text, extra, r.add], this.settings.imo26 ? IMO26_REFS : []);
+      return textExplain(dropRefs(items, [r.drop, notApplied(text)].join(" ")));
+    };
+    if (!questions.length) return insertTemplate(editor, start, end, route.body + notesFor(route.body));
     new TextInputsModal(this, name, route, questions, (answers, qs, ctx) => {
       // A function or point typed into a computed field switches the whole
       // form to it, so "g" in the Hessian field also makes the text say g.
@@ -1227,7 +1235,8 @@ export default class MathAutocompletePlugin extends Plugin {
       const computed = qs.filter((q) => q.desc && done[q.key] && resolveLabel(q.label, vars, ctx)?.value === done[q.key]).map((q) => q.label);
       const code = this.settings.textEvidence && computed.length ? evidencePy(computed, vars, ctx) : "";
       const evidence = code ? `\n\n\`\`\`python\n${code}\n\`\`\`\n` : "";
-      insertTemplate(editor, start, end, fillTextAnswers(route.body, done, qs) + evidence + notes);
+      const filled = fillTextAnswers(route.body, done, qs);
+      insertTemplate(editor, start, end, filled + evidence + notesFor(filled, ctx));
     }, pickers).open();
   }
 
@@ -1239,13 +1248,10 @@ export default class MathAutocompletePlugin extends Plugin {
       name: t.name,
       title: t.desc,
       label: route.label,
-      items: explainItems([t.desc, route.label, pyRefs(t.name, route.label)], refs),
+      items: pyItems(t, route, used, answers, vars, refs),
       inputs: used.map((u) => {
-        // A form answer left as prefilled from the vars block still shows as math.
-        const same = (a, b) => String(a).replace(/\s+/g, "") === String(b).replace(/\s+/g, "");
-        const n = vars.get(u.var);
-        const v = n && (!u.typed || same(answers[u.input], n.value)) && n;
-        return v && !v.error ? { name: u.input, tex: toLatex(v) } : { name: u.input, code: answers[u.input] ?? u.var };
+        const v = fromVars(u, answers, vars);
+        return v ? { name: u.input, tex: toLatex(v) } : { name: u.input, code: answers[u.input] ?? u.var };
       }),
       assumptions: assumptionsTex(vars.assumptions || []),
     });
