@@ -7,7 +7,6 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { parsePySnippets, buildPySnippet, snippetQuestions } from "../src/pysnippets.js";
 import { parseVars } from "../src/vars.js";
-import { explainItems, pyExplainLines, pyRefs } from "../src/explain.js";
 
 const REFS = JSON.parse(fs.readFileSync(new URL("../src/refs/imo26.json", import.meta.url), "utf8"));
 
@@ -49,8 +48,8 @@ for (const s of snippets) {
     // point-like ones sized to the variables) go in as typed answers.
     const { questions } = snippetQuestions(v, { vars });
     const answers = Object.fromEntries(questions.map((q) => [q.key, q.value]));
-    // With the explanation prints, as the plugin inserts it by default.
-    const explain = (used, route) => pyExplainLines({ title: s.desc, label: route.label, items: explainItems([s.desc, route.label, pyRefs(s.name, route.label)], REFS), inputs: used.map((u) => u.input) });
+    // No explanation prints: the plugin puts that above the block as Markdown.
+    const explain = null;
     const { text } = buildPySnippet(v, { vars, answers, explain });
     let code = text.replace(/\{\{\s*([^{}\n]+?)\s*\}\}/g, (m, label) => {
       if (label in v.examples) return v.examples[label];
@@ -64,7 +63,8 @@ for (const s of snippets) {
     const id = `\\${s.name}${v.label ? ` [${v.label}]` : ""}`;
     if (res.status === 0) {
       pass++;
-      if (only) console.log(`--- ${id}\n${code}\n>>>\n${res.stdout}`);
+      // PY_PRINT=1: every output (and warnings), without the code.
+      if (only || process.env.PY_PRINT) console.log(`--- ${id}\n${process.env.PY_PRINT ? "" : code + "\n"}>>>\n${res.stdout}${res.stderr ? "STDERR:\n" + res.stderr : ""}`);
     } else {
       fails.push(id);
       console.log(`FAIL ${id}\n${code}\n${(res.stderr || res.error?.message || "").split("\n").slice(-6).join("\n")}\n`);

@@ -280,6 +280,11 @@ By Proposition 3.17, $(A + B)^2 = A^2 + AB + BA + B^2$. This equals $A^2 + 2AB +
 **Inverse of** $A = {{A}}$: the columns $B_j$ of $A^{-1}$ solve $AB_j = I_j$ (Section 3.5.1). Solve them all at once by Gauss elimination on $(A \mid I)$ until it is $(I \mid A^{-1})$:
 $$\left(\begin{array}{ccc|ccc} {{A | I}} \end{array}\right) \to {{steps}} \to \left(\begin{array}{ccc|ccc} {{I | A inverse}} \end{array}\right)$$
 So $A^{-1} = {{A inverse}}$. Check: $AA^{-1} = I$ (Definition 3.24).
+### with parameters: for which values is A invertible? (Def 3.24, Ex 3.26)
+**For which values is** $A = {{A}}$ **invertible?** Gauss elimination on $(A \mid I)$ with the parameters kept divides by $D = {{D of A}}$. Multiplying the result through by $D$ gives
+$$M = {{M with AM = DI}}, \qquad AM = MA = D\,I \quad \text{(multiply out, Definition 3.4)}.$$
+**If $D \neq 0$**, i.e. {{D nonzero when}}: $\left(\tfrac{1}{D}M\right)A = A\left(\tfrac{1}{D}M\right) = I$, so $A$ is invertible with $A^{-1} = {{A inverse with parameters}}$ (Definition 3.24).
+**If $D = 0$:** {{D zero cases}}
 ### 2x2 formula (Ex 3.26)
 For $A = {{A}}$: $D = ad - bc = {{D}} \neq 0$, so $A$ is invertible and
 $$A^{-1} = \frac{1}{D}\begin{pmatrix} d & -b \\ -c & a \end{pmatrix} = {{A inverse}}.$$
@@ -677,6 +682,12 @@ $${{f_x}} + \lambda\,({{g_x}}) = 0, \quad {{f_y}} + \lambda\,({{g_y}}) = 0, \qua
 {{solve the system}}
 Candidates: ${{candidate points}}$ with $f$-values ${{values}}$.
 The constraint set is compact ({{reason}}), so by Theorem 5.84 the max is ${{max}}$ and the min is ${{min}}$.
+### linear constraint (a line): Lagrange, then convexity gives the min (Thm 7.39, Thm 6.13)
+**Optimize** $f({{x, y}}) = {{f}}$ subject to $g({{x, y}}) = {{g}} = 0$. Introduce the Lagrangian $L(x, y, \lambda) = f(x, y) + \lambda g(x, y)$ (Section 7.10). By Theorem 7.39 a local maximum/minimum $v_0$ gives a critical point of $L$, i.e. $\nabla L = 0$:
+$${{f_x}} + \lambda\,({{g_x}}) = 0, \quad {{f_y}} + \lambda\,({{g_y}}) = 0, \quad {{g}} = 0$$
+{{solve the system}}
+So the only candidate is $v_0 = {{candidate points}}$, with ${{values}}$.
+{{why this is the max / min}}
 ### regard λ as a constant: Gaussian elimination in x, y (Ex 7.42)
 Regarding $\lambda$ as a constant, the equations ${{f_x}} + \lambda\,({{g_x}}) = 0$ and ${{f_y}} + \lambda\,({{g_y}}) = 0$ form a system of linear equations in $x$ and $y$. Gaussian elimination (Section 2.3) gives {{equation in λ}}, assuming {{y \neq 0}}; the case {{y = 0}} is handled separately: {{_}}. Substituting in $g = 0$: {{solve}}.
 ### word problem (box, fence, ...)

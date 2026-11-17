@@ -12,8 +12,9 @@
 // Also: the verdict blanks of matrix templates and which routes fit the
 // matrix. Pure, no Obsidian imports.
 import * as cas from "./cas.js";
-import { casOf } from "./vars.js";
+import { casOf, satisfies, assumptionsTex } from "./vars.js";
 import { symmetricReduction, definiteness, resolveLabel } from "./textlink.js";
+import { resolveLagrangeLabel, noteFG, lagrangeSolve } from "./lagrange.js";
 
 const T = (x, vars) => cas.tex(x, vars);
 export const texM = (A) => `\\begin{pmatrix} ${A.map((r) => r.map((x) => T(x)).join(" & ")).join(" \\\\ ")} \\end{pmatrix}`;
@@ -107,6 +108,99 @@ export function nonCommuting(A, others = []) {
   return null; // A = aI: it gives AB = BA for every B
 }
 
+// ---------- inverse of a matrix with parameters ----------
+// Gauss elimination on (A | I) with the parameters kept divides by
+// expressions in them. Multiplied through by D it gives M (polynomial
+// entries) with AM = MA = D I, which is checked by multiplying out
+// (Definition 3.4). So A^{-1} = M / D where D != 0 (Definition 3.24), and the
+// values with D = 0 are handled one by one (Gauss elimination, Section 2.3).
+const params = (A) => [...new Set(A.flat().flatMap((x) => [...cas.symbols(x)]))].sort();
+const qnum = (q) => q.n / q.d;
+const qtex = (q) => T(cas.num(q));
+
+export function paramInverse(A, assumptions = []) {
+  if (!isSquare(A) || isConst(A)) return null;
+  const n = A.length;
+  const minor = (i, j) => A.filter((_, r) => r !== i).map((r) => r.filter((_, c) => c !== j));
+  const D = cas.mat.det(A);
+  // M_ij = (-1)^(i+j) D(A without row j, column i): the polynomial version of A^{-1}.
+  const M = n === 1 ? [[cas.ONE]] : A.map((_, i) => A.map((_, j) => {
+    const d = cas.mat.det(minor(j, i));
+    return (i + j) % 2 ? cas.neg(d) : d;
+  }));
+  const DI = A.map((r, i) => r.map((_, j) => (i === j ? D : cas.ZERO)));
+  const same = (X, Y) => X.every((r, i) => r.every((x, j) => cas.equal(x, Y[i][j])));
+  if (!same(cas.mat.mul(A, M), DI) || !same(cas.mat.mul(M, A), DI)) return null;
+  const ps = params(A);
+  const p = ps.length === 1 ? ps[0] : null;
+  const roots = p && !isConst([[D]]) ? cas.rationalRoots(D, p) : null;
+  const uniq = roots ? roots.filter((r, i) => roots.findIndex((s) => s.n === r.n && s.d === r.d) === i) : null;
+  const kept = uniq ? uniq.filter((r) => satisfies(assumptions, p, qnum(r))) : null;
+  const excluded = uniq ? uniq.filter((r) => !kept.includes(r)) : [];
+  // D written as c (p - r1)(p - r2)... when it splits.
+  let Dtex = T(D);
+  if (roots && roots.length) {
+    // The leading coefficient c: D = c (p - r1)(p - r2)... checked by expanding.
+    const prod = cas.mul(...roots.map((r) => cas.sub(cas.sym(p), cas.num(r))));
+    const top = cas.pow(cas.sym(p), cas.num(roots.length));
+    const lt = cas.termsOf(D).map((s) => cas.constValue(cas.div(s, top))).find(Boolean);
+    const c = lt && cas.isZero(cas.sub(D, cas.mul(cas.num(lt), prod))) ? lt : null;
+    if (c) {
+      const fs = roots.map((r) => (r.n === 0 ? p : `(${T(cas.sub(cas.sym(p), cas.num(r)))})`));
+      const pre = c.n === c.d ? "" : c.n === -c.d ? "-" : qtex(c);
+      const body = fs.join("");
+      const factored = roots.length === 1 && !pre ? T(D) : `${pre}${body}`;
+      if (factored !== Dtex) Dtex = `${Dtex} = ${factored}`;
+    }
+  }
+  const cases = (kept || []).map((r) => {
+    const Ar = A.map((row) => row.map((x) => cas.subs(x, { [p]: cas.num(r) })));
+    const v = zeroSolution(Ar);
+    return { r, A: Ar, v };
+  });
+  return { D, Dtex, M, p, params: ps, roots: uniq, kept, excluded, cases, assumptions: assumptionsTex(assumptions, ps) };
+}
+
+// x / D, cancelled when x is a constant multiple of D.
+function overD(x, D) {
+  if (cas.isZero(x)) return cas.ZERO;
+  const [t] = cas.termsOf(D);
+  for (const s of cas.termsOf(x)) {
+    const q = cas.constValue(cas.div(s, t));
+    if (!q) continue;
+    const c = cas.num(q);
+    if (cas.isZero(cas.sub(x, cas.mul(c, D)))) return c;
+  }
+  return null;
+}
+const fracTex = (x, D) => {
+  if (cas.constValue(D)) return T(cas.div(x, D));
+  const c = overD(x, D);
+  return c ? T(c) : `\\frac{${T(x)}}{${T(D)}}`;
+};
+
+function paramInverseProse(P, name, label) {
+  const p = P.p;
+  const neq = (r) => `$${p} \\neq ${qtex(r)}$`;
+  if (label === "D nonzero when") {
+    if (cas.constValue(P.D)) return `for every value of the parameters ($D = ${T(P.D)} \\neq 0$)`;
+    if (!P.roots) return `$${T(P.D)} \\neq 0$${P.assumptions ? ` (with $${P.assumptions}$)` : ""}`;
+    const ex = P.excluded.length ? ` ($${P.excluded.map((r) => `${p} = ${qtex(r)}`).join("$, $")}$ ${P.excluded.length > 1 ? "are" : "is"} ruled out by $${P.assumptions}$)` : "";
+    if (!P.kept.length) return `for every ${P.assumptions ? `$${P.assumptions}$` : `$${p}$`}${ex}`;
+    return `${P.kept.map(neq).join(" and ")}${P.assumptions ? `, with $${P.assumptions}$` : ""}${ex}`;
+  }
+  // D zero cases
+  if (cas.constValue(P.D)) return `This never happens, so $${name}$ is invertible for every value of the parameters.`;
+  if (P.roots && !P.kept.length) return `This never happens${P.assumptions ? ` for $${P.assumptions}$` : ""}, so $${name}$ is invertible for all those values.`;
+  if (!P.roots) {
+    return `Then $${name}M = 0$, so a column $m \\neq 0$ of $M$ gives $${name}m = 0$. If $B$ were an inverse, $m = (B${name})m = B(${name}m) = 0$, a contradiction (Definition 3.24). (Where $M = 0$ as well, do Gauss elimination for that value.)`;
+  }
+  return P.cases.map(({ r, A, v }) => {
+    if (!v) return `For $${p} = ${qtex(r)}$: Gauss elimination on $${texM(A)}$ (Section 2.3).`;
+    return `For $${p} = ${qtex(r)}$: $${name} = ${texM(A)}$ and $${name}v = 0$ for $v = ${texCol(v)} \\neq 0$ (Gauss elimination, Section 2.3). If $B$ were an inverse, $v = (B${name})v = B(${name}v) = B0 = 0$, a contradiction (Definition 3.24). So $${name}$ is **not invertible** for $${p} = ${qtex(r)}$.`;
+  }).join(" ");
+}
+
 // Symmetric reduction of a matrix with parameters (Exercise 8.37). No
 // interchanges: a 0 diagonal entry stops it (returns null). divisors: the
 // diagonal entries with parameters that were divided by.
@@ -198,6 +292,9 @@ const isDefChoice = (l) => l.includes(" / ") && l.split(" / ").every((o) => DEF_
 // Is the template text about a matrix A (not about f's Hessian)?
 export const aboutA = (body) => /(^|[^\\\w])A(\s*=\s*\{\{A\}\}|\$|\s*u\b|\^\\top|\\,|\s*v\b)/.test(body) && !/\\nabla\^2|Hessian/.test(body);
 
+// " (with $a > 0$)" for the vars-block assumptions about A's parameters.
+const assumed = (vars, A) => { const s = assumptionsTex(vars.assumptions || [], params(A)); return s ? ` (with $${s}$)` : ""; };
+
 // Blanks of the matrix templates, computed from the note's matrix.
 // undefined: not a matrix blank here; null: a matrix blank, nothing to compute from.
 export function resolveMatrixLabel(label, vars, ctx = {}) {
@@ -205,7 +302,7 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
   const body = ctx.body || "";
   if (!aboutA(body)) return undefined;
   const m = noteMatrix(vars, ctx);
-  const known = isDefChoice(l) || /^(all > 0 \/ all ≥ 0 \/ of both signs|diagonal matrix|row op \+ column op|quadratic form|shift|A inverse|A \| I|I \| A inverse|A has a zero row \/ A v = 0 for v = \.\.\. ≠ 0|contradiction, e\.g\. v = BAv = B0 = 0|AB|BA)$/.test(l)
+  const known = isDefChoice(l) || /^(all > 0 \/ all ≥ 0 \/ of both signs|diagonal matrix|row op \+ column op|quadratic form|shift|A inverse|A \| I|I \| A inverse|D of A|M with AM = DI|D nonzero when|A inverse with parameters|D zero cases|A has a zero row \/ A v = 0 for v = \.\.\. ≠ 0|contradiction, e\.g\. v = BAv = B0 = 0|AB|BA)$/.test(l)
     || (/^(u|value)$/.test(l) && /u\^\\top A u = \{\{value\}\}/.test(body))
     || (/^(u|v|positive|negative)$/.test(l) && /\{\{negative\}\} < 0/.test(body))
     || (/^(a|c)$/.test(l) && /\{\{shift\}\}/.test(body))
@@ -221,7 +318,7 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
       const P = paramConditions(A);
       if (!P) return null;
       const say = (x) => (x === "never" ? "never" : x || "always");
-      return { value: `positive definite exactly when ${say(P.pd)}, positive semi-definite exactly when ${say(P.psd)}${P.note}`, prose: true, from: `${from}, diagonal of D with parameters` };
+      return { value: `positive definite exactly when ${say(P.pd)}, positive semi-definite exactly when ${say(P.psd)}${P.note}${assumed(vars, A)}`, prose: true, from: `${from}, diagonal of D with parameters` };
     }
     if (isDefChoice(l) || /^all > 0/.test(l) || /^(diagonal matrix|row op \+ column op)$/.test(l)) {
       if (!isSym(A)) return null;
@@ -258,6 +355,20 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
       if (l === "a") return { value: T(a), from };
       if (l === "shift") return { value: T(cas.div(b, a)), from: `${from}, b / a` };
       return { value: T(cas.sub(c, cas.div(cas.mul(b, b), a))), from: `${from}, c − b²/a` };
+    }
+    // Parameters: A^{-1} = M / D, with the values where D = 0 done one by one.
+    if (/^(D of A|M with AM = DI|D nonzero when|A inverse with parameters|D zero cases)$/.test(l) || (/^(A inverse|I \| A inverse)$/.test(l) && isSquare(A) && !isConst(A))) {
+      const P = paramInverse(A, vars.assumptions || []);
+      if (!P) return null;
+      const src = `${from}, Gauss elimination on (A | I) with the parameters kept`;
+      if (l === "D of A") return { value: P.Dtex, from: `${from}, the number Gauss elimination divides by` };
+      if (l === "M with AM = DI") return { value: texM(P.M), from: src };
+      if (l === "A inverse" || l === "A inverse with parameters") {
+        const c = cas.constValue(P.D);
+        return { value: c ? texM(P.M.map((r) => r.map((x) => cas.div(x, P.D)))) : `\\frac{1}{${T(P.D)}}${texM(P.M)}`, from: src };
+      }
+      if (l === "I | A inverse") return { value: A.map((r, i) => [...r.map((_, j) => (i === j ? "1" : "0")), ...P.M[i].map((x) => fracTex(x, P.D))].join(" & ")).join(" \\\\ "), from: src };
+      return { value: paramInverseProse(P, m.name, l), prose: true, from: src };
     }
     if (l === "D") {
       if (A.length !== 2 || !isSquare(A)) return null;
@@ -302,13 +413,29 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
 // Matrix blanks first (they depend on the route text), then everything else.
 export function resolveAny(label, vars, ctx = {}) {
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;
-  return r !== undefined ? r : resolveLabel(label, vars, ctx);
+  if (r !== undefined) return r;
+  const g = vars instanceof Map ? resolveLagrangeLabel(label, vars, ctx) : undefined;
+  return g !== undefined ? g : resolveLabel(label, vars, ctx);
+}
+
+// \lagrange: a linear g with convex (or -f convex) f -> the convexity route.
+function lagrangeFit(label, vars, ctx) {
+  const fg = vars instanceof Map ? noteFG(vars, ctx) : null;
+  if (!fg) return null;
+  let S;
+  try { S = lagrangeSolve(fg.F, fg.G); } catch (_) { return null; }
+  if (!S || S.kind !== "unique" || !S.linearG) return null;
+  const conv = /(positive|negative)/.test(S.d || "");
+  const g = fg.G.v.name;
+  if (/^linear constraint/.test(label)) return conv ? { ok: true, best: true, why: `${g} is linear: one candidate, convexity decides` } : null;
+  return { ok: false, why: `${g} = 0 is a line: not compact, Theorem 5.84 does not apply` };
 }
 
 // Does this route fit the note's matrix? { ok, why } or null (no opinion).
 export function routeFit(route, vars, ctx = {}) {
   const body = route.body || "";
   const label = route.label || "";
+  if (/Theorem 7\.39/.test(body) && /^(one constraint|linear constraint)/.test(label)) return lagrangeFit(label, vars, ctx);
   if (!aboutA(body)) return null;
   const m = noteMatrix(vars, ctx);
   if (!m) return null;
@@ -332,7 +459,12 @@ export function routeFit(route, vars, ctx = {}) {
     }
     if (/invertible|inverse|2x2 formula|\(A \| I\)/i.test(label) && !/of a product|transpose/i.test(label)) {
       if (!isSquare(A)) return { ok: false, why: `${name} is not square` };
-      if (!isConst(A)) return null;
+      if (!isConst(A)) {
+        const ps = params(A).join(", ");
+        if (/with parameters/i.test(label)) return { ok: true, best: true, why: `${name} has the parameter${ps.includes(",") ? "s" : ""} ${ps}` };
+        if (/2x2 formula/i.test(label)) return A.length === 2 ? { ok: true, why: `${name} has parameters: D = ad − bc ≠ 0 is a condition` } : { ok: false, why: `${name} is ${A.length}×${A.length}` };
+        return /Gauss/i.test(label) ? { ok: false, why: `${name} has parameters: it divides by D without saying when D = 0` } : null;
+      }
       const singular = !!zeroSolution(A);
       const is = singular ? `${name} is not invertible` : `${name} is invertible`;
       if (/NOT invertible/i.test(label)) return { ok: singular, why: is, best: singular };

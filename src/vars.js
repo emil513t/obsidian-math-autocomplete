@@ -35,9 +35,13 @@ export function parseVars(doc, { implicit = true } = {}) {
   // ```vars, ```Vars, ```VARS: any capitalisation.
   const re = /^[ \t]*(```|~~~)[ \t]*vars[ \t]*\n([\s\S]*?)^[ \t]*\1[ \t]*$/gim;
   let m;
+  const assumptions = [];
   while ((m = re.exec(doc))) {
     for (const v of parseBlock(m[2], vars)) vars.set(v.name, v);
+    assumptions.push(...parseAssumptions(m[2]));
   }
+  // a > 0, b ≥ 1, 0 < t < 1, c ≠ 0: what the note assumes about its parameters.
+  vars.assumptions = assumptions;
   if (!implicit) return vars;
   const add = (lines, source) => {
     for (const v of parseBlock(lines.join("\n"), vars)) {
@@ -112,6 +116,58 @@ function pyExprTex(e) {
     .replace(/\ba(sin|cos|tan)\(/g, "arc$1(");
   const x = cas.tryParse(t);
   return x ? cas.tex(x) : null;
+}
+
+// ---------- assumptions: a > 0, b >= 1, 0 < t < 1, a, b ≠ 0 ----------
+
+const REL = String.raw`(<=|>=|!=|=<|=>|≤|≥|≠|<|>|\\leq?|\\geq?|\\neq|\\ne|\\lt|\\gt)`;
+const NUMB = String.raw`(-?\s*\d+(?:\.\d+)?(?:\s*/\s*\d+)?|-?\s*\\frac\{\d+\}\{\d+\})`;
+const NAMES = String.raw`([A-Za-z]\w*(?:\s*,\s*[A-Za-z]\w*)*)`;
+const normOp = (op) => ({ "<=": "<=", "=<": "<=", "≤": "<=", "\\le": "<=", "\\leq": "<=", ">=": ">=", "=>": ">=", "≥": ">=", "\\ge": ">=", "\\geq": ">=", "!=": "!=", "≠": "!=", "\\ne": "!=", "\\neq": "!=", "<": "<", "\\lt": "<", ">": ">", "\\gt": ">" })[op.trim()];
+const FLIP = { "<": ">", ">": "<", "<=": ">=", ">=": "<=", "!=": "!=" };
+const numOf = (s) => {
+  const t = s.replace(/\s+/g, "");
+  const f = t.match(/^(-?)\\frac\{(\d+)\}\{(\d+)\}$/);
+  if (f) return (f[1] ? -1 : 1) * Number(f[2]) / Number(f[3]);
+  const [p, q] = t.split("/");
+  return q ? Number(p) / Number(q) : Number(p);
+};
+
+// [{ name, op: "<" | "<=" | ">" | ">=" | "!=", value: number, text }]
+export function parseAssumptions(src) {
+  const out = [];
+  const push = (names, op, value) => {
+    for (const name of names.split(",").map((s) => s.trim())) {
+      out.push({ name, op, value, text: `${name} ${({ "<=": "\\le", ">=": "\\ge", "!=": "\\neq" })[op] || op} ${cas.tex(cas.parse(String(value).replace(/^(-?\d+)\.(\d+)$/, "$1.$2")))}` });
+    }
+  };
+  for (const raw of src.split("\n")) {
+    const line = stripComment(raw).trim().replace(/^\$|\$$/g, "").trim();
+    if (!line || /:?=(?!=)/.test(line.replace(/<=|>=|!=|=<|=>/g, ""))) continue;
+    let m = line.match(new RegExp(`^${NUMB}\\s*${REL}\\s*${NAMES}\\s*${REL}\\s*${NUMB}$`));
+    if (m) {
+      const lo = normOp(m[2]), hi = normOp(m[4]);
+      if (lo && hi) { push(m[3], FLIP[lo], numOf(m[1])); push(m[3], hi, numOf(m[5])); }
+      continue;
+    }
+    m = line.match(new RegExp(`^${NAMES}\\s*${REL}\\s*${NUMB}$`));
+    if (m && normOp(m[2])) { push(m[1], normOp(m[2]), numOf(m[3])); continue; }
+    m = line.match(new RegExp(`^${NUMB}\\s*${REL}\\s*${NAMES}$`));
+    if (m && normOp(m[2])) push(m[3], FLIP[normOp(m[2])], numOf(m[1]));
+  }
+  return out.filter((a) => Number.isFinite(a.value));
+}
+
+// Does the number x satisfy every assumption about `name`?
+export function satisfies(assumptions = [], name, x) {
+  return assumptions.filter((a) => a.name === name).every((a) => ({
+    "<": x < a.value, "<=": x <= a.value, ">": x > a.value, ">=": x >= a.value, "!=": x !== a.value,
+  })[a.op]);
+}
+
+// "a > 0, b \ge 1" for the parameters that occur, or "".
+export function assumptionsTex(assumptions = [], names = null) {
+  return assumptions.filter((a) => !names || names.includes(a.name)).map((a) => a.text).join(",\\ ");
 }
 
 export function parseBlock(src, known = new Map()) {

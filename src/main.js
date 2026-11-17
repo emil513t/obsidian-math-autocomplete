@@ -27,12 +27,12 @@ import IMO26_EXTRA from "./refs/imo26-extra.json";
 const IMO26_REFS = [...IMO26_NUMBERED, ...IMO26_EXTRA];
 import { parseRefQuery, rankRefs, formatRef, kindLabel, refKey, refExcerpt } from "./refs.js";
 import { envOf, isMatrixEnv } from "./variants.js";
-import { parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS, fnExpr } from "./vars.js";
+import { assumptionsTex, parseVars, parseBlock, matchVars, fenceLanguage, insertFor, toLatex, toPython, latexName, displayName, PY_LANGS, fnExpr } from "./vars.js";
 import { parseGraph, drawScene, GRAPH_KEYWORDS, graphQuery, graphOptions } from "./graph.js";
 import { graphToPython } from "./graphpy.js";
 import { isHidden } from "./curriculum.js";
 import { rankObjects, objectContext, sizedMatrixOptions, findDefinitions, resolveAnswers } from "./objects.js";
-import { explainItems, pyExplainLines, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
+import { explainItems, pyExplainMarkdown, textExplain, TEMPLATE_REFS, pyRefs } from "./explain.js";
 import { resolveLabel, noteFunctions, notePoints } from "./textlink.js";
 import { aboutA, resolveAny, resolveMatrixLabel, routeFit } from "./witness.js";
 import { evidencePy } from "./evidence.js";
@@ -92,8 +92,23 @@ class PySnippetSuggest extends EditorSuggest {
     const picks = this.plugin.settings.templatePicks;
     picks["py:" + t.name] = (picks["py:" + t.name] || 0) + 1;
     this.plugin.saveSettings();
+    // What it computes, the values and the references go above the block as
+    // Markdown; the python only prints results.
     const explain = this.plugin.pyExplainer(t);
-    const put = (v, answers) => insertTemplate(editor, start, end, buildPySnippet(v, { ...state, answers, explain }).text);
+    const put = (v, answers) => {
+      const built = buildPySnippet(v, { ...state, answers });
+      const head = explain ? explain(built.used, v, answers, state.vars) : "";
+      let [s, e] = [start, end];
+      let f = start.line;
+      while (f >= 0 && !/^\s*(```|~~~)/.test(editor.getLine(f))) f--;
+      if (head && f >= 0) {
+        editor.replaceRange(head + "\n", { line: f, ch: 0 });
+        const k = head.split("\n").length;
+        s = { line: start.line + k, ch: start.ch };
+        e = { line: end.line + k, ch: end.ch };
+      }
+      insertTemplate(editor, s, e, built.text);
+    };
     const insert = (v) => {
       const { questions } = snippetQuestions(v, state);
       if (!this.plugin.settings.askInputs || !questions.length) return put(v, {});
@@ -1216,15 +1231,20 @@ export default class MathAutocompletePlugin extends Plugin {
     }, pickers).open();
   }
 
-  // Python: print what is computed, the values used and the cited references.
+  // Python: the Markdown above the block (what is computed, the values used, the references).
   pyExplainer(t) {
     if (!this.settings.explainRefs) return null;
     const refs = this.settings.imo26 ? IMO26_REFS : [];
-    return (used, route) => pyExplainLines({
+    return (used, route, answers = {}, vars = new Map()) => pyExplainMarkdown({
+      name: t.name,
       title: t.desc,
       label: route.label,
       items: explainItems([t.desc, route.label, pyRefs(t.name, route.label)], refs),
-      inputs: used.map((u) => u.input),
+      inputs: used.map((u) => {
+        const v = !u.typed && vars.get(u.var);
+        return v && !v.error ? { name: u.input, tex: toLatex(v) } : { name: u.input, code: answers[u.input] ?? u.var };
+      }),
+      assumptions: assumptionsTex(vars.assumptions || []),
     });
   }
 

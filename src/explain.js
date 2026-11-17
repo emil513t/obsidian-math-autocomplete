@@ -150,3 +150,17 @@ export function textExplain(items) {
   const body = withText.map((it) => `> **${it.label}${it.title ? ` (${it.title})` : ""}.** ${it.text ? clean(it.text) : ""}`.trimEnd());
   return `\n\n> [!note]- Definitions and results used\n${body.join("\n>\n")}\n`;
 }
+
+// Markdown above a python block: what it computes, the note's values it uses
+// (as math) and the cited references in a folded callout. The python itself
+// then only prints results.
+//   inputs: [{ name, tex }] (tex: LaTeX of the value) or [{ name, code }]
+export function pyExplainMarkdown({ name, title, label, items, inputs = [], assumptions = "" }) {
+  const head = [`**\\${name}**`, title, label].filter(Boolean).join(" · ");
+  const vals = inputs.map((i) => (i.tex != null ? `$${i.name} = ${i.tex}$` : `\`${i.name} = ${i.code}\``));
+  if (assumptions) vals.push(`$${assumptions}$`);
+  const lines = [head];
+  if (vals.length) lines.push(`Using ${vals.join(", ")}.`);
+  const refs = textExplain(items).trim();
+  return lines.join("\n") + (refs ? `\n\n${refs}` : "") + "\n";
+}

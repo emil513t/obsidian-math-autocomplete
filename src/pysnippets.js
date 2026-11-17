@@ -177,6 +177,13 @@ function replaceName(body, from, to) {
 // an empty or missing answer falls back to the note's vars / a Tab placeholder.
 // explain(used) -> python lines printed before the computation (what it
 // computes, the values used, the book references).
+// sympy flags for what the vars block assumes about a symbol (a > 0 -> positive=True).
+const FLAG = { ">0": "positive=True", ">=0": "nonnegative=True", "<0": "negative=True", "<=0": "nonpositive=True", "!=0": "nonzero=True" };
+function symbolFlags(assumptions, name) {
+  const fl = assumptions.filter((a) => a.name === name && a.value === 0).map((a) => FLAG[`${a.op}0`]).filter(Boolean);
+  return fl.length ? [...new Set(fl)].join(", ") : "";
+}
+
 export function buildPySnippet(s, { vars = new Map(), before = "", answers = {}, explain = null } = {}) {
   let body = s.body;
   const defined = definedNames(before);
@@ -237,9 +244,17 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {},
   syms.sort((a, b) => order(a) - order(b) || a.localeCompare(b));
   const needSym = syms.filter((n) => !defined.has(n));
   if (style === "sympy" && needSym.length && (s.syms.length || used.length || s.inputs.some((i) => i.kind === "expr"))) {
-    header.push(needSym.length === 1
-      ? `${needSym[0]} = sp.symbols('${needSym[0]}')`
-      : `${needSym.join(", ")} = sp.symbols('${needSym.join(" ")}')`);
+    // a > 0, b >= 0, c != 0 in the vars block: sympy knows them (positive=True, ...).
+    const flags = (n) => symbolFlags(vars.assumptions || [], n);
+    const plain = needSym.filter((n) => !flags(n));
+    if (plain.length) {
+      header.push(plain.length === 1
+        ? `${plain[0]} = sp.symbols('${plain[0]}')`
+        : `${plain.join(", ")} = sp.symbols('${plain.join(" ")}')`);
+    }
+    for (const n of needSym.filter(flags)) header.push(`${n} = sp.symbols('${n}', ${flags(n)})`);
+    const other = (vars.assumptions || []).filter((x) => needSym.includes(x.name) && x.value !== 0);
+    if (other.length) header.push(`# assumed in the vars block (sympy can't hold these, so check the answers): ${other.map((x) => `${x.name} ${x.op} ${x.value}`).join(", ")}`);
   }
 
   const symList = `[${syms.join(", ")}]`;
