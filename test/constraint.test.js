@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { parseVars, toLatex } from "../src/vars.js";
 import { parseTemplates, textQuestions, fillTextAnswers } from "../src/templates.js";
 import { resolveAny, routeFit } from "../src/witness.js";
-import { parsePySnippets, buildPySnippet } from "../src/pysnippets.js";
+import { parsePySnippets, buildPySnippet, snippetQuestions } from "../src/pysnippets.js";
 import { noteFunctions } from "../src/textlink.js";
 
 const NOTE = "```vars \ny = x + 1\nf(x, y) = (x - 1)^2 + (y - 1)^2\n```\n";
@@ -29,9 +29,12 @@ test("python snippets declare y as a symbol (was: TypeError str - int)", () => {
   for (const name of ["limit", "lagrange", "critxy"]) {
     const s = SNIPPETS.find((x) => x.name === name);
     if (!s) continue;
-    for (const v of s.all) {
-      const { text } = buildPySnippet(v, { vars });
-      if (/\{\{/.test(text)) continue;
+    for (const v of s.all) for (const viaForm of [false, true]) {
+      // viaForm: the inputs form prefills f from the vars block and sends it
+      // back as a typed answer (the path the plugin takes by default).
+      const answers = viaForm ? Object.fromEntries(snippetQuestions(v, { vars }).questions.map((q) => [q.key, q.value])) : {};
+      const { text } = buildPySnippet(v, { vars, answers });
+      if (/\{\{/.test(text) || !/\(y - 1\)/.test(text)) continue; // routes that don't use f
       assert.match(text, /x, y = sp\.symbols\('x y'\)/, `\\${name} [${v.label}]`);
       assert.doesNotMatch(text, /^y = /m, `\\${name} [${v.label}] must not assign y`);
       if (v.uses.includes("plt")) continue;

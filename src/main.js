@@ -1241,7 +1241,10 @@ export default class MathAutocompletePlugin extends Plugin {
       label: route.label,
       items: explainItems([t.desc, route.label, pyRefs(t.name, route.label)], refs),
       inputs: used.map((u) => {
-        const v = !u.typed && vars.get(u.var);
+        // A form answer left as prefilled from the vars block still shows as math.
+        const same = (a, b) => String(a).replace(/\s+/g, "") === String(b).replace(/\s+/g, "");
+        const n = vars.get(u.var);
+        const v = n && (!u.typed || same(answers[u.input], n.value)) && n;
         return v && !v.error ? { name: u.input, tex: toLatex(v) } : { name: u.input, code: answers[u.input] ?? u.var };
       }),
       assumptions: assumptionsTex(vars.assumptions || []),

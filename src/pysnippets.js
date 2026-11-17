@@ -214,7 +214,9 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {},
       defs.push(`${inp.name} = ${py}`);
       used.push({ input: inp.name, var: inp.name, typed: true });
       if (inp.kind !== "set" && inp.kind !== "any") {
-        for (const n of freeSymbols(py)) if (!vars.has(n) && !syms.includes(n)) syms.push(n);
+        // Same rule as below: only plain-number note variables (a = 2) are
+        // not symbols; y in f(x, y) is one even with y = x + 1 in the note.
+        for (const n of freeSymbols(py)) if ((!vars.has(n) || !isConstVar(vars.get(n))) && !syms.includes(n)) syms.push(n);
       }
       continue;
     }
