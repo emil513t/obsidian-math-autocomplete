@@ -11,7 +11,7 @@ const texM = (M, vars) => `\\begin{pmatrix} ${M.map((r) => r.map((x) => cas.tex(
 // The note's functions: scalar vars with at least one variable in them.
 export function noteFunctions(vars) {
   return [...vars.values()].filter((v) => {
-    if (v.kind !== "scalar" || v.error) return false;
+    if (v.kind !== "scalar" || v.error || v.constraint) return false;
     try { return fnExpr(v, vars).vars.length > 0; } catch (_) { return false; }
   });
 }

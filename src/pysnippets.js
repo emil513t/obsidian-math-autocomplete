@@ -144,13 +144,19 @@ function fits(v, kind) {
   if (kind === "any") return false; // only ever matched by name
   if (kind === "matrix") return v.kind === "matrix";
   if (kind === "vector") return v.kind === "vector" || (v.kind === "matrix" && (v.value.length === 1 || v.value.every((r) => r.length === 1)));
-  if (v.error) return false;
+  if (v.error || v.constraint) return false; // y = x + 1 next to f(x, y): a constraint, not an input
   if (kind === "set") return v.kind === "vector" || (v.kind === "set" && !v.builder);
   if (kind === "list") return v.kind === "vector";
   if (kind === "points") return v.kind === "vector" || (v.kind === "matrix" && v.value.every((r) => r.length === 2));
   if (kind === "number") return v.kind === "scalar" && /^-?[\d./\\{}frac\s]+$/.test(v.value);
   if (kind === "expr") return v.kind === "scalar" && /[A-Za-z]/.test(v.value.replace(/\\(frac|sqrt|pi)\b/g, ""));
   return false;
+}
+
+// A note variable that is a plain number (a = 2), not an expression (y = x + 1).
+function isConstVar(v) {
+  if (!v || v.kind !== "scalar" || v.params) return !!v && v.kind !== "scalar";
+  try { return !/[A-Za-z]/.test(asciiMath(String(v.value)).replace(/\\(frac|sqrt|pi|cdot|left|right)/g, "")); } catch (_) { return false; }
 }
 
 function pyValue(v, kind, style) {
@@ -229,7 +235,10 @@ export function buildPySnippet(s, { vars = new Map(), before = "", answers = {},
         const py = pyValue(pick, inp.kind, style);
         defs.push(`${inp.name} = ${py}`);
         if (inp.kind !== "set") {
-          for (const n of freeSymbols(py)) if (!vars.has(n) && !syms.includes(n)) syms.push(n);
+          // pyValue already put in the note's constants, so every name left is
+          // a symbol, also one the note defines elsewhere: in f(x, y) with
+          // y = x + 1 in the vars block, y is still f's variable.
+          for (const n of freeSymbols(py)) if ((!vars.has(n) || pick.params?.includes(n) || !isConstVar(vars.get(n))) && !syms.includes(n)) syms.push(n);
         }
       }
     } else {

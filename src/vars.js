@@ -42,6 +42,7 @@ export function parseVars(doc, { implicit = true } = {}) {
   }
   // a > 0, b ≥ 1, 0 < t < 1, c ≠ 0: what the note assumes about its parameters.
   vars.assumptions = assumptions;
+  markConstraints(vars);
   if (!implicit) return vars;
   const add = (lines, source) => {
     for (const v of parseBlock(lines.join("\n"), vars)) {
@@ -116,6 +117,21 @@ function pyExprTex(e) {
     .replace(/\ba(sin|cos|tan)\(/g, "arc$1(");
   const x = cas.tryParse(t);
   return x ? cas.tex(x) : null;
+}
+
+// y = x + 1 next to f(x, y) = ...: y is f's variable, so the line is the
+// constraint y = x + 1 (as in min_{y = x + 1} f), not a value for y.
+function markConstraints(vars) {
+  const fnParams = new Set([...vars.values()].flatMap((v) => (v.params && !v.error ? v.params : [])));
+  for (const v of vars.values()) {
+    if (v.kind === "scalar" && !v.params && !v.error && fnParams.has(v.name) && /[A-Za-z]/.test(String(v.value))) v.constraint = true;
+  }
+  // As g = 0 for \lagrange and the python snippets: g = y - (x + 1).
+  const c = [...vars.values()].find((v) => v.constraint);
+  if (c && !vars.has("g")) {
+    const g = parseValue("g", `${c.name} - (${c.value})`);
+    if (g && !g.error) vars.set("g", { ...g, fromConstraint: c.name });
+  }
 }
 
 // ---------- assumptions: a > 0, b >= 1, 0 < t < 1, a, b ≠ 0 ----------
