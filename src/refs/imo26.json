@@ -818,9 +818,9 @@
  {
   "kind": "proposition",
   "num": "6.43",
-  "title": "Sign of the derivative characterizes monotonicity",
+  "title": "Sign of the derivative decides increasing / decreasing",
   "page": 169,
-  "heading": "Proposition 6.43 — Sign of the derivative characterizes monotonicity",
+  "heading": "Proposition 6.43 — Sign of the derivative decides increasing / decreasing",
   "text": "Let f : (a,b) →R be a differentiable function. Then f is increasing if and only if f ′(x) ≥0 for every x ∈(a,b). If f ′(x) > 0 for every x ∈(a,b), then f is strictly increasing."
  },
  {
@@ -1010,9 +1010,9 @@
  {
   "kind": "theorem",
   "num": "8.31",
-  "title": "Every symmetric matrix is congruent to a diagonal matrix",
+  "title": "Every symmetric matrix can be reduced to a diagonal matrix",
   "page": 220,
-  "heading": "Theorem 8.31 — Every symmetric matrix is congruent to a diagonal matrix",
+  "heading": "Theorem 8.31 — Every symmetric matrix can be reduced to a diagonal matrix",
   "text": "Let A be a real symmetric n × n matrix. Then there exists an invertible matrix B, such that B⊤AB is a diagonal matrix."
  },
  {

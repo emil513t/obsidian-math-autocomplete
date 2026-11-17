@@ -22,6 +22,9 @@ import DEFAULT_TEMPLATES_MD from "./default-templates.md";
 import IMO26_TEMPLATES_MD from "./imo26-templates.md";
 import IMO26_NUMBERED from "./refs/imo26.json";
 import IMO26_EXTRA from "./refs/imo26-extra.json";
+import EXERCISE_INDEX from "./exercise-index.json";
+import TIPS_MD from "./tips.md";
+import { studyCard, parseTips } from "./studycard.js";
 // Numbered items (Definition 4.26, ...), plus sections and the definitions the
 // book makes in running text ("positive definite", Section 3.7.1).
 const IMO26_REFS = [...IMO26_NUMBERED, ...IMO26_EXTRA];
@@ -325,6 +328,8 @@ const DEFAULT_SETTINGS = {
   graphOutput: "python",
   offBook: false,
   showWork: true,
+  // Study cards (\card): show whether the statement holds / which route works (folded spoiler).
+  cardVerdict: false,
 };
 
 // @name inserts a variable from the note's ```vars block: LaTeX in math,
@@ -410,7 +415,7 @@ class TemplateSuggest extends EditorSuggest {
     if (!this.plugin.settings.templatesEnabled) return null;
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
     // \word, \def4.26, or \ref followed by free search words.
-    const m = before.match(/(?:^|[\s(>*_[])\\((?:ref|ex|definition|theorem|proposition|lemma|corollary|remark|section)(?:\s[^\\$\n]{0,60})?|[a-zA-Z]+[\w.]*)$/);
+    const m = before.match(/(?:^|[\s(>*_[])\\((?:ref|ex|definition|theorem|proposition|lemma|corollary|remark|section|card)(?:\s[^\\$\n]{0,60})?|[a-zA-Z]+[\w.]*)$/);
     if (!m) return null;
     if (cursorContext(editor.getRange({ line: 0, ch: 0 }, cursor)) !== "text") return null;
     this.plugin.textVars = graphQuery(m[1]) ? parseVars(editor.getValue()) : null;
@@ -447,6 +452,12 @@ class TemplateSuggest extends EditorSuggest {
       } else left.createDiv({ cls: "mac-template-snippet", text: r.text });
       return;
     }
+    if (item.type === "card") {
+      top.createEl("code", { text: item.q ? `\\card ${item.q}` : "\\card" });
+      top.createSpan({ cls: "mac-template-desc", text: "Study card: what to show, ways to do it, tricks, what to look at" });
+      left.createDiv({ cls: "mac-template-snippet", text: item.q ? "for the exercise you typed" : "for the exercise above the cursor (or in an ```exercise block); \\card 7.41 for a book exercise" });
+      return;
+    }
     if (item.type === "graph") {
       const g = item.g;
       top.createEl("code", { text: "\\graph" });
@@ -476,6 +487,10 @@ class TemplateSuggest extends EditorSuggest {
       editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + text.length));
       s.refPicks[refKey(r)] = (s.refPicks[refKey(r)] || 0) + 1;
       this.plugin.saveSettings();
+      return;
+    }
+    if (item.type === "card") {
+      this.plugin.insertStudyCard(editor, start, end, item.q);
       return;
     }
     if (item.type === "graph") {
@@ -1097,6 +1112,18 @@ export default class MathAutocompletePlugin extends Plugin {
     });
 
     this.addCommand({
+      id: "study-card",
+      name: "Study card for the exercise above the cursor (or the selection)",
+      editorCallback: (editor) => {
+        const sel = editor.getSelection().trim();
+        const cur = editor.getCursor("to");
+        const at = { line: cur.line, ch: editor.getLine(cur.line).length };
+        if (sel) editor.setCursor(at);
+        this.insertStudyCard(editor, at, at, sel);
+      },
+    });
+
+    this.addCommand({
       id: "open-templates-file",
       name: "Open (or create) the editable templates file",
       callback: () => this.openTemplatesFile(),
@@ -1239,6 +1266,57 @@ export default class MathAutocompletePlugin extends Plugin {
     }, pickers).open();
   }
 
+  // The exercise a study card is for: the words after \card, else the
+  // nearest ```exercise block above, else the paragraph above the cursor.
+  exerciseTextAt(editor, line, typed = "") {
+    if (typed) return typed;
+    const lines = editor.getValue().split("\n");
+    const fence = (l) => /^\s*(```|~~~)/.test(l);
+    for (let i = line; i >= 0; i--) {
+      if (/^\s*(```|~~~)\s*exercise\s*$/i.test(lines[i])) {
+        let j = i + 1; const out = [];
+        while (j < lines.length && !fence(lines[j])) out.push(lines[j++]);
+        if (j > line || i < line) return out.join("\n").trim();
+      }
+    }
+    // Text before \card on the same line, else the paragraph above.
+    const here = lines[line].replace(/\\card.*$/i, "").trim();
+    if (here) return here;
+    let i = line - 1;
+    while (i >= 0 && !lines[i].trim()) i--;
+    const out = [];
+    while (i >= 0 && lines[i].trim() && !fence(lines[i])) out.unshift(lines[i--]);
+    return out.join("\n").trim();
+  }
+
+  insertStudyCard(editor, start, end, typed = "") {
+    const text = this.exerciseTextAt(editor, start.line, typed);
+    if (!text) {
+      new Notice("Write the exercise above the cursor (or in an ```exercise block), or type \\card 7.41.");
+      return;
+    }
+    this.tips ??= parseTips(TIPS_MD);
+    const vars = this.settings.varsEnabled ? parseVars(editor.getValue()) : new Map();
+    const card = studyCard({
+      text,
+      index: EXERCISE_INDEX,
+      tips: this.tips,
+      templates: this.templates.filter((t) => !isHidden("templates", t.name, this.settings)),
+      vars,
+      refs: IMO26_REFS,
+      verdict: !!this.settings.cardVerdict,
+      items: (s) => explainItems(s, IMO26_REFS),
+      cite: (name, s, v) => citeFromResult(name, s, IMO26_REFS, v),
+      fit: (route, name, v) => routeFit(route, v, { command: name }),
+      explain: (items) => textExplain(items),
+    });
+    const pre = editor.getLine(start.line).slice(0, start.ch).trim() ? "\n\n" : "";
+    // Plain text (no Tab stops): the card is read, not filled in.
+    const out = pre + card.markdown;
+    editor.replaceRange(out, start, end);
+    editor.setCursor(editor.offsetToPos(editor.posToOffset(start) + out.length));
+  }
+
   // Python: the Markdown above the block (what is computed, the values used, the references).
   pyExplainer(t) {
     if (!this.settings.explainRefs) return null;
@@ -1282,6 +1360,9 @@ export default class MathAutocompletePlugin extends Plugin {
   // Everything the plain-text popup offers for `raw` (text after the \).
   textSuggestions(raw) {
     const out = [];
+    // \card, \card 7.41, \card <exercise words>: a study card.
+    const card = raw.match(/^card(?:\s+(.*))?$/i);
+    if (card && this.settings.imo26) out.push({ type: "card", q: (card[1] || "").trim() });
     const word = raw.match(/^[a-zA-Z]+$/) ? raw : null;
     // \graph, \plot, \draw, \region, \contour ...: graphs from the note's variables.
     const gq = word ? graphQuery(word) : null;
@@ -1568,6 +1649,11 @@ class MathAutocompleteSettingTab extends PluginSettingTab {
         await this.plugin.saveSettings();
         this.plugin.loadExercises();
       }));
+
+    new Setting(containerEl)
+      .setName("Study cards: show the verdict")
+      .setDesc("\\card gives a plan for an exercise: what to show, ways to do it, tricks and what to look at, never the solution. On: it also says (folded, as a spoiler) whether the statement holds for the note's values and which route works.")
+      .addToggle((t) => t.setValue(!!s.cardVerdict).onChange(async (v) => { s.cardVerdict = v; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl)
       .setName("Add the title to references")
