@@ -182,14 +182,14 @@ print("S =", S, "  |S| =", len(S))
 
 ## \intersection — where two things meet
 ### two curves y = f(x), y = g(x)
-@uses sympy
+@uses sympy nice
 @in f expr
 @in g expr
 @sym x
 pts = sp.solve(sp.Eq(f, g), $SYM)
 real = [p for p in pts if p.is_real]
-print("x-values (exact):", real if len(str(real)) < 300 else "long, see decimals")
-print("points (decimal):", [(sp.N(p, 6), sp.N(f.subs($SYM, p), 6)) for p in real])
+print("x-values:", nice(real))
+print("points:", ", ".join(f"({sp.N(p, 6)}, {sp.N(f.subs($SYM, p), 6)})" for p in real) or "none")
 ### two sets
 @in A set
 @in B set
@@ -218,13 +218,15 @@ t = sp.symbols('t')
 sol = sp.solve(sp.Eq(n.dot(p + t*u), c), t)
 print("t =", sol, " points:", [list(p + tt*u) for tt in sol])
 ### system of equations
-@uses sympy solve
+@uses sympy solve nice
 @in f expr
 @in g expr
 @sym x y
 sol = solve_all([sp.Eq(f, 0), sp.Eq(g, 0)], $SYMS)
-print("exact:", sol if len(str(sol)) < 300 else "long, see decimals")
-print("decimal:", [{k: sp.N(v, 6) for k, v in d.items()} for d in sol])
+real_ = [d for d in sol if all(sp.N(v).is_real for v in d.values())]
+print(len(sol), "solutions,", len(real_), "of them real" if len(sol) != len(real_) else "all real")
+for d in real_:
+    print("  ", ", ".join(f"{k} = {nice(v, 20, False)}" for k, v in d.items()))
 
 ## \injective — is f injective? solve f(a) = f(b) (Def 1.106)
 @uses sympy
@@ -232,26 +234,37 @@ print("decimal:", [{k: sp.N(v, 6) for k, v in d.items()} for d in sol])
 @sym x
 a, b = sp.symbols('a b', real=True)
 sol = sp.solve(sp.Eq(f.subs($SYM, a), f.subs($SYM, b)), b)
-print("f(a) = f(b) gives b =", sol, "  injective iff only b = a:", sol == [a])
+other = [s for s in sol if s != a]
+print("f(a) = f(b) gives b =", ", ".join(str(s) for s in sol))
+print("injective:", "yes (only b = a)" if not other else "no: also b = " + ", ".join(str(s) for s in other))
 
 ## \surjective — is f surjective? solve y = f(x) for x (Def 1.106)
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
-y_ = sp.symbols('y_')
+y_ = sp.symbols('y')
+R_ = sp.calculus.util.function_range(f, $SYM, sp.S.Reals)
+print("values f takes on R:", nice_set(R_))
+print("surjective onto R:", "yes" if R_ == sp.S.Reals else "no")
 pre = sp.solve(sp.Eq(f, y_), $SYM)
-print("x with f(x) = y:", pre)
-print("range over the reals:", sp.calculus.util.function_range(f, $SYM, sp.S.Reals))
+if len(str(pre)) <= 150:
+    print("x with f(x) = y:", ", ".join(str(h) for h in pre))
+else:
+    print("x with f(x) = y:", len(pre), "long formulas; for y = 0 they give x =", nice([sp.N(h.subs(y_, 0), 6, chop=True) for h in pre]))
 
 ## \inversefn — inverse function: solve y = f(x) for x
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
-y_ = sp.symbols('y_')
+y_ = sp.symbols('y')
 inv = sp.solve(sp.Eq(f, y_), $SYM)
-print("candidates for f^-1(y):", inv)
-for h in inv:
-    print("check f(f^-1(y)) =", sp.simplify(f.subs($SYM, h)))
+if len(str(inv)) <= 150:
+    for h in inv:
+        print("f^-1(y) =", h, "   check f(f^-1(y)) = y:", sp.simplify(f.subs($SYM, h) - y_) == 0)
+else:
+    print(len(inv), "candidate formulas for f^-1(y), each long; for y = 0 they give", nice([sp.N(h.subs(y_, 0), 6, chop=True) for h in inv]))
+if len(inv) > 1:
+    print("more than one candidate: f is not injective on all of R, so restrict the domain to one piece")
 
 ## \composition — compositions f∘g, g∘f, and with vector functions
 ### f o g and g o f (one variable)
@@ -307,21 +320,21 @@ print("total parameters:", total)
 c = sp.Poly(f, $SYM).all_coeffs()
 x0 = {{value of x}}
 acc = 0
-for a_ in c:
+for i_, a_ in enumerate(c):
+    print(f"step {i_ + 1}: {acc}*{x0} + {a_} = {acc*x0 + a_}")
     acc = acc*x0 + a_
-    print("acc =", acc)
 print("f written with fewer multiplications:", sp.horner(f), "   f(x0) =", acc, "=", f.subs($SYM, x0))
 print("multiplications:", len(c) - 1, "  additions:", len(c) - 1)
 
 ## \preimage — preimage f^-1(S) of an interval (Def 1.115)
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
 @ex lower bound := 0
 @ex upper bound := 4
 lo, hi = {{lower bound}}, {{upper bound}}
 pre = sp.solveset(f >= lo, $SYM, sp.S.Reals).intersect(sp.solveset(f <= hi, $SYM, sp.S.Reals))
-print("f^-1([lo, hi]) =", pre)
+print(f"f^-1([{lo}, {hi}]) =", nice_set(pre))
 
 ## \sumind — induction: sum formulas and inequalities (Thm 1.86)
 ### sum formula: base case, step, sympy's own sum
@@ -340,8 +353,15 @@ print("sympy's own sum:", sp.factor(sp.summation(term, (k, 1, n))))
 @ex from := 1
 @ex to := 12
 factorial = sp.factorial
-for n in range({{from}}, {{to}} + 1):
-    print("n =", n, ":", bool({{inequality in n}}))
+res_ = [(n, bool({{inequality in n}})) for n in range({{from}}, {{to}} + 1)]
+runs_ = []
+for n, ok in res_:
+    if runs_ and runs_[-1][2] == ok:
+        runs_[-1][1] = n
+    else:
+        runs_.append([n, n, ok])
+for a_, b_, ok in runs_:
+    print(("true " if ok else "FALSE") + f" for n = {a_}" + (f"..{b_}" if b_ > a_ else ""))
 
 ## \hash — sha-256 and md5 hash of a text (Ex 1.98)
 @uses hashlib
@@ -403,13 +423,14 @@ print("check q*k + r - p =", sp.expand(q*k_ + r_ - p))
 
 ## \roots — roots and factorization of a polynomial
 ### factor and find all roots
-@uses sympy
+@uses sympy nice
 @in p expr
 @sym x
-print("factored:", sp.factor(p))
-print("roots (with multiplicity):", sp.roots(sp.Poly(p, $SYM)))
-print("real roots:", sp.real_roots(sp.Poly(p, $SYM)))
-print("numeric:", sp.Poly(p, $SYM).nroots())
+fp_ = sp.factor(p)
+print("factored:", fp_ if fp_ != sp.expand(p) else "does not factor with rational numbers")
+for r_, m_ in sp.roots(sp.Poly(p, $SYM)).items():
+    print("  root", nice(r_), "  (real)" if sp.N(r_, chop=True).is_real else "  (complex)", f"  multiplicity {m_}" if m_ > 1 else "")
+print("real roots:", nice(sp.real_roots(sp.Poly(p, $SYM))) or "none")
 ### with one parameter: the number of real roots (Sec 2.4.2)
 @uses sympy symred
 @in f expr
@@ -442,7 +463,11 @@ print("secret p(0) =", P.subs($SYM, 0))
 ## \stochastic — stochastic matrix: powers P^n and the stable distribution (Ex 3.10)
 @uses sympy solve
 @in P matrix
-print("columns sum to 1:", [sp.simplify(sum(P[:, j])) for j in range(P.cols)])
+sums_ = [sp.simplify(sum(P[:, j])) for j in range(P.cols)]
+nonneg_ = all(x >= 0 for x in P)
+print("columns sum to 1:", all(s == 1 for s in sums_), sums_, "  all entries >= 0:", nonneg_)
+if not (nonneg_ and all(s == 1 for s in sums_)):
+    print("so P is NOT a stochastic matrix; the powers below are just matrix powers")
 for k_ in [1, 2, 5, 10, 50]:
     print(f"P^{k_} =", sp.N(P**k_, 4).tolist())
 v = sp.Matrix(sp.symbols(f'p1:{P.rows + 1}'))
@@ -512,7 +537,7 @@ else:
     print("not invertible: the left side cannot be made into I")
 
 ## \eliminate — optimize with a constraint by eliminating a variable (Ex 4.2, 4.5)
-@uses sympy
+@uses sympy nice
 @in f expr
 @in g expr
 @sym x y
@@ -525,7 +550,8 @@ for s_ in sp.solve(g, {{eliminate}}):
         if c.is_real is False or F.subs({{keep}}, c).is_real is False:
             continue
         d2 = sp.simplify(sp.diff(F, {{keep}}, 2).subs({{keep}}, c))
-        print("   critical", {{keep}}, "=", c, "  f =", sp.simplify(F.subs({{keep}}, c)), "  f'' =", d2)
+        kind_ = "local min" if d2.is_positive else "local max" if d2.is_negative else "f'' = 0: no conclusion"
+        print("   critical", {{keep}}, "=", nice(c), "  f =", nice(sp.simplify(F.subs({{keep}}, c))), "  f'' =", nice(d2, 25), "->", kind_)
 
 ## \det — determinant (and by cofactor expansion along row 1)
 @uses sympy
@@ -537,7 +563,7 @@ print("cofactor expansion row 1:", sum(A[0, j]*A.cofactor(0, j) for j in range(A
 @uses sympy
 @in A matrix
 print("rank A =", A.rank())
-print("null space:", [list(v) for v in A.nullspace()])
+print("null space:", [list(v) for v in A.nullspace()] or "only the zero vector")
 print("column space:", [list(v) for v in A.columnspace()])
 print("rref:", A.rref()[0].tolist())
 
@@ -580,8 +606,12 @@ print("D = diag", D, "  check B^T A B = D:", sp.simplify(B.T * A * B - sp.diag(*
 used = [x for x in D[:-1] if x.free_symbols]
 if used:
     print("the reduction divided by", used, "-- assuming these are not 0; put the values making them 0 into A and reduce again")
-print("positive definite  <=>", " and ".join(f"({x}) > 0" for x in D))
-print("positive semidefinite  <=>", " and ".join(f"({x}) >= 0" for x in D))
+def cond_(strict):  # numbers in D are checked here; only the entries with parameters are left
+    if any(not x.free_symbols and (x <= 0 if strict else x < 0) for x in D):
+        return "never (a number in D is " + ("<= 0)" if strict else "< 0)")
+    return " and ".join(f"{x} {'>' if strict else '>='} 0" for x in D if x.free_symbols) or "always"
+print("positive definite      <=>", cond_(True))
+print("positive semidefinite  <=>", cond_(False))
 free = sorted(A.free_symbols, key=str)
 if len(free) == 1:
     print("solved:", sp.reduce_inequalities([x > 0 for x in D], free))
@@ -653,12 +683,13 @@ print("not convex: two points whose segment leaves the set:" if bad else "no fai
 
 ## \convexfn — is f convex? second derivative / Hessian (Ch4/6/8)
 ### one variable: f'' >= 0
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
 f2 = sp.simplify(sp.diff(f, $SYM, 2))
+neg_ = sp.solveset(f2 < 0, $SYM, sp.S.Reals)
 print("f'' =", f2)
-print("where f'' < 0:", sp.solveset(f2 < 0, $SYM, sp.S.Reals), " (empty set means convex on R)")
+print("f'' >= 0 everywhere, so f is convex on R" if neg_ == sp.S.EmptySet else f"f'' < 0 for x in {nice_set(neg_)}, so f is NOT convex on R")
 ### several variables: Hessian positive semidefinite everywhere
 @uses sympy symred
 @in f expr
@@ -668,7 +699,8 @@ print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 print("symmetric reduction B^T H B = D, D = diag", [sp.factor(d) for d in D])
 if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
-print("every diagonal entry of D >= 0 everywhere, so H is positive semidefinite and f convex:", holds_everywhere(D, strict=False))
+ok_ = holds_everywhere(D, strict=False)
+print({True: "every diagonal entry of D is >= 0 everywhere: H is positive semidefinite, f is convex", False: "some diagonal entry of D is < 0 somewhere: f is NOT convex", None: "can't decide the signs of D automatically: check them by hand"}[ok_])
 ### with one parameter: for which values is f convex? (Thm 8.25)
 @uses sympy symred
 @in f expr
@@ -694,7 +726,8 @@ print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 print("symmetric reduction B^T H B = D, D = diag", [sp.factor(d) for d in D])
 if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
-print("every diagonal entry of D > 0 everywhere, so H is positive definite and f strictly convex:", holds_everywhere(D, strict=True))
+ok_ = holds_everywhere(D, strict=True)
+print({True: "every diagonal entry of D is > 0 everywhere: H is positive definite, f is strictly convex", False: "some diagonal entry of D is <= 0 somewhere: this test does not show strict convexity", None: "can't decide the signs of D automatically: check them by hand"}[ok_])
 
 ## \fm — Fourier–Motzkin elimination of a variable (Sec 4.5)
 @uses sympy
@@ -712,8 +745,9 @@ def fm_eliminate(ineqs, v):
             (upper if c > 0 else lower).append(bound)
     return rest + [sp.simplify(lo - up) for lo in lower for up in upper], lower, upper
 new, lower, upper = fm_eliminate(ineqs, $SYM)
-print("lower bounds for", $SYM, ":", lower, "  upper bounds:", upper)
-print("after eliminating (each <= 0):", new)
+print(f"lower bounds: {$SYM} >=", ", ".join(map(str, lower)) or "none")
+print(f"upper bounds: {$SYM} <=", ", ".join(map(str, upper)) or "none")
+print(f"without {$SYM}:", ", ".join(f"{e} <= 0" for e in new) or "nothing left (every value works)")
 
 ## \lp — linear optimization (linear programming) with scipy (Sec 4.4)
 @uses numpy scipy
@@ -817,7 +851,8 @@ print("along y = x^2:", sp.limit(f.subs(s2, s1**2), s1, 0))
 @uses sympy
 @ex a_n := (1 + 1/n)**n
 n = sp.symbols('n', positive=True, integer=True)
-print("lim a_n =", sp.limit({{a_n}}, n, sp.oo))
+L_ = sp.limit({{a_n}}, n, sp.oo)
+print("lim a_n =", L_, "" if L_.is_Rational or not L_.is_number else f"~ {sp.N(L_, 8)}")
 
 ## \continuous — continuity at a point (Def 5.65)
 @uses sympy
@@ -844,7 +879,7 @@ for _ in range(100):
 print("root ~", (a + b)/2)
 
 ## \evt — max and min on [a, b]: critical points, a and b (Thm 5.84)
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
 @ex a := -1
@@ -852,8 +887,10 @@ print("root ~", (a + b)/2)
 a, b = {{a}}, {{b}}
 crit = [c for c in sp.solve(sp.diff(f, $SYM), $SYM) if c.is_real and a <= c <= b]
 cands = {c: f.subs($SYM, c) for c in [a, b, *crit]}
-print("candidates:", cands)
-print("max at", max(cands, key=lambda c: cands[c]), " min at", min(cands, key=lambda c: cands[c]))
+for c, v in cands.items():
+    print(f"  x = {nice(c, 20, False):<14} f = {nice(sp.simplify(v), 30):<32}", "(end point)" if c in (a, b) else "(f' = 0)")
+hi_ = max(cands, key=lambda c: cands[c]); lo_ = min(cands, key=lambda c: cands[c])
+print(f"max f = {nice(cands[hi_])} at x = {nice(hi_)};  min f = {nice(cands[lo_])} at x = {nice(lo_)}")
 
 ## \derivative — derivatives: at a point, n-th order, from the definition (Ch6)
 ### f', f'', at a point, tangent line
@@ -871,7 +908,8 @@ print("tangent: y =", sp.expand(f.subs($SYM, a) + d1.subs($SYM, a)*($SYM - a)))
 @in f expr
 @sym x
 @ex order n := 17
-print("f^(n) =", sp.simplify(sp.diff(f, $SYM, {{order n}})))
+n_ = {{order n}}
+print(f"f^({n_}) =", sp.simplify(sp.diff(f, $SYM, n_)))
 ### from the definition: limit of (f(x + h) - f(x))/h (Def 6.17)
 @uses sympy
 @in f expr
@@ -896,12 +934,16 @@ print("dy/dx =", sp.simplify(sp.idiff(F, s2, s1)))
 @ex start x0 := 1.0
 F, dF = sp.lambdify($SYM, f), sp.lambdify($SYM, sp.diff(f, $SYM))
 xk = {{start x0}}
-for k in range(20):
+print("step  x_k")
+for k in range(50):
     step = F(xk)/dF(xk)
     xk -= step
-    print(k + 1, xk)
+    print(f"{k + 1:>4}  {xk:.12g}")
     if abs(step) < 1e-12:
+        print(f"root ~ {xk:.15g}   (f(root) = {F(xk):.2g}, stopped after {k + 1} steps)")
         break
+else:
+    print("no convergence after 50 steps: try another start point")
 ### system F(x, y) = 0 with the matrix derivative (Sec 7.4, Ex 7.14)
 @uses sympy
 @in F vector
@@ -909,17 +951,26 @@ for k in range(20):
 @ex start point := [1, 1]
 J = F.jacobian($SYMS)
 v = sp.Matrix({{start point}}).evalf()
-for k in range(30):
+hist_ = []
+for k in range(50):
     sub = dict(zip($SYMS, v))
     try:
         step = J.subs(sub).solve(F.subs(sub))
     except Exception:
-        print("the matrix derivative is not invertible at", list(v), "- try another start point")
+        print("the matrix derivative is not invertible at", [float(c) for c in v], "- try another start point")
         break
     v = v - step
-    print(k + 1, [float(c) for c in v])
+    hist_.append((k + 1, [f"{float(c):.10g}" for c in v]))
     if step.norm() < 1e-12:
         break
+shown_ = hist_ if len(hist_) <= 8 else hist_[:5] + [("...", ["..."])] + hist_[-2:]
+for k_, row_ in shown_:
+    print(f"{k_:>4}  ({', '.join(row_)})")
+if hist_:
+    done_ = step.norm() < 1e-12
+    print(("solution ~ " if done_ else "not converged yet, last point ") + f"({', '.join(hist_[-1][1])}) after {len(hist_)} steps")
+    if len(hist_) > 15:
+        print("slow: each step only shrinks the distance by a fixed factor. That happens when the matrix derivative is not invertible at the solution")
 
 ## \logistic — logistic regression: sigmoid, likelihood, gradient, fit (Ex 7.30-7.34)
 @uses numpy
@@ -928,17 +979,20 @@ for k in range(30):
 @ex learning rate := 0.1
 xs_, ys_ = np.array([p[0] for p in pts], float), np.array([p[1] for p in pts], float)
 sig = lambda z: 1/(1 + np.exp(-z))
-a_, b_ = 0.0, 0.0
-for _ in range(int({{steps}})):
-    p_ = sig(a_ + b_*xs_)
-    a_ += {{learning rate}}*np.mean(ys_ - p_)
-    b_ += {{learning rate}}*np.mean((ys_ - p_)*xs_)
-p_ = np.clip(sig(a_ + b_*xs_), 1e-12, 1 - 1e-12)
-print(f"P(y = 1 | x) = sigma({a_:.4f} + {b_:.4f} x)")
-print("log of the likelihood:", float(np.sum(ys_*np.log(p_) + (1 - ys_)*np.log(1 - p_))))
-print("gradient (d/da, d/db):", float(np.sum(ys_ - p_)), float(np.sum((ys_ - p_)*xs_)))
-if b_ != 0:
-    print("x where P = 1/2:", -a_/b_)
+if not set(ys_.tolist()) <= {0.0, 1.0}:
+    print("the labels (second coordinates) must be 0 or 1; found", sorted(set(ys_.tolist())))
+else:
+    a_, b_ = 0.0, 0.0
+    for _ in range(int({{steps}})):
+        p_ = sig(a_ + b_*xs_)
+        a_ += {{learning rate}}*np.mean(ys_ - p_)
+        b_ += {{learning rate}}*np.mean((ys_ - p_)*xs_)
+    p_ = np.clip(sig(a_ + b_*xs_), 1e-12, 1 - 1e-12)
+    print(f"P(y = 1 | x) = sigma({a_:.4f} + {b_:.4f} x)")
+    print(f"log of the likelihood: {float(np.sum(ys_*np.log(p_) + (1 - ys_)*np.log(1 - p_))):.6g}")
+    print(f"gradient (d/da, d/db): {float(np.sum(ys_ - p_)):.3g}, {float(np.sum((ys_ - p_)*xs_)):.3g}   (close to 0 at the best fit)")
+    if b_ != 0:
+        print(f"x where P = 1/2: {-a_/b_:.6g}")
 
 ## \crit — critical points and extrema, one variable (Sec 6.3.6, Sec 6.4)
 ### all critical points
@@ -1003,13 +1057,13 @@ print("T_n(x) =", sp.expand(T))
 print("check with sympy:", sp.series(f, $SYM, a, n + 1))
 
 ## \increasing — where f is increasing / decreasing (Def 6.41)
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
 d = sp.diff(f, $SYM)
 print("f' =", sp.factor(d))
-print("increasing where f' > 0:", sp.solveset(d > 0, $SYM, sp.S.Reals))
-print("decreasing where f' < 0:", sp.solveset(d < 0, $SYM, sp.S.Reals))
+print("f' > 0 (increasing) for x in", nice_set(sp.solveset(d > 0, $SYM, sp.S.Reals)))
+print("f' < 0 (decreasing) for x in", nice_set(sp.solveset(d < 0, $SYM, sp.S.Reals)))
 
 ## \mvt — mean value theorem: find c with f'(c) = (f(b) - f(a))/(b - a) (Thm 6.40)
 @uses sympy
@@ -1029,8 +1083,13 @@ print("(f(b) - f(a))/(b - a) =", slope, "  c in (a, b):", cs)
 @sym x
 @ex point := 0
 a = {{point}}
-print("f(a), g(a) =", f.subs($SYM, a), g.subs($SYM, a))
-print("f'/g' at a ->", sp.limit(sp.diff(f, $SYM)/sp.diff(g, $SYM), $SYM, a), "  direct:", sp.limit(f/g, $SYM, a))
+fa_, ga_ = f.subs($SYM, a), g.subs($SYM, a)
+print("f(a) =", fa_, "  g(a) =", ga_)
+if fa_ == 0 and ga_ == 0:
+    print("0/0, so look at f'/g': limit", sp.limit(sp.diff(f, $SYM)/sp.diff(g, $SYM), $SYM, a))
+else:
+    print("not 0/0, so f'/g' is not the way here")
+print("limit of f/g at a:", sp.limit(f/g, $SYM, a))
 
 ## \gradient — partial derivatives and the gradient (Def 7.4, Sec 7.5)
 @uses sympy
@@ -1201,7 +1260,7 @@ print("H(point) =", Hp.tolist())
 D, B = symmetric_reduction(Hp)
 print("symmetric reduction B^T H B = D: D = diag", D, "->", definiteness(D))
 ### for all x: positive (semi)definite everywhere?
-@uses sympy symred
+@uses sympy symred nice
 @in f expr
 @sym x y
 H = sp.simplify(sp.hessian(f, $SYMS))
@@ -1209,15 +1268,18 @@ print("H =", H.tolist())
 D, B = symmetric_reduction(H)
 d_ = [sp.factor(d) for d in D]
 print("symmetric reduction B^T H B = D: D = diag", d_)
-def where_not_positive(m_):
+for i_, m_ in enumerate(d_):
     if not m_.free_symbols:
-        return sp.S.EmptySet if m_ > 0 else sp.S.Reals
-    if len(m_.free_symbols) == 1:
-        return sp.solveset(m_ <= 0, m_.free_symbols.pop(), sp.S.Reals)
-    return f"check {m_} <= 0 by hand"
-print("where each diagonal entry of D is <= 0 (empty = always > 0):", [where_not_positive(m_) for m_ in d_])
+        print(f"  d_{i_ + 1} = {m_}:", "> 0" if m_ > 0 else "= 0" if m_ == 0 else "< 0")
+    elif len(m_.free_symbols) == 1:
+        z_ = m_.free_symbols.pop()
+        bad_ = sp.solveset(m_ <= 0, z_, sp.S.Reals)
+        print(f"  d_{i_ + 1} = {m_}:", "> 0 everywhere" if bad_ == sp.S.EmptySet else f"<= 0 for {z_} in {nice_set(bad_)}")
+    else:
+        print(f"  d_{i_ + 1} = {m_}: check its sign by hand")
 if divided_by(D): print("the reduction divided by", divided_by(D), "-- where these are 0, reduce H at that point again")
-print("positive definite everywhere (all > 0):", holds_everywhere(D, strict=True), "  positive semidefinite everywhere (all >= 0):", holds_everywhere(D, strict=False), "  (None = check by hand)")
+yn_ = {True: "yes", False: "no", None: "can't decide automatically, check by hand"}
+print("positive definite everywhere:", yn_[holds_everywhere(D, strict=True)], "   positive semidefinite everywhere:", yn_[holds_everywhere(D, strict=False)])
 ### second order partial derivatives: is f_xy = f_yx? (Clairaut's theorem, Thm 7.11)
 @uses sympy
 @in f expr
@@ -1249,7 +1311,7 @@ if cands:
 
 ## \compactopt — max/min on a compact set: interior + boundary (Prop 7.46)
 ### boundary is a curve g = 0
-@uses sympy solve
+@uses sympy solve nice
 @in f expr
 @in g expr
 @sym x y
@@ -1262,10 +1324,15 @@ for p in solve_all([sp.diff(f + lam*g, s) for s in $SYMS] + [g], $SYMS + [lam]):
     if all(p[s].is_real for s in $SYMS):
         cands.append(("boundary", {s: p[s] for s in $SYMS}))
 vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
-for v in vals: print(*v)
-print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
+pt_ = lambda p: "(" + ", ".join(nice(p[s], 12, False) for s in $SYMS) + ")"
+for where, p, v in vals:
+    print(f"  {where:<10} {pt_(p):<34} f = {nice(v, 30)}")
+if vals:
+    hi_ = max(vals, key=lambda t: t[2]); lo_ = min(vals, key=lambda t: t[2])
+    print(f"max f = {nice(hi_[2])} at {pt_(hi_[1])} ({hi_[0]})")
+    print(f"min f = {nice(lo_[2])} at {pt_(lo_[1])} ({lo_[0]})")
 ### polygon / rectangle given by inequalities g_i <= 0 (Ex 7.48-7.50)
-@uses sympy itertools solve
+@uses sympy itertools solve nice
 @in f expr
 @in gs list
 @sym x y
@@ -1286,8 +1353,13 @@ for g1, g2 in itertools.combinations(gs, 2):
         if len(p) == len(V) and inside(p):
             cands.append(("vertex", p))
 vals = [(where, p, sp.simplify(f.subs(p))) for where, p in cands]
-for v in vals: print(*v)
-print("max:", max(vals, key=lambda t: t[2]), "\nmin:", min(vals, key=lambda t: t[2]))
+pt_ = lambda p: "(" + ", ".join(nice(p[s], 12, False) for s in V) + ")"
+for where, p, v in vals:
+    print(f"  {where:<18} {pt_(p):<20} f = {nice(v, 30)}")
+if vals:
+    hi_ = max(vals, key=lambda t: t[2]); lo_ = min(vals, key=lambda t: t[2])
+    print(f"max f = {nice(hi_[2])} at {pt_(hi_[1])} ({hi_[0]})")
+    print(f"min f = {nice(lo_[2])} at {pt_(lo_[1])} ({lo_[0]})")
 
 ## \kkt — KKT conditions: minimize f subject to g_i <= 0, try every subset of the constraints with equality (Thm 9.37)
 @uses sympy itertools solve
@@ -1318,7 +1390,8 @@ for k in range(len(gs) + 1):
 F = sp.lambdify([$SYMS], f)
 cons = [{"type": "ineq", "fun": (lambda h: lambda z: -h(z))(sp.lambdify([$SYMS], g_))} for g_ in gs]
 res = opt.minimize(F, np.array({{start point}}, float), constraints=cons)
-print(res.message, " x* =", res.x, " f(x*) =", res.fun)
+print(res.message)
+print("x* ~", [round(float(c), 6) + 0.0 for c in res.x], "  f(x*) ~", round(float(res.fun), 8))
 
 ## \newtonopt — Newton's method for minimizing f (Sec 8.3)
 @uses sympy numpy
@@ -1359,7 +1432,7 @@ d_ = X.shape[1]
 cons = [{"type": "ineq", "fun": (lambda i: lambda wb: yl[i]*(X[i] @ wb[:d_] + wb[d_]) - 1)(i)} for i in range(len(X))]
 res = opt.minimize(lambda wb: 0.5*wb[:d_] @ wb[:d_], np.zeros(d_ + 1), constraints=cons)
 w, b = res.x[:d_], res.x[d_]
-print("w =", np.round(w, 4), " b =", round(float(b), 4), " margin =", 2/np.linalg.norm(w))
+print("w =", np.round(w, 4), " b =", round(float(b), 4), " margin =", round(float(2/np.linalg.norm(w)), 4))
 print("support vectors (on the margin, y(w.x + b) = 1):", [X[i].tolist() for i in range(len(X)) if abs(yl[i]*(X[i] @ w + b) - 1) < 1e-4])
 print("all correct side:", all(yl*(X @ w + b) > 0))
 
@@ -1394,14 +1467,17 @@ val, err = si.quad(sp.lambdify($SYM, f), {{a}}, {{b}})
 print("int ~", val, " error ~", err)
 
 ## \area — area between two curves (intersections + integral)
-@uses sympy
+@uses sympy nice
 @in f expr
 @in g expr
 @sym x
 pts = sorted(p for p in sp.solve(sp.Eq(f, g), $SYM) if p.is_real)
-print("intersections:", pts)
-area = sum(sp.Abs(sp.integrate(f - g, ($SYM, a_, b_))) for a_, b_ in zip(pts, pts[1:]))
-print("area between them:", sp.simplify(area), "~", sp.N(area))
+print("intersections at x =", nice(pts))
+if len(pts) < 2:
+    print("fewer than two intersection points: the curves do not close off a region between them")
+else:
+    area = sum(sp.Abs(sp.integrate(f - g, ($SYM, a_, b_))) for a_, b_ in zip(pts, pts[1:]))
+    print("area between them:", nice(sp.simplify(area)), "~", sp.N(area, 6))
 
 ## \sum — sums
 @uses sympy
@@ -1413,12 +1489,12 @@ print("sum =", S, "~", sp.N(S))
 print("simplified:", sp.nsimplify(sp.simplify(sp.radsimp(S))) if S.is_finite else S)
 
 ## \solve — solve an equation / inequality over the reals
-@uses sympy
+@uses sympy nice
 @in f expr
 @sym x
-print("f = 0:", sp.solveset(sp.Eq(f, 0), $SYM, sp.S.Reals))
-print("f > 0:", sp.solveset(f > 0, $SYM, sp.S.Reals))
-print("f <= 0:", sp.solveset(f <= 0, $SYM, sp.S.Reals))
+print("f = 0  for x in", nice_set(sp.solveset(sp.Eq(f, 0), $SYM, sp.S.Reals)))
+print("f > 0  for x in", nice_set(sp.solveset(f > 0, $SYM, sp.S.Reals)))
+print("f <= 0 for x in", nice_set(sp.solveset(f <= 0, $SYM, sp.S.Reals)))
 
 ## \simplify — simplify, expand, factor
 @uses sympy

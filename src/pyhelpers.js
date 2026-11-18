@@ -10,10 +10,15 @@ export const SYMRED = `def symmetric_reduction(A, verbose=False):
     A = sp.Matrix(A)
     n = A.rows
     ext = sp.eye(n).col_join(A)  # B on top, A below
+    def rows(M):  # one line per row, columns lined up (no fractions over 3 lines)
+        cells = [[str(M[i, j]) for j in range(M.cols)] for i in range(M.rows)]
+        w = [max(len(r[j]) for r in cells) for j in range(M.cols)]
+        for r in cells:
+            print("  [ " + "  ".join(c.rjust(w[j]) for j, c in enumerate(r)) + " ]")
     def show(msg):
         if verbose:
             print(msg)
-            sp.pprint(ext[:n, :], use_unicode=False); print("   ---"); sp.pprint(ext[n:, :], use_unicode=False); print()
+            rows(ext[:n, :]); print("  " + "-" * 10); rows(ext[n:, :]); print()
     def add(i, j, c):  # c column i to column j (whole), c row i to row j (lower half)
         ext[:, j] = ext[:, j] + c * ext[:, i]
         ext[n + j, :] = ext[n + j, :] + c * ext[n + i, :]
@@ -64,6 +69,55 @@ export const CASES = `def cases_in(p, crit, classify):
     for w, r in rows:
         print(f"{w}: {r}")
     return rows`;
+
+// Readable output: exact when short, else ~decimals; intervals as (a, b] U [c, inf);
+// matrices one row per line.
+export const NICE = `def nice(e, width=50, approx=True):
+    """Exact when it is short (with ~decimals after an irrational number), else ~ and 6 digits."""
+    if isinstance(e, dict):
+        return "{" + ", ".join(f"{nice(k, width, approx)}: {nice(v, width, approx)}" for k, v in e.items()) + "}"
+    if isinstance(e, (list, tuple, set, frozenset)):
+        return "[" + ", ".join(nice(x, width, approx) for x in e) + "]"
+    if isinstance(e, sp.Set):
+        return nice_set(e)
+    if isinstance(e, float):
+        return f"{e:.6g}"
+    try:
+        e = sp.sympify(e)
+    except Exception:
+        return str(e)
+    s = str(e)
+    if len(s) <= width and "RootOf" not in s:
+        if approx and e.is_number and not e.is_Rational and not e.free_symbols:
+            return f"{s} (~{sp.N(e, 6, chop=True)})".replace("*I", "i")
+        return s
+    if e.free_symbols:
+        return s if len(s) <= 3*width else s[:3*width] + " ... (long)"
+    return "~" + str(sp.N(e, 6, chop=True)).replace("*I", "i")
+
+def nice_set(S):
+    """Intervals as (a, b], U for unions, words for the empty set and R."""
+    if S == sp.S.EmptySet:
+        return "no real x"
+    if S == sp.S.Reals:
+        return "every real x"
+    if isinstance(S, sp.Union):
+        return " U ".join(nice_set(a) for a in S.args)
+    if isinstance(S, sp.Interval):
+        lo = "-inf" if S.start == -sp.oo else nice(S.start, 30, False)
+        hi = "inf" if S.end == sp.oo else nice(S.end, 30, False)
+        return ("(" if S.left_open else "[") + f"{lo}, {hi}" + (")" if S.right_open else "]")
+    if isinstance(S, sp.FiniteSet):
+        return "{" + ", ".join(nice(x, 30) for x in S) + "}"
+    return str(S)
+
+def show_rows(M):
+    """A matrix, one row per line, columns lined up."""
+    M = sp.Matrix(M)
+    cells = [[nice(M[i, j], 30) for j in range(M.cols)] for i in range(M.rows)]
+    w = [max(len(r[j]) for r in cells) for j in range(M.cols)]
+    for r in cells:
+        print("  [ " + "  ".join(c.rjust(w[j]) for j, c in enumerate(r)) + " ]")`;
 
 export const DEFINITENESS = `def definiteness(D):
     """Definiteness of A from the diagonal of D = B^T A B (Propositions 3.43, 8.11)."""

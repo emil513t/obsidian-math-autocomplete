@@ -14,7 +14,7 @@
 
 import { parseTemplates } from "./templates.js";
 import { toPython, parseValue, splitTop, latexToPy } from "./vars.js";
-import { SYMRED, DEFINITENESS, EVERYWHERE, CASES } from "./pyhelpers.js";
+import { SYMRED, DEFINITENESS, EVERYWHERE, CASES, NICE } from "./pyhelpers.js";
 import { asciiMath } from "./cas.js";
 
 const IMPORTS = {
@@ -28,6 +28,8 @@ ${EVERYWHERE}
 
 ${CASES}`,
   sympy: "import sympy as sp",
+  // Readable output (exact when short, else ~decimals; intervals; matrix rows).
+  nice: NICE,
   numpy: "import numpy as np",
   plt: "import matplotlib.pyplot as plt",
   scipy: "import scipy.optimize as opt",
