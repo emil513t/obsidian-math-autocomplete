@@ -4,8 +4,12 @@ Step 1 of the "dynamic proofs" plan (2026-11-17); this file is the map.
 
 **Status (2026-11-18):** E6 built (`src/witness.js`), E4 built (`src/ineqproof.js`: \fm, \svm NOT separable,
 \kkt no feasible point, \fouriermotzkin worked solution), E1 built (`src/negate.js`: \negate command +
-template, \contradiction / \contrapositive blanks). Tests: `test/witness.test.js`, `test/contradict.test.js`.
-Next: E5 + E9.
+template, \contradiction / \contrapositive blanks), E5 built (`src/nosolution.js`: \gauss ★ + every route
+filled, "adding e1, e2 and −1 times e3 gives 0 = −1", \leastsquares 5.17), E9 built (`src/notoptimal.js`:
+\kkt "NOT optimal: no λ ≥ 0" and "a feasible point with a smaller value" at the note's point; 9.46(b),
+9.52(3), 9.56(2), 9.57(2)). Tests: `test/witness.test.js`, `test/contradict.test.js`, `test/notopt.test.js`.
+Not built from E9: the "give an example" catalogue (6.8, 6.11, 8.22, 9.40) and 9.54(3)(4) (a family of points).
+Next: E8.
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,

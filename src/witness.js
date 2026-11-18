@@ -21,6 +21,8 @@ import { resolveEndingLabel } from "./endings.js";
 import { outcomeOf } from "./outcomes.js";
 import { resolveIneqLabel } from "./ineqproof.js";
 import { resolveNegationLabel, resolveImplicationLabel } from "./negate.js";
+import { resolveGaussLabel } from "./nosolution.js";
+import { resolveNotOptimalLabel } from "./notoptimal.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -428,7 +430,7 @@ export function resolveAny(label, vars, ctx = {}) {
   const g = vars instanceof Map ? resolveLagrangeLabel(label, vars, ctx) : undefined;
   if (g !== undefined) return g;
   // E4: inequalities that contradict each other; E1: negations.
-  for (const f of [resolveIneqLabel, resolveNegationLabel, resolveImplicationLabel]) {
+  for (const f of [resolveIneqLabel, resolveNegationLabel, resolveImplicationLabel, resolveGaussLabel, resolveNotOptimalLabel]) {
     const x = vars instanceof Map ? f(label, vars, ctx) : undefined;
     if (x !== undefined) return x;
   }

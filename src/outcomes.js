@@ -6,6 +6,8 @@ import * as cas from "./cas.js";
 import { noteMatrix, noteMatrices, definitenessWitness, isSym, zeroSolution } from "./witness.js";
 import { mainFn, resolveLabel, notePoints, noteFunctions } from "./textlink.js";
 import { noteRelations, noteContradiction, contradictionLine } from "./ineqproof.js";
+import { gaussInfo } from "./nosolution.js";
+import { notOptimal } from "./notoptimal.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
 import { setVerdict, limitVerdict, kktVerdict, svmVerdict } from "./verdicts.js";
@@ -194,8 +196,19 @@ export function outcomeOf(command, vars, ctx = {}) {
       const f = inequalityFailure(vars);
       return f ? one("fails", `it fails at ${f.x} = ${cas.tex(f.value)}`) : null;
     }
+    if (command === "gauss" || command === "leastsquares") {
+      // E5: Gauss elimination on the note's own system.
+      const I = gaussInfo(vars);
+      if (!I) return null;
+      const k = I.G.kind;
+      if (command === "leastsquares") return one(k === "none" ? "ls" : "exact", k === "none" ? "Av = b has no solution" : "Av = b can be solved");
+      return one(k, k === "none" ? `row ${I.G.bad + 1} says 0 = ${cas.tex(I.G.rows[I.G.bad][I.sys.vars.length])}` : k === "unique" ? "every unknown gets a value" : `${I.G.free.join(", ")} free`);
+    }
     if (command === "kkt") {
       if (infeasible(vars, ctx)) return one("none", "the constraints contradict each other");
+      // E9: a point in the note is tested first.
+      const N = notOptimal(vars, ctx);
+      if (N) return N.K.ok ? one("isopt", "λ ≥ 0 solves the KKT equations at the point") : one("notopt", N.K.feasible ? "no λ ≥ 0 at the point" : "the point breaks a constraint");
       const K = kktVerdict(vars, ctx);
       if (!K) return null;
       if (!K.strictlyFeasible) return one("notsf", "no point has all g_i < 0");

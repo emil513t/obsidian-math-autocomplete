@@ -10,6 +10,7 @@ import { mainFn, fnByName, noteFunctions, pointVar, pointExprs } from "./textlin
 import { definitenessWitness } from "./witness.js";
 import { limitOf, parsePointText } from "./limit.js";
 import { citations } from "./explain.js";
+import { notOptimal } from "./notoptimal.js";
 
 const isConstM = (M) => M.every((r) => r.every((x) => cas.constValue(x) !== null));
 const sgn = (q) => (q.n > 0 ? 1 : q.n < 0 ? -1 : 0);
@@ -342,6 +343,17 @@ export function verdictFit(command, label, vars, ctx = {}) {
       return null;
     }
     if (command === "kkt") {
+      // E9: a point in the note decides between "NOT optimal" and "verify a given point".
+      if (/^(NOT optimal|verify a given point)/.test(label)) {
+        const N = notOptimal(vars, ctx);
+        if (!N) return fit(false, "no f, g_i and point in the note");
+        const why = N.K.ok ? "λ ≥ 0 solves the KKT equations at the point" : N.K.feasible ? "no λ ≥ 0 at the point" : "the point breaks a constraint";
+        if (/^verify/.test(label)) return fit(N.K.ok, why, N.K.ok);
+        if (/^NOT optimal: no λ/.test(label)) return fit(!N.K.ok, why, !N.K.ok && (N.convex !== false || !N.B));
+        return fit(!N.K.ok && !!N.B, N.B ? `f(w) < f(v) at w = (${N.B.q.map((x) => cas.tex(x)).join(", ")})` : why, !N.K.ok && !!N.B && N.convex === false);
+      }
+      // A point in the note: the question is about that point, so no ★ here.
+      if (!/^no feasible point/.test(label) && notOptimal(vars, ctx)) return fit(true, "the note gives a point: the point routes test it");
       const K = kktVerdict(vars, ctx);
       if (!K) return null;
       if (K.feasible === false) return /^no feasible point/.test(label) ? fit(true, "the constraints contradict each other", true) : fit(false, "no point satisfies all the constraints");

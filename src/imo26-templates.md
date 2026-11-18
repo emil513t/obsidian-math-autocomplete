@@ -237,9 +237,9 @@ $$\left(\begin{array}{ccc|c} {{reduced system}} \end{array}\right)$$
 so ${{free variable}}$ can be chosen freely. Expressing the others in terms of ${{free variable}} = t$: ${{x = ..., y = ...}}$.
 **All solutions:** $\{ {{solution vector in terms of t}} \mid t \in \mathbb{R} \}$.
 ### no solutions: an impossible equation (Thm 2.8)
-After elimination (Theorem 2.8):
-$$\left(\begin{array}{ccc|c} {{reduced system}} \end{array}\right)$$
-The last row says $0 = {{nonzero}}$, which is impossible, so the system has **no solutions**.
+Gauss elimination (Section 2.3, Theorem 2.8): {{elimination steps}}. This gives
+$${{system after elimination}}$$
+Row ${{row}}$ says $0 = {{nonzero}}$, which is impossible, so the system has **no solutions**. The same in one line: {{combination}}. $\blacksquare$
 ### word problem: set up the system first
 **Unknowns:** ${{unknowns}}$ = {{what they mean}}.
 **Equations:** {{translate each sentence}}:
@@ -801,6 +801,12 @@ At $v = {{v}}$ the active constraints are ${{active}}$. With $\lambda = {{lambda
 If all $\lambda_i = 0$, the KKT conditions say $\nabla f(v) = 0$: $v = {{critical point}}$. It is feasible ($g_i(v) \le 0$: {{check}}), so it is the optimum.
 ### not strictly feasible: KKT may fail (Ex 9.40)
 No $z_0$ has all $g_i(z_0) < 0$ ({{reason}}), so the problem is not strictly feasible (Definition 9.36) and Theorem 9.37 (i) does not apply: {{the optimum ... violates KKT}}.
+### NOT optimal: no λ ≥ 0 at the point (Thm 9.37)
+At $v = {{point}}$ the active constraints are {{active constraints}}. The KKT conditions (Theorem 9.37) need $\lambda_i \ge 0$, $\lambda_i = 0$ for the inactive constraints ($\lambda_i g_i(v) = 0$) and $\nabla f(v) + \sum_i \lambda_i \nabla g_i(v) = 0$:
+{{equations for λ}}.
+{{why no λ ≥ 0}}. The problem is convex and strictly feasible ({{convex and strictly feasible}}, Definition 9.36), so by Theorem 9.37 (i) an optimal solution satisfies the KKT conditions. $v$ does not, so $v$ is **not optimal**. $\blacksquare$
+### NOT optimal: a feasible point with a smaller value (Lemma 7.17)
+At $v = {{point}}$, $f(v) = {{value at point}}$. Moving from $v$ in a direction where $f$ decreases (Lemma 7.17) gives $w = {{better point}}$, which satisfies every constraint: {{check constraints}}. Since $f(w) = {{value at better point}} < f(v)$, $v$ is **not optimal**. $\blacksquare$
 ### no feasible point: the constraints contradict each other (Sec 4.5)
 Fourier–Motzkin elimination (Section 4.5) on $g_1 \le 0, \dots$ ends in a contradiction: {{elimination}}. No point satisfies all the constraints, so the problem has no optimum.
 

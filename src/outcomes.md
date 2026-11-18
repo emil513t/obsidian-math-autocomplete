@@ -307,6 +307,8 @@ start of the matching route's label ("-" for none). Book wording only.
 - [active] some constraints active :: the case with λ ≥ 0 and all g ≤ 0 :: the KKT point is the optimum (Theorem 9.37) :: KKT with case analysis
 - [notsf] not strictly feasible :: no point has all g_i < 0 :: KKT may fail (Definition 9.36) :: not strictly feasible
 - [none] no feasible point :: the constraints contradict each other :: no optimum :: no feasible point
+- [notopt] a given point is not optimal :: no λ ≥ 0 solves the KKT equations there, or a feasible point has a smaller value :: the point is not optimal (Theorem 9.37) :: NOT optimal: no λ ≥ 0
+- [isopt] a given point is optimal :: λ ≥ 0 solves the KKT equations there :: the point is optimal (Theorem 9.37 (ii)) :: verify a given point satisfies KKT
 
 ## \svm
 - [sep] separable :: a line (hyperplane) with every point on its side :: the optimal hyperplane and its margin (Theorem 9.8) :: optimal separating hyperplane
