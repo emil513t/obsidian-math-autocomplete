@@ -9,6 +9,7 @@ import { noteRelations, noteContradiction, contradictionLine } from "./ineqproof
 import { gaussInfo } from "./nosolution.js";
 import { notOptimal } from "./notoptimal.js";
 import { convexVerdict, setBadPair } from "./notconvex.js";
+import { irrationalVerdict } from "./irrational.js";
 import { topologyVerdict, jump, corner, noteTopSet, unboundedWitness } from "./topology.js";
 import { setVerdictE2, truthInfo, tableFn, tableNotInjective, tableNotSurjective, notInjective, notSurjective } from "./failcases.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
@@ -259,6 +260,11 @@ export function outcomeOf(command, vars, ctx = {}) {
         if (!Tb.T) return null;
         return one(tableNotSurjective(Tb) ? "notsurj" : "surj", tableNotSurjective(Tb) ? "a value of T is never hit" : "every value of T is hit");
       }
+    }
+    if (command === "irrational") {
+      // E10: x^n = m, a prime with the wrong number of factors, or a perfect power.
+      const I = irrationalVerdict(vars, ctx);
+      return I ? (I.irrational ? one("irr", `the prime ${I.p} divides both a and b`) : one("rat", `it equals ${I.rational}`)) : null;
     }
     if (command === "convexset") {
       // E8: two points of the set whose midpoint is outside.

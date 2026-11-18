@@ -24,7 +24,13 @@ E7 built (`src/topology.js`: \bounded NOT bounded (ray inside the set, n = ⌈|R
 compact, \limit jump with ε = gap/4 (5.64), \derivative corner slopes (6.24, 6.31); sets given as ℕ, ℤ,
 listed sets and set-builder; setVerdict now also says "not bounded" from a ray). Tests:
 `test/topology.test.js`. Not built: 5.85 (catalogue), |x| typed with \lvert (write it as two cases).
-Next: E10, E11.
+E10 built (`src/irrational.js`: \irrational for ξ^n = m from `xi = \sqrt{2}`, `\sqrt[3]{2}`, `2^{1/3}`
+or `f(x) = x^n - m`: the Example 1.83 chain with a prime p whose exponent in m is not a multiple of n,
+"p divides c·x^n ⇒ p divides x" by the remainder computation of Example 1.80 (parity for p = 2),
+descent for √8; perfect powers → "rational after all"). Tests: `test/irrational.test.js`.
+Not built: general polynomials with several terms (the book has no tool beyond parity for them);
+1.81 itself is E1 (\contrapositive / \negate).
+Next: E11.
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,

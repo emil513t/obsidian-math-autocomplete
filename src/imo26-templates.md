@@ -166,7 +166,7 @@ Hence $f^{-1}({{C}}) = {{answer}}$.
 ## \irrational — Ch1: no rational solution, by contradiction (Ex 1.85)
 ### lowest terms + divisibility (Def 1.54)
 **Proof by contradiction.** Assume $\xi = \frac{a}{b} \in \mathbb{Q}$ with ${{equation in xi}}$, where $a \in \mathbb{Z}$, $b \in \mathbb{N}$ have no common divisor (Definition 1.54).
-Then ${{equation in a, b}}$, so ${{p}}$ divides $a$. Write $a = {{p}}k$. Then {{substitute}}, so ${{p}}$ divides $b$ too.
+Then ${{equation in a, b}}$, so ${{p}}$ divides $a$ ({{why p divides a}}). Write $a = {{p}}k$. Then {{substitute}}, so ${{p}}$ divides $b$ too.
 So ${{p}}$ divides both $a$ and $b$ — a contradiction. $\blacksquare$
 ### it is rational after all: write it as a fraction (Def 1.54)
 ${{number}} = {{simplify}} = \frac{{{a}}}{{{b}}}$ with integers ${{a}}$ and ${{b}} \neq 0$, so it is rational (Definition 1.54).
