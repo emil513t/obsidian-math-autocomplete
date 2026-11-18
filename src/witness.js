@@ -27,6 +27,7 @@ import { resolveConvexLabel } from "./notconvex.js";
 import { resolveFailLabel } from "./failcases.js";
 import { resolveTopologyLabel } from "./topology.js";
 import { resolveIrrationalLabel } from "./irrational.js";
+import { resolveMistakeLabel } from "./mistake.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -439,6 +440,9 @@ export function resolveAny(label, vars, ctx = {}) {
   // E10: no rational root of x^n = m.
   const ir = vars instanceof Map ? resolveIrrationalLabel(label, vars, ctx) : undefined;
   if (ir !== undefined) return ir;
+  // E11: the mistake in an argument.
+  const mk = vars instanceof Map ? resolveMistakeLabel(label, vars, ctx) : undefined;
+  if (mk !== undefined) return mk;
   const e = vars instanceof Map ? resolveEndingLabel(label, vars, ctx) : undefined;
   if (e !== undefined) return e;
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;

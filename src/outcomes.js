@@ -10,6 +10,7 @@ import { gaussInfo } from "./nosolution.js";
 import { notOptimal } from "./notoptimal.js";
 import { convexVerdict, setBadPair } from "./notconvex.js";
 import { irrationalVerdict } from "./irrational.js";
+import { mistakeVerdict } from "./mistake.js";
 import { topologyVerdict, jump, corner, noteTopSet, unboundedWitness } from "./topology.js";
 import { setVerdictE2, truthInfo, tableFn, tableNotInjective, tableNotSurjective, notInjective, notSurjective } from "./failcases.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
@@ -260,6 +261,11 @@ export function outcomeOf(command, vars, ctx = {}) {
         if (!Tb.T) return null;
         return one(tableNotSurjective(Tb) ? "notsurj" : "surj", tableNotSurjective(Tb) ? "a value of T is never hit" : "every value of T is hit");
       }
+    }
+    if (command === "fakeproof") {
+      // E11: the steps checked with values for the letters / P(n) for small n.
+      const ks = mistakeVerdict(vars);
+      return ks ? ks.map((k) => ({ key: k, why: { div0: "a step divides by something that is 0", onlyif: "a step only holds one way", ind: "P(n) holds, P(n + 1) does not" }[k] })) : null;
     }
     if (command === "irrational") {
       // E10: x^n = m, a prime with the wrong number of factors, or a perfect power.

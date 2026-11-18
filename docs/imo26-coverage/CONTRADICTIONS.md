@@ -30,7 +30,12 @@ or `f(x) = x^n - m`: the Example 1.83 chain with a prime p whose exponent in m i
 descent for √8; perfect powers → "rational after all"). Tests: `test/irrational.test.js`.
 Not built: general polynomials with several terms (the book has no tool beyond parity for them);
 1.81 itself is E1 (\contrapositive / \negate).
-Next: E11.
+E11 built (`src/mistake.js`: \fakeproof from `chain = a = b \iff a^2 = ab \iff ...`: values for the letters
+that make every earlier line true; the first step where the next line is false is the mistake, "divided
+by q" when the two lines differ by a factor q that is 0 there (2.2: a − b, which the first line makes 0);
+a ⇔ that only holds one way gets its example (Def 1.18); fake induction from `P(n) = ...`: P(n0) true,
+P(n0 + 1) false (1.89)). Tests: `test/mistake.test.js`. Not built: 3.30 (an argument in words).
+**All 11 engines are built.**
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,
