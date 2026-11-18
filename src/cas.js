@@ -284,7 +284,7 @@ function dAtom(a, v) {
     case "tan": outer = add(ONE, pow(f("tan"), 2)); break;
     case "exp": outer = f("exp"); break;
     case "ln": outer = pow(u, -1); break;
-    case "log": outer = pow(mul(u, fn("ln", num(10))), -1); break;
+    case "log": outer = pow(u, -1); break; // the book: log has base e
     case "arcsin": outer = pow(sub(ONE, pow(u, 2)), Q(-1, 2)); break;
     case "arccos": outer = neg(pow(sub(ONE, pow(u, 2)), Q(-1, 2))); break;
     case "arctan": outer = pow(add(ONE, pow(u, 2)), -1); break;
@@ -377,7 +377,7 @@ function evalAtom(a, env) {
   if (a.t === "nroot") return a.v.n / a.v.d;
   if (a.t === "sum") return evaluate(a.x, env);
   const u = evaluate(a.arg, env);
-  const F = { sin: Math.sin, cos: Math.cos, tan: Math.tan, exp: Math.exp, ln: Math.log, log: Math.log10,
+  const F = { sin: Math.sin, cos: Math.cos, tan: Math.tan, exp: Math.exp, ln: Math.log, log: Math.log,
     arcsin: Math.asin, arccos: Math.acos, arctan: Math.atan, sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh, abs: Math.abs };
   return F[a.name](u);
 }

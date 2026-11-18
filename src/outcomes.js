@@ -8,6 +8,7 @@ import { mainFn, resolveLabel, notePoints, noteFunctions } from "./textlink.js";
 import { noteRelations, noteContradiction, contradictionLine } from "./ineqproof.js";
 import { gaussInfo } from "./nosolution.js";
 import { notOptimal } from "./notoptimal.js";
+import { convexVerdict, setBadPair } from "./notconvex.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
 import { setVerdict, limitVerdict, kktVerdict, svmVerdict } from "./verdicts.js";
@@ -94,7 +95,8 @@ function oneVarOutcome(command, vars, ctx) {
   if (F.vars.length !== 1) {
     if (command === "convexfn" || command === "strictconvex") {
       const H = cas.hessian(F.x, F.vars);
-      if (!isConstM(H)) return null;
+      // E8: a point where the Hessian is not positive semi-definite, with a bad pair.
+      if (!isConstM(H)) return convexVerdict(F) === "notconvex" ? one("notconvex", `the Hessian of ${nm} is not positive semi-definite at one point`) : null;
       const d = definitenessWitness(H)?.d;
       if (!d) return null;
       if (d === "positive definite") return one("strict", `the Hessian of ${nm} is positive definite everywhere`);
@@ -214,6 +216,11 @@ export function outcomeOf(command, vars, ctx = {}) {
       if (!K.strictlyFeasible) return one("notsf", "no point has all g_i < 0");
       if (!K.point) return null;
       return one(K.allZero ? "inner" : "active", `optimum (${K.point.map((x) => cas.tex(x)).join(", ")})${K.allZero ? ", all λ = 0" : ""}`);
+    }
+    if (command === "convexset") {
+      // E8: two points of the set whose midpoint is outside.
+      const B = setBadPair(vars, ctx);
+      return B ? one("notconvex", "the midpoint of two of its points is outside") : null;
     }
     if (command === "fm") {
       // E4: the note's inequalities contradict each other, or elimination ends without that.

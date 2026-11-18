@@ -23,6 +23,7 @@ import { resolveIneqLabel } from "./ineqproof.js";
 import { resolveNegationLabel, resolveImplicationLabel } from "./negate.js";
 import { resolveGaussLabel } from "./nosolution.js";
 import { resolveNotOptimalLabel } from "./notoptimal.js";
+import { resolveConvexLabel } from "./notconvex.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -423,6 +424,9 @@ export function resolveMatrixLabel(label, vars, ctx = {}) {
 export function resolveAny(label, vars, ctx = {}) {
   const c = vars instanceof Map ? resolveCasesLabel(label, vars, ctx) : undefined;
   if (c !== undefined) return c;
+  // E8: not convex / not strictly convex (the route's text decides).
+  const cx = vars instanceof Map ? resolveConvexLabel(label, vars, ctx) : undefined;
+  if (cx !== undefined) return cx;
   const e = vars instanceof Map ? resolveEndingLabel(label, vars, ctx) : undefined;
   if (e !== undefined) return e;
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;

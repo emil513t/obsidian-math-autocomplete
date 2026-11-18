@@ -9,7 +9,11 @@ filled, "adding e1, e2 and −1 times e3 gives 0 = −1", \leastsquares 5.17), E
 \kkt "NOT optimal: no λ ≥ 0" and "a feasible point with a smaller value" at the note's point; 9.46(b),
 9.52(3), 9.56(2), 9.57(2)). Tests: `test/witness.test.js`, `test/contradict.test.js`, `test/notopt.test.js`.
 Not built from E9: the "give an example" catalogue (6.8, 6.11, 8.22, 9.40) and 9.54(3)(4) (a family of points).
-Next: E8.
+E8 built (`src/notconvex.js`: \convexfn bad pair, \strictconvex Hessian/f'' at a point and "linear on a
+segment" (6.6, 8.28, 9.52, 9.54(1)), \convexset midpoint outside; 9.53(1) with e^{x−y}). Tests:
+`test/notconvex.test.js`. Not built from E8: 4.25 union (sets given as a union) and 6.58 (a statement).
+Also fixed: the CAS read \log as base 10; the book's log has base e.
+Next: E2 + E3.
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,
