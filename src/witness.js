@@ -25,6 +25,7 @@ import { resolveGaussLabel } from "./nosolution.js";
 import { resolveNotOptimalLabel } from "./notoptimal.js";
 import { resolveConvexLabel } from "./notconvex.js";
 import { resolveFailLabel } from "./failcases.js";
+import { resolveTopologyLabel } from "./topology.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -431,6 +432,9 @@ export function resolveAny(label, vars, ctx = {}) {
   // E2 + E3: one concrete case where a claim fails.
   const fc = vars instanceof Map ? resolveFailLabel(label, vars, ctx) : undefined;
   if (fc !== undefined) return fc;
+  // E7: not bounded / open / closed, no limit, not differentiable.
+  const tp = vars instanceof Map ? resolveTopologyLabel(label, vars, ctx) : undefined;
+  if (tp !== undefined) return tp;
   const e = vars instanceof Map ? resolveEndingLabel(label, vars, ctx) : undefined;
   if (e !== undefined) return e;
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;

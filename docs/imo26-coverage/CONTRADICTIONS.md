@@ -19,7 +19,12 @@ function tables of pairs (1.102, 1.108, 1.113); \injective / \surjective for for
 \crit critical point that is not an extremum (6.38); \inequality with several variables and the note's
 assumptions (1.72(i))). Tests: `test/failcases.test.js`. Not built: "give an example" exercises 2.30,
 6.42, 6.47 and the counting argument 1.107 (hash functions).
-Next: E7, E10, E11.
+E7 built (`src/topology.js`: \bounded NOT bounded (ray inside the set, n = ⌈|R|⌉ + 1 for ℕ, 5.36),
+\openset NOT open (5.42, 5.44, 5.46, ℤ/ℕ, finite sets), \closedset NOT closed (5.50(d)), \compact NOT
+compact, \limit jump with ε = gap/4 (5.64), \derivative corner slopes (6.24, 6.31); sets given as ℕ, ℤ,
+listed sets and set-builder; setVerdict now also says "not bounded" from a ray). Tests:
+`test/topology.test.js`. Not built: 5.85 (catalogue), |x| typed with \lvert (write it as two cases).
+Next: E10, E11.
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,

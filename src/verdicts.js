@@ -11,6 +11,7 @@ import { definitenessWitness } from "./witness.js";
 import { limitOf, parsePointText } from "./limit.js";
 import { citations } from "./explain.js";
 import { notOptimal } from "./notoptimal.js";
+import { noteTopSet, unboundedWitness } from "./topology.js";
 
 const isConstM = (M) => M.every((r) => r.every((x) => cas.constValue(x) !== null));
 const sgn = (q) => (q.n > 0 ? 1 : q.n < 0 ? -1 : 0);
@@ -169,6 +170,10 @@ export function setVerdict(vars, ctx = {}) {
     if (lb === true) bounded = true;
     else if (lb === false && inPt) bounded = false;
     else if (inPt && S.xs.some((x) => S.conds.every((c) => !cas.symbols(c.e).has(x)))) bounded = false;
+  }
+  // E7: a ray inside the set (y ≥ x², ...) shows it is not bounded.
+  if (bounded === null && inPt) {
+    try { const S7 = noteTopSet(vars, ctx); if (S7 && unboundedWitness(S7)) bounded = false; } catch (_) { /* no opinion */ }
   }
   // Interval with one open and one closed finite end: neither open nor closed.
   if (S.interval && S.conds.length === 2 && !strict && !nonstrict) { open = false; closed = false; }

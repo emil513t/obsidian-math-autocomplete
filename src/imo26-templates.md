@@ -596,7 +596,7 @@ and $\varepsilon(h) = {{epsilon(h)}} \to 0$ for $h \to 0$. $\blacksquare$
 $$f'(x) = {{apply the rule}} = {{result}}$$
 using the {{product rule (Section 6.3.3) / chain rule (Section 6.3.4)}}.
 ### NOT differentiable at a point (Def 6.17)
-If $f$ were differentiable at ${{x0}}$ with $f'({{x0}}) = c$, then $\frac{f({{x0}}+h) - f({{x0}})}{h} \to c$ (Definition 6.17). But this quotient is ${{right value}}$ for $h > 0$ and ${{left value}}$ for $h < 0$, so no such $c$ exists.
+If $f$ were differentiable at ${{x0}}$ with $f'({{x0}}) = c$, then $\frac{f({{x0}}+h) - f({{x0}})}{h} \to c$ (Definition 6.17). But for small $h$ this quotient is ${{right value}}$ when $h > 0$ and ${{left value}}$ when $h < 0$, two different numbers, so no such $c$ exists.
 ### higher derivatives: find the pattern
 $f' = {{f'}}$, $f'' = {{f''}}$, $f''' = {{f'''}}$, $f^{(4)} = {{f''''}}$, so the pattern repeats with period ${{period}}$ and $f^{({{n}})} = {{answer}}$.
 

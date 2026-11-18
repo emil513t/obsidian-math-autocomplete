@@ -9,6 +9,7 @@ import { noteRelations, noteContradiction, contradictionLine } from "./ineqproof
 import { gaussInfo } from "./nosolution.js";
 import { notOptimal } from "./notoptimal.js";
 import { convexVerdict, setBadPair } from "./notconvex.js";
+import { topologyVerdict, jump, corner, noteTopSet, unboundedWitness } from "./topology.js";
 import { setVerdictE2, truthInfo, tableFn, tableNotInjective, tableNotSurjective, notInjective, notSurjective } from "./failcases.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
@@ -180,8 +181,14 @@ export function outcomeOf(command, vars, ctx = {}) {
     }
     const sets = ["bounded", "openset", "closedset", "compact", "evt"];
     if (sets.includes(command)) {
-      const V = setVerdict(vars, ctx);
-      if (!V) return null;
+      const V0 = setVerdict(vars, ctx) || topologyVerdict(vars, ctx);
+      if (!V0) return null;
+      // E7: a ray inside the set decides "not bounded" when the general test can't.
+      const V = { ...V0 };
+      if (V.bounded === null) {
+        const S = noteTopSet(vars, ctx);
+        if (S && unboundedWitness(S)) { V.bounded = false; V.compact = false; }
+      }
       const n = V.name;
       if (command === "bounded" && V.bounded !== null) return one(!V.nonempty ? "empty" : V.bounded ? "bounded" : "unbounded", `${n} is ${V.bounded ? "" : "not "}bounded`);
       if (command === "openset" && V.open !== null) return one(V.open && V.closed ? "both" : V.open ? "open" : "notopen", `${n} is ${V.open ? "" : "not "}open`);
@@ -189,6 +196,15 @@ export function outcomeOf(command, vars, ctx = {}) {
       if (command === "compact" && V.compact !== null) return one(V.compact ? "compact" : V.bounded === false ? "unbounded" : "notclosed", V.compact ? `${n} is closed and bounded` : `${n} is ${V.bounded === false ? "not bounded" : "not closed"}`);
       if (command === "evt" && V.compact !== null) return one(V.compact ? "both" : "fail", `${n} is ${V.compact ? "" : "not "}compact`);
       return null;
+    }
+    // E7: a jump (two formulas) and a corner.
+    if (command === "limit" || command === "continuous") {
+      const J = jump(vars, ctx);
+      if (J) return one(command === "limit" ? "none" : "jump", `the two formulas approach ${cas.tex(J.left)} and ${cas.tex(J.right)}`);
+    }
+    if (command === "derivative") {
+      const C = corner(vars, ctx);
+      if (C) return one("corner", `the slopes from the two sides are ${cas.tex(C.left)} and ${cas.tex(C.right)}`);
     }
     if (command === "limit") {
       const L = limitVerdict(vars, ctx);
