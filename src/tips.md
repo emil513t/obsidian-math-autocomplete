@@ -13,6 +13,11 @@ show: One row per combination of truth values: 2^n rows for n letters (Definitio
 trick: Two propositions are the same exactly when their columns agree in every row.
 trick: p ⇒ q is false only in the row p true, q false: that row is all you need to break an implication.
 
+## \negate
+show: Move ¬ inside one step at a time: ¬∀ becomes ∃¬, ¬∃ becomes ∀¬ ((1.3), Section 1.3.4), ∧ and ∨ swap (Exercise 1.20).
+trick: ¬(p ⇒ q) is p ∧ ¬q (Definition 1.10): the negation of an implication is never an implication.
+disprove: To show a ∀-statement is false, one value that breaks it is enough; the order of ∀ and ∃ stays (Remark 5.34).
+
 ## \setequal
 show: A = B means x ∈ A ⇒ x ∈ B and x ∈ B ⇒ x ∈ A (Definition 1.27): two inclusions.
 disprove: One element in one set and not in the other is enough.

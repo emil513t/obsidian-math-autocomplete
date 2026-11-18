@@ -1,6 +1,11 @@
 # IMO26: contradiction, counterexample and "not" proofs, classified for the whole curriculum
 
-Step 1 of the "dynamic proofs" plan (2026-11-17). Nothing is built yet; this file is the map.
+Step 1 of the "dynamic proofs" plan (2026-11-17); this file is the map.
+
+**Status (2026-11-18):** E6 built (`src/witness.js`), E4 built (`src/ineqproof.js`: \fm, \svm NOT separable,
+\kkt no feasible point, \fouriermotzkin worked solution), E1 built (`src/negate.js`: \negate command +
+template, \contradiction / \contrapositive blanks). Tests: `test/witness.test.js`, `test/contradict.test.js`.
+Next: E5 + E9.
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,

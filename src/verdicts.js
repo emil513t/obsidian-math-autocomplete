@@ -261,7 +261,7 @@ export function kktVerdict(vars, ctx = {}) {
 
 const nums = (s) => { try { return JSON.parse(String(s).replace(/\s+/g, "")); } catch (_) { return null; } };
 // Points (rows of X) and labels ±1 from the note (X / P and l / labels / ell), or the python form.
-function svmData(vars, ctx) {
+export function svmData(vars, ctx = {}) {
   const a = ctx.answers || {};
   let X = nums(a["points X"]); let y = nums(a["labels +-1"]);
   if (!Array.isArray(X) || !Array.isArray(y)) {

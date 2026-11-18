@@ -5,7 +5,9 @@
 import * as cas from "./cas.js";
 import { latexName } from "./vars.js";
 import { symmetricReduction, definiteness, definitenessWhy, CONCLUSION } from "./textlink.js";
-import { typedFunction, numericRoots, fmtC, taylor2, gaussSources, fmSystem, runLimit } from "./objects.js";
+import { typedFunction, numericRoots, fmtC, taylor2, gaussSources, fmSystem, runLimit, negationNames } from "./objects.js";
+import { contradiction, contradictionProof, noteContradiction } from "./ineqproof.js";
+import { negate, negationChain, noteStatements, DEFINITIONS } from "./negate.js";
 import { gauss, parseSystem, systemTex, parseIneqs, fmStep, ineqTex, inductionSteps } from "./elim.js";
 import { findRelation } from "./vars.js";
 import { convexityProof } from "./convex.js";
@@ -814,7 +816,11 @@ HANDLERS.fouriermotzkin = (id, ctx, a, steps) => {
       steps.push({ text: `So there is such an $${x}$ exactly when the largest lower bound is at most the smallest upper bound, as in (4.12)-(4.13):`, tex: `\\max(${lo.join(", ")}) \\le ${x} \\le \\min(${hi.join(", ")}) \\iff \\max(${lo.join(", ")}) \\le \\min(${hi.join(", ")})` });
       steps.push({ text: `Expand into one inequality per (lower, upper) pair, ${st.lower.length}·${st.upper.length} = ${st.pairs.length} in all, using $\\max(a,b) \\le c \\iff a \\le c \\wedge b \\le c$:`, tex: `\\begin{aligned} ${st.pairs.map((q) => `& ${cas.tex(q.L.b, others)} ${q.strict ? "<" : "\\le"} ${cas.tex(q.U.b, others)}`).join(" \\\\ ")} \\end{aligned}` });
     }
-    if (st.contradictions.length) { steps.push({ text: `One of them says a false thing about numbers, so the system has **no solution**.` }); return "Fourier-Motzkin elimination"; }
+    if (st.contradictions.length) {
+      steps.push({ text: `One of them says a false thing about numbers, so the system has **no solution**.` });
+      shortProof();
+      return "Fourier-Motzkin elimination";
+    }
     cur = st.next;
     left = others;
     steps.push({ text: cur.length ? `Simplified (true number inequalities like $0 \\le 4$ dropped, duplicates removed), the system without $${x}$ is:` : `Nothing is left: every value of the remaining variables works.`, tex: cur.length ? list(cur, left) : undefined });
@@ -822,13 +828,44 @@ HANDLERS.fouriermotzkin = (id, ctx, a, steps) => {
   if (left.length === 1 && cur.length) {
     const v = left[0];
     const st = fmStep(cur, left, v);
-    const lo = st.lower.map((q) => q.b); const hi = st.upper.map((q) => q.b);
     const num = (x) => { const c = cas.constValue(x); return c ? c.n / c.d : null; };
-    const maxL = lo.length ? lo.reduce((m, x) => (num(x) > num(m) ? x : m)) : null;
-    const minU = hi.length ? hi.reduce((m, x) => (num(x) < num(m) ? x : m)) : null;
-    steps.push({ text: `Only $${v}$ is left. Isolating it gives the possible values:`, tex: `${maxL ? `${cas.tex(maxL)} \\le ` : ""}${v}${minU ? ` \\le ${cas.tex(minU)}` : ""}` });
+    // The largest lower / smallest upper bound; at a tie the strict one is the sharper.
+    const pick = (qs, better) => qs.reduce((m, q) => (!m || better(num(q.b), num(m.b)) || (num(q.b) === num(m.b) && q.strict) ? q : m), null);
+    const L = pick(st.lower, (a, b) => a > b); const U = pick(st.upper, (a, b) => a < b);
+    const lt = (q) => (q.strict ? "<" : "\\le");
+    const range = `${L ? `${cas.tex(L.b)} ${lt(L)} ` : ""}${v}${U ? ` ${lt(U)} ${cas.tex(U.b)}` : ""}`;
+    if (st.contradictions.length) {
+      steps.push({ text: `Only $${v}$ is left. Isolating it asks for $${range}$, and no number does that, so the system has **no solution**.` });
+      shortProof();
+    } else {
+      steps.push({ text: `Only $${v}$ is left. Isolating it gives the possible values:`, tex: range });
+    }
   }
   return "Fourier-Motzkin elimination";
+  // E4: the same contradiction in one line, straight from the system.
+  function shortProof() {
+    let C = null;
+    try { C = id === "own" ? contradiction(String(a.e || "").split(";").map((s) => s.trim()).filter(Boolean)) : noteContradiction(ctx.vars); } catch (_) { C = null; }
+    if (C) steps.push({ text: `**Short proof without the elimination** (as in Exercise 5.9). ${contradictionProof(C).replace(/^\*\*Proof\.\*\* /, "")}` });
+  }
+};
+
+// E1: negation, rule by rule ((1.3), Exercise 1.20, Definition 1.10, Definition 1.65).
+HANDLERS.negate = (id, ctx, a, steps) => {
+  let src, says = null, ref = null;
+  if (id === "own") src = a.s;
+  else if (id.startsWith("ng:")) { const S = noteStatements(ctx.vars).find((x) => x.name === id.slice(3)); if (!S) return null; src = S.text; says = `$${latexName(S.name)}$`; }
+  else if (id.startsWith("nd:")) {
+    const d = DEFINITIONS.find((x) => x.key === id.slice(3)); if (!d) return null;
+    const names = negationNames(ctx.vars);
+    src = d.s(names); says = d.says(names); ref = d.ref;
+  } else return null;
+  const N = negate(src);
+  steps.push({ text: `${says ? `${says} means${ref ? ` (${ref})` : ""}:` : "The statement:"}`, tex: N.statement });
+  steps.push({ text: `Move $\\neg$ inside one step at a time. Each quantifier flips (¬∀ becomes ∃¬ and ¬∃ becomes ∀¬, (1.3) in Section 1.3.4), ∧ and ∨ swap (Exercise 1.20), $\\neg(p \\Rightarrow q) \\equiv p \\wedge \\neg q$ (Definition 1.10: an implication is false only when $p$ is true and $q$ is false), and a relation is replaced by its opposite (Definition 1.65: exactly one of $x < y$, $x = y$, $x > y$ holds):`, tex: negationChain(N) });
+  steps.push({ text: `The negation:`, tex: N.tex });
+  steps.push({ text: `**Proof by contradiction** (Section 1.6.4): assume this and derive something false. **To show the statement is false**: prove this negation; for each $\\exists$ name one value that works, for each $\\forall$ let the value be arbitrary (as in Remark 5.34).` });
+  return "negation";
 };
 
 HANDLERS.convexity = (id, ctx, a, steps) => {

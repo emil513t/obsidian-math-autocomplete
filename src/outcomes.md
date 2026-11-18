@@ -11,6 +11,11 @@ start of the matching route's label ("-" for none). Book wording only.
 - [equiv] two propositions agree :: same column in every row :: they are equivalent (Definition 1.18) :: two propositions are equivalent
 - [differ] two propositions differ :: one row with different values :: not equivalent: that row is the example :: two propositions are equivalent
 
+## \negate
+- [neg] the negation, written out :: ¬ moved past every ∀, ∃, ∧, ∨, ⇒ :: what to prove when you show the statement is false :: step by step
+- [true] the statement holds :: assuming its negation leads to something false :: the statement is true (Section 1.6.4) :: proof by contradiction
+- [false] the statement is false :: one value for each ∃ in the negation works :: the negation holds (Remark 5.34) :: NOT true
+
 ## \setequal
 - [eq] equal :: both inclusions hold :: A = B (Definition 1.27) :: double inclusion
 - [sub] one inclusion only :: A ⊆ B but some b ∈ B is not in A :: A ≠ B, A ⊆ B :: NOT equal

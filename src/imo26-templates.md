@@ -41,6 +41,16 @@ ${{proposition}}$ is **always true**: in its truth table (Definition 1.10) the l
 {{table}}
 $\blacksquare$
 
+## \negate — Ch1: negate a statement / prove it by contradiction (Sec 1.3.4, Sec 1.6.4)
+### step by step ((1.3), Ex 1.20, Def 1.10)
+The negation of ${{statement}}$, one rule at a time (¬∀ becomes ∃¬ and ¬∃ becomes ∀¬ by (1.3), Section 1.3.4; ∧, ∨ by Exercise 1.20; ⇒ by Definition 1.10):
+$${{negation steps}}$$
+So the negation is ${{negation}}$.
+### proof by contradiction: assume the negation (Sec 1.6.4)
+**Proof by contradiction** (Section 1.6.4). Assume that ${{statement}}$ is false, i.e. ${{negation}}$. Then {{derivation}}, which is false. So the assumption was false, and ${{statement}}$ holds. $\blacksquare$
+### NOT true: prove the negation instead (Remark 5.34)
+To show that ${{statement}}$ is false, we prove its negation ${{negation}}$: {{for each ∀ take any value, for each ∃ name one value that works}}. $\blacksquare$
+
 ## \setequal — Ch1: prove two sets are equal (Def 1.27)
 ### double inclusion (Def 1.27)
 **Proof.** By Definition 1.27 we show ${{A}} \subseteq {{B}}$ and ${{B}} \subseteq {{A}}$.
@@ -438,7 +448,7 @@ Pairing every lower with every upper bound gives the system in the remaining var
 $${{new system}}$$
 The original system has a solution iff this one has.
 ### show a system has no solution (Sec 4.5)
-Eliminating ${{x}}$ and then ${{y}}$ (Section 4.5) leaves ${{final inequalities}}$, i.e. $0 \le {{negative number}}$ — impossible. So the original system has **no solutions**.
+Eliminating ${{eliminated variables}}$ (Section 4.5) ends in ${{false inequality}}$, which is false. Each step only adds positive multiples of inequalities (Definition 1.65), so the same contradiction comes straight from the system: {{multiply and add}}. So the original system has **no solutions**. $\blacksquare$
 ### linear optimization: add z = objective (Sec 4.4-4.5)
 **Maximize** ${{objective}}$ subject to {{constraints}}. Add $z = {{objective}}$ and eliminate the original variables (Section 4.5):
 {{elimination}}
@@ -810,7 +820,7 @@ With $\hat v_i = (\ell_i x_i, \ell_i y_i, \ell_i)$ (5.7), start with $\alpha = 0
 
 If the points are separable it stops after finitely many updates (Proposition 5.14); final $\alpha = {{alpha}}$.
 ### NOT separable (Ex 5.9)
-**Proof.** Suppose $\alpha^\top v + \beta$ separates them. Then {{inequalities for each point}}; adding {{suitable ones}} gives $0 < 0$ — a contradiction. So no separating line exists. $\blacksquare$
+**Proof.** Suppose $\alpha^\top v + \beta$ separates them. Then {{inequalities for each point}}; adding {{suitable ones}} gives ${{false inequality}}$ — a contradiction. So no separating line exists. $\blacksquare$
 
 ## \perceptron — Ch1: perceptrons and neural networks (Remark 1.120)
 ### choose weights for a logic gate

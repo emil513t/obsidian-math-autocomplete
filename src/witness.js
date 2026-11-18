@@ -19,6 +19,8 @@ import { verdictFit } from "./verdicts.js";
 import { resolveCasesLabel, paramCases, commandOfBody } from "./cases.js";
 import { resolveEndingLabel } from "./endings.js";
 import { outcomeOf } from "./outcomes.js";
+import { resolveIneqLabel } from "./ineqproof.js";
+import { resolveNegationLabel, resolveImplicationLabel } from "./negate.js";
 const VERDICT_COMMANDS = new Set(["bounded", "openset", "closedset", "compact", "evt", "limit", "kkt", "svm"]);
 
 const T = (x, vars) => cas.tex(x, vars);
@@ -424,7 +426,13 @@ export function resolveAny(label, vars, ctx = {}) {
   const r = vars instanceof Map ? resolveMatrixLabel(label, vars, ctx) : undefined;
   if (r !== undefined) return r;
   const g = vars instanceof Map ? resolveLagrangeLabel(label, vars, ctx) : undefined;
-  return g !== undefined ? g : resolveLabel(label, vars, ctx);
+  if (g !== undefined) return g;
+  // E4: inequalities that contradict each other; E1: negations.
+  for (const f of [resolveIneqLabel, resolveNegationLabel, resolveImplicationLabel]) {
+    const x = vars instanceof Map ? f(label, vars, ctx) : undefined;
+    if (x !== undefined) return x;
+  }
+  return resolveLabel(label, vars, ctx);
 }
 
 // \lagrange: a linear g with convex (or -f convex) f -> the convexity route.

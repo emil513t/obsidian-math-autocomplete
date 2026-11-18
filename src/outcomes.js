@@ -4,7 +4,8 @@
 // Pure, no Obsidian imports.
 import * as cas from "./cas.js";
 import { noteMatrix, noteMatrices, definitenessWitness, isSym, zeroSolution } from "./witness.js";
-import { mainFn, resolveLabel, notePoints } from "./textlink.js";
+import { mainFn, resolveLabel, notePoints, noteFunctions } from "./textlink.js";
+import { noteRelations, noteContradiction, contradictionLine } from "./ineqproof.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
 import { setVerdict, limitVerdict, kktVerdict, svmVerdict } from "./verdicts.js";
@@ -200,6 +201,14 @@ export function outcomeOf(command, vars, ctx = {}) {
       if (!K.strictlyFeasible) return one("notsf", "no point has all g_i < 0");
       if (!K.point) return null;
       return one(K.allZero ? "inner" : "active", `optimum (${K.point.map((x) => cas.tex(x)).join(", ")})${K.allZero ? ", all λ = 0" : ""}`);
+    }
+    if (command === "fm") {
+      // E4: the note's inequalities contradict each other, or elimination ends without that.
+      const rels = noteRelations(vars);
+      if (rels.length < 2) return null;
+      const C = noteContradiction(vars);
+      if (C) return one("none", `${contradictionLine(C).replace(/\$/g, "")}`);
+      return noteFunctions(vars).length ? null : one("solvable", "elimination ends without a contradiction");
     }
     if (command === "svm") {
       const S = svmVerdict(vars, ctx);

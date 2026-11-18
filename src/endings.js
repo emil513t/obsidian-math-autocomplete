@@ -8,6 +8,8 @@ import { linear, gauss, fmStep } from "./elim.js";
 import { noteMatrices, noteMatrix, texM } from "./witness.js";
 import { mainFn, statementVar, substituteTex, evalSide, noteFunctions, fnByName } from "./textlink.js";
 import { noteFG } from "./lagrange.js";
+import { contradiction, contradictionLine } from "./ineqproof.js";
+import { latexName } from "./vars.js";
 
 const T = (x, vars) => cas.tex(x, vars);
 const size = (M) => `${M.length} \\times ${M[0].length}`;
@@ -83,6 +85,11 @@ export function infeasible(vars, ctx) {
   if (!G.length) return null;
   const xs = cas.orderVars(new Set(G.flatMap((g) => [...cas.symbols(g.x)])));
   if (G.some((g) => !linear(g.x, xs))) return null;
+  // E4: name the constraints and the numbers to add them with.
+  try {
+    const C = contradiction(G.map((g) => ({ expr: g.x, op: "\\le", lhs: "", rhs: "0", name: `${latexName(g.v.name)} \\le 0` })), { vars: xs });
+    if (C) return `eliminating $${C.order.join(", ")}$ ends in $${C.sumTex}$, which is false; directly: ${contradictionLine(C)}`;
+  } catch (_) { /* fall back to plain elimination */ }
   let cur = G.map((g) => ({ e: g.x, strict: false }));
   for (const x of xs) {
     const st = fmStep(cur, xs, x);

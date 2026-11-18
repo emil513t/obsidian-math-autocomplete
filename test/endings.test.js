@@ -35,7 +35,7 @@ test("the new routes fill themselves from the note", () => {
   assert.match(fill("matmul", /^NOT defined/, note("A = [[1, 2, 3]]\nB = [[1, 2]]")), /\$A\$ is \$1 \\times 3\$ and \$B\$ is \$1 \\times 2\$/);
   assert.match(fill("matinv", /^not square/, note("A = [[1, 2, 3], [4, 5, 6]]")), /is \$2 \\times 3\$, not square/);
   assert.match(fill("posdef", /^not symmetric/, note("A = [[1, 2], [0, 1]]")), /S = \\frac\{1\}\{2\}\(A \+ A\^\\top\) = \\begin\{pmatrix\} 1 & 1 \\\\ 1 & 1 \\end\{pmatrix\}/);
-  assert.match(fill("kkt", /^no feasible point/, note("f(x, y) = x^2 + y^2\ng1(x, y) = x - 1\ng2(x, y) = 2 - x")), /eliminating \$x\$ leaves \$1 \\le 0\$, which is false/);
+  assert.match(fill("kkt", /^no feasible point/, note("f(x, y) = x^2 + y^2\ng1(x, y) = x - 1\ng2(x, y) = 2 - x")), /eliminating \$x\$ ends in \$0 \\le -1\$, which is false; directly: adding \$g_\{1\} \\le 0\$ and \$g_\{2\} \\le 0\$ gives \$0 \\le -1\$/);
   assert.match(fill("lagrange", /^∇g = 0/, note("f(x, y) = x + y\ng(x, y) = x^2 - y^2")), /\(0, 0\)\\text\{ \(on \} g = 0\\text\{: add it\)\}/);
   assert.match(fill("sumind", /^the formula is wrong/, note("P(n) = \\sum_{k=1}^{n} k = n^2")), /For \$n = 2\$ the left side is \$3\$ and the right side is \$4\$/);
   assert.match(fill("inequality", /^NOT true for all values/, note("I(x) = x^2 \\ge 2x + 1")), /For \$x = 0\$ the left side is \$0\$ and the right side is \$1\$, and \$0 < 1\$/);

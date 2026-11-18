@@ -11,6 +11,18 @@ import { convexityProof } from "./convex.js";
 import { limitOf, limitAnswer, parsePointText, derivativeLimit, parseCases, limitCases, fraction } from "./limit.js";
 import { symmetricReduction, definiteness } from "./textlink.js";
 import { paramConditionsTex } from "./witness.js";
+import { negate, noteStatements, DEFINITIONS, DEFAULT_NAMES } from "./negate.js";
+
+// The note's names for the negated definitions: its set (S, U, C) and function f.
+export function negationNames(vars) {
+  const n = { ...DEFAULT_NAMES };
+  if (!(vars instanceof Map)) return n;
+  const set = [...vars.values()].find((v) => (v.kind === "set" || v.kind === "interval") && !v.error);
+  if (set) { n.S = set.name; n.U = set.name; n.C = set.name; }
+  const f = [...vars.values()].find((v) => v.kind === "scalar" && v.params && !v.error);
+  if (f) n.f = f.name;
+  return n;
+}
 
 const r = String.raw;
 
@@ -550,6 +562,16 @@ export const OBJECTS = [
         const elim = String(a.x || vars[0]).split(",").map((s) => s.trim()).filter(Boolean);
         return { value: fmAnswer(ineqs, vars, elim) };
       } });
+      return out;
+    },
+  },
+  {
+    name: "negate", words: "negation negate not neg opposite false proof by contradiction assume quantifier for all there exists forall exists", desc: "negation of a statement, rule by rule ((1.3), Ex 1.20, Def 1.10, Remark 5.34)", varName: "notP",
+    options: (ctx) => {
+      const out = noteStatements(ctx.vars).map((S) => computed(`ng:${S.name}`, `Negation of ${S.name}`, () => ({ value: S.N.tex })));
+      const names = negationNames(ctx.vars);
+      for (const d of DEFINITIONS) out.push(computed(`nd:${d.key}`, `${d.label.replace(/\b(S|U|C|f)\b/, (m) => names[m] || m)} (${d.ref})`, () => ({ value: negate(d.s(names)).tex })));
+      out.push({ id: "own", label: "Statement you type", ask: [{ key: "s", label: "Statement (∀ ∃ ¬ ∧ ∨ ⇒ or \\forall, \\exists, ...)", hint: "\\forall x \\in S : x^2 \\ge 0" }], build: (a) => ({ value: negate(a.s).tex }) });
       return out;
     },
   },
