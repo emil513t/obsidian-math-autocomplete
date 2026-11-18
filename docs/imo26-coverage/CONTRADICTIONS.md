@@ -13,7 +13,13 @@ E8 built (`src/notconvex.js`: \convexfn bad pair, \strictconvex Hessian/f'' at a
 segment" (6.6, 8.28, 9.52, 9.54(1)), \convexset midpoint outside; 9.53(1) with e^{x−y}). Tests:
 `test/notconvex.test.js`. Not built from E8: 4.25 union (sets given as a union) and 6.58 (a statement).
 Also fixed: the CAS read \log as base 10; the book's log has base e.
-Next: E2 + E3.
+E2 + E3 built (`src/failcases.js`: \setequal / \subsetproof element in one set and not the other (listed
+and set-builder sets over R, Z, N); \truthtable "NOT equivalent" / "NOT always true" rows (1.11, 1.20);
+function tables of pairs (1.102, 1.108, 1.113); \injective / \surjective for formulas (1.109, e^x);
+\crit critical point that is not an extremum (6.38); \inequality with several variables and the note's
+assumptions (1.72(i))). Tests: `test/failcases.test.js`. Not built: "give an example" exercises 2.30,
+6.42, 6.47 and the counting argument 1.107 (hash functions).
+Next: E7, E10, E11.
 
 **Method:** all 289 exercises in `ex.json` read one by one, plus every place the book itself argues
 by contradiction (Sec 1.6.4 + Ex 1.83, Thm 1.86, the global-minimum proof in Sec 6, Lemma 6.37,

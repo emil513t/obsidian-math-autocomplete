@@ -9,7 +9,8 @@ start of the matching route's label ("-" for none). Book wording only.
 - [taut] true in every row :: the last column is all T :: the proposition always holds :: true in every row
 - [contra] false in every row :: the last column is all F :: its negation always holds :: truth table for one proposition
 - [equiv] two propositions agree :: same column in every row :: they are equivalent (Definition 1.18) :: two propositions are equivalent
-- [differ] two propositions differ :: one row with different values :: not equivalent: that row is the example :: two propositions are equivalent
+- [differ] two propositions differ :: one row with different values :: not equivalent: that row is the example :: NOT equivalent
+- [some] true in some rows, false in others :: one row where the last column is f :: not always true: that row is the example :: NOT always true
 
 ## \negate
 - [neg] the negation, written out :: ¬ moved past every ∀, ∃, ∧, ∨, ⇒ :: what to prove when you show the statement is false :: step by step

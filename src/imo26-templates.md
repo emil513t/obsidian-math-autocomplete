@@ -40,6 +40,10 @@ using {{¬(p ∧ q) ≡ ¬p ∨ ¬q (Exercise 1.20) / p ⇔ q ≡ (p ⇒ q) ∧ 
 ${{proposition}}$ is **always true**: in its truth table (Definition 1.10) the last column is t in every row:
 {{table}}
 $\blacksquare$
+### NOT equivalent: one row where they differ (Def 1.10)
+${{P}}$ and ${{Q}}$ are **not equivalent**: they differ in this row of the truth table (Definition 1.10): for ${{row}}$, ${{P}}$ is {{P value}} but ${{Q}}$ is {{Q value}}.
+### NOT always true: one row where it is false (Def 1.10)
+${{proposition}}$ is **not always true**: it is false in this row of the truth table (Definition 1.10): ${{row}}$ gives {{P value}}.
 
 ## \negate — Ch1: negate a statement / prove it by contradiction (Sec 1.3.4, Sec 1.6.4)
 ### step by step ((1.3), Ex 1.20, Def 1.10)
@@ -69,7 +73,7 @@ so ${{A}}$ and ${{B}}$ have the same elements, i.e. ${{A}} = {{B}}$ (Definition 
 These two propositions have identical truth tables (Definition 1.10): {{table / reason}}.
 So ${{A}} = {{B}}$ (Definition 1.27). $\blacksquare$
 ### NOT equal: an element in one but not the other (Def 1.27)
-${{A}} \neq {{B}}$ (Definition 1.27): ${{element}} \in {{A}}$ because {{reason}}, but ${{element}} \notin {{B}}$ because {{reason}}.
+${{A}} \neq {{B}}$ (Definition 1.27): ${{element}} \in {{the set with it}}$ because {{why in it}}, but ${{element}} \notin {{the other set}}$ because {{why not in the other}}.
 
 ## \subsetproof — Ch1: show A is a subset of B
 ### element chasing
@@ -77,7 +81,7 @@ ${{A}} \neq {{B}}$ (Definition 1.27): ${{element}} \in {{A}}$ because {{reason}}
 {{argument}}
 So $x \in {{B}}$. Since $x$ was arbitrary, ${{A}} \subseteq {{B}}$. $\blacksquare$
 ### not a subset: an element of A outside B
-${{A}} \not\subseteq {{B}}$: ${{element}} \in {{A}}$ since {{reason}}, but ${{element}} \notin {{B}}$ since {{reason}}.
+${{A}} \not\subseteq {{B}}$: ${{element}} \in {{A}}$ since {{why in A}}, but ${{element}} \notin {{B}}$ since {{why not in B}}.
 
 ## \setbuilder — Ch1: list the elements of a set-builder set / set operations
 ### solve the condition
@@ -636,7 +640,7 @@ $f$ is continuous on the compact $[{{a}}, {{b}}]$, so max and min exist (Theorem
 
 **Max** ${{max}}$, **min** ${{min}}$.
 ### a critical point that is NOT an extremum (Ex 6.38)
-$f(x) = {{f}}$ has $f'({{x0}}) = 0$ but takes values both above and below $f({{x0}})$ near ${{x0}}$, so the converse of Lemma 6.37 fails.
+$f(x) = {{f}}$ has $f'({{x0}}) = 0$, but {{why f' keeps its sign}}, so $f$ is {{strictly increasing / strictly decreasing}} (Proposition 6.43). So $f$ takes values both above and below $f({{x0}})$ near ${{x0}}$: ${{x0}}$ is not a local extremum, and the converse of Lemma 6.37 fails.
 
 ## \taylor — Ch6: Taylor polynomials (Sec 6.4)
 ### compute the Taylor polynomial

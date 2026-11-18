@@ -70,7 +70,10 @@ export function noteSet(vars, ctx = {}) {
   }
   const m = String(v.value).match(/^\\\{\s*(.*?)\s*(?:\\mid|\\colon|\||:)\s*(.*?)\s*\\\}$/s);
   if (!m) return null;
-  const head = m[1].replace(/\\in\s*\\mathbb\{R\}(\^\{?\d+\}?)?/, "").replace(/^\(|\)$/g, "");
+  // ℤ, ℕ, ℚ only when the caller can use them (ctx.domains); the topology verdicts are about ℝ^d.
+  const dm = m[1].match(/\\in\s*\\mathbb\{([ZNQ])\}/);
+  if (dm && !ctx.domains) return null;
+  const head = m[1].replace(/\\in\s*\\mathbb\{[RZNQ]\}(\^\{?\d+\}?)?/, "").replace(/^\(|\)$/g, "");
   const xs = head.split(",").map((s) => s.trim()).filter((s) => /^[a-z]$/.test(s));
   if (!xs.length) return null;
   const conds = [];
@@ -80,7 +83,7 @@ export function noteSet(vars, ctx = {}) {
     conds.push(...p);
   }
   if (conds.some((c) => [...cas.symbols(c.e)].some((s) => !xs.includes(s)))) return null;
-  return { name: v.name, xs, conds };
+  return { name: v.name, xs, conds, domain: dm ? dm[1] : "R" };
 }
 
 // No division by something that can be 0, no logs/roots: continuous on all of R^d.

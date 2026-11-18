@@ -9,7 +9,7 @@ import { noteMatrices, noteMatrix, texM } from "./witness.js";
 import { mainFn, statementVar, substituteTex, evalSide, noteFunctions, fnByName } from "./textlink.js";
 import { noteFG } from "./lagrange.js";
 import { contradiction, contradictionLine } from "./ineqproof.js";
-import { latexName } from "./vars.js";
+import { latexName, satisfies } from "./vars.js";
 
 const T = (x, vars) => cas.tex(x, vars);
 const size = (M) => `${M.length} \\times ${M[0].length}`;
@@ -49,15 +49,26 @@ export function inequalityFailure(vars) {
   if (!P) return null;
   const l = cas.tryParse(P.lhs); const r = cas.tryParse(P.rhs);
   if (!l || !r) return null;
-  const xs = [...new Set([...cas.symbols(l), ...cas.symbols(r)])];
-  if (xs.length !== 1) return null;
-  const x = xs[0];
-  for (const k of [0, 1, -1, 2, -2, 0.5, -0.5, 3, -3, 10, -10, 0.25]) {
-    const q = Number.isInteger(k) ? cas.num(k) : cas.num(Math.round(k * 4), 4);
-    const a = cas.subs(l, { [x]: q }); const b = cas.subs(r, { [x]: q });
+  const xs = cas.orderVars(new Set([...cas.symbols(l), ...cas.symbols(r)]));
+  if (!xs.length || xs.length > 3) return null;
+  // E3: one value per variable from a small grid (simple numbers first), keeping
+  // the note's assumptions (a > 0, ...); several variables give one tuple.
+  const ks = [0, 1, -1, 2, -2, 0.5, -0.5, 3, -3, 10, -10, 0.25];
+  const qs = ks.map((k) => (Number.isInteger(k) ? cas.num(k) : cas.num(Math.round(k * 4), 4)));
+  const A = vars.assumptions || [];
+  const tuples = (n) => (n === 0 ? [[]] : tuples(n - 1).flatMap((t) => qs.map((q) => [...t, q])));
+  // Whole numbers before fractions, small before large: the example a person would try.
+  const size = (t) => t.reduce((s, q) => s + Math.abs(cas.evaluate(q)) + (cas.constValue(q).d > 1 ? 5 : 0), 0);
+  const cands = tuples(xs.length).filter((t) => t.every((q, i) => satisfies(A, xs[i], cas.evaluate(q)))).sort((s, t) => size(s) - size(t));
+  for (const t of cands) {
+    const env = Object.fromEntries(xs.map((x, i) => [x, t[i]]));
+    const a = cas.subs(l, env); const b = cas.subs(r, env);
     const av = cas.evaluate(a); const bv = cas.evaluate(b);
     if (!Number.isFinite(av) || !Number.isFinite(bv)) continue;
-    if (!holdsRel(av, P.op, bv)) return { x, value: q, left: a, right: b, gt: av > bv };
+    if (!holdsRel(av, P.op, bv)) {
+      const one = xs.length === 1;
+      return { x: one ? xs[0] : `(${xs.join(", ")})`, value: one ? t[0] : null, valueTex: one ? T(t[0]) : `(${t.map((q) => T(q)).join(", ")})`, left: a, right: b, gt: av > bv };
+    }
   }
   return null;
 }
@@ -132,8 +143,8 @@ export function resolveEndingLabel(label, vars, ctx = {}) {
   if (/^(variable|value|left|right|> \/ <)$/.test(l) && /does not hold for every value/.test(body)) {
     const f = inequalityFailure(vars);
     if (!f) return null;
-    const v = { variable: f.x, value: T(f.value), left: T(f.left), right: T(f.right), "> / <": f.gt ? ">" : "<" }[l];
-    return { value: v, from: `${f.x} = ${T(f.value)}` };
+    const v = { variable: f.x, value: f.valueTex, left: T(f.left), right: T(f.right), "> / <": f.gt ? ">" : "<" }[l];
+    return { value: v, from: `${f.x} = ${f.valueTex}` };
   }
   return undefined;
 }

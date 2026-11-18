@@ -9,6 +9,7 @@ import { noteRelations, noteContradiction, contradictionLine } from "./ineqproof
 import { gaussInfo } from "./nosolution.js";
 import { notOptimal } from "./notoptimal.js";
 import { convexVerdict, setBadPair } from "./notconvex.js";
+import { setVerdictE2, truthInfo, tableFn, tableNotInjective, tableNotSurjective, notInjective, notSurjective } from "./failcases.js";
 import { noteFG, lagrangeSolve } from "./lagrange.js";
 import { signEverywhere } from "./convex.js";
 import { setVerdict, limitVerdict, kktVerdict, svmVerdict } from "./verdicts.js";
@@ -119,7 +120,12 @@ function oneVarOutcome(command, vars, ctx) {
     const k = { pos: "strict", nonneg: "strict", zero: "inc", neg: "dec", nonpos: "dec", mixed: "neither" }[s];
     return k ? one(k, `${nm}' = ${cas.tex(d1, [v])} is ${{ pos: "> 0", nonneg: "≥ 0, 0 only at single points", zero: "0", neg: "< 0", nonpos: "≤ 0", mixed: "of both signs" }[s]}`) : null;
   }
-  if (!isPoly1(F)) return null;
+  if (!isPoly1(F)) {
+    // E3: e^x, ln, ...: a pair with the same value / a y that is never hit.
+    if (command === "injective" && notInjective(F)) return one("notinj", "two points with the same value");
+    if (command === "surjective" && notSurjective(F)) return one("notsurj", "a value that is never hit");
+    return null;
+  }
   const deg = degree(F);
   if (command === "injective") {
     const s = signEverywhere(d1, [v]).s;
@@ -196,7 +202,7 @@ export function outcomeOf(command, vars, ctx = {}) {
     }
     if (command === "inequality") {
       const f = inequalityFailure(vars);
-      return f ? one("fails", `it fails at ${f.x} = ${cas.tex(f.value)}`) : null;
+      return f ? one("fails", `it fails at ${f.x} = ${f.valueTex}`) : null;
     }
     if (command === "gauss" || command === "leastsquares") {
       // E5: Gauss elimination on the note's own system.
@@ -216,6 +222,27 @@ export function outcomeOf(command, vars, ctx = {}) {
       if (!K.strictlyFeasible) return one("notsf", "no point has all g_i < 0");
       if (!K.point) return null;
       return one(K.allZero ? "inner" : "active", `optimum (${K.point.map((x) => cas.tex(x)).join(", ")})${K.allZero ? ", all λ = 0" : ""}`);
+    }
+    // E2: sets, propositions and function tables, every element / row tried.
+    if (command === "setequal" || command === "subsetproof") {
+      const V = setVerdictE2(vars);
+      if (!V) return null;
+      if (command === "subsetproof") return V.subset === null ? null : one(V.subset ? "yes" : "no", V.subset ? `every element of ${V.A.name} is in ${V.B.name}` : `${V.A.name} has an element outside ${V.B.name}`);
+      if (V.equal === null) return null;
+      if (V.equal) return one("eq", `${V.A.name} and ${V.B.name} have the same elements`);
+      return one(V.ab && V.ba ? "neq" : "sub", V.ab && V.ba ? "each has an element the other lacks" : "one inclusion only");
+    }
+    if (command === "truthtable") {
+      const I = truthInfo(vars);
+      return I ? one(I.kind, { taut: "true in every row", contra: "false in every row", some: "false in some row", equiv: "the same in every row", differ: "they differ in one row" }[I.kind]) : null;
+    }
+    if (command === "injective" || command === "surjective") {
+      const Tb = tableFn(vars, ctx);
+      if (Tb) {
+        if (command === "injective") return one(tableNotInjective(Tb) ? "notinj" : "inj", tableNotInjective(Tb) ? "two inputs with the same value" : "all values differ");
+        if (!Tb.T) return null;
+        return one(tableNotSurjective(Tb) ? "notsurj" : "surj", tableNotSurjective(Tb) ? "a value of T is never hit" : "every value of T is hit");
+      }
     }
     if (command === "convexset") {
       // E8: two points of the set whose midpoint is outside.
